@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="ks_email_cc.Message" t-inherit="mail.Message" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Message-content')]" position="before">
+            <small>
+                <p t-if="props.message.ks_cc_partners">
+                    <b>CC :</b>
+                    <t t-esc="props.message.ks_cc_partners"/>
+                </p>
+                <p t-if="props.message.ks_email_cc_string">
+                    <b>CC Emails:</b>
+                    <t t-esc="props.message.ks_email_cc_string"/>
+                </p>
+                <p t-if="props.message.ks_bcc_partners">
+                    <b>Bcc :</b>
+                    <t t-esc="props.message.ks_bcc_partners"/>
+                </p>
+                <p t-if="props.message.ks_email_bcc_string">
+                    <b>Bcc Emails:</b>
+                    <t t-esc="props.message.ks_email_bcc_string"/>
+                </p>
+            </small>
+        </xpath>
+    </t>
+</templates>
