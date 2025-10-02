@@ -10,20 +10,28 @@ class MailMailInherit(models.Model):
     _inherit = 'mail.mail'
 
     def _prepare_outgoing_list(self, mail_server=False, doc_to_followers=None):
-        """Override to inject email_bcc into outgoing email values."""
+        """Override to inject email_cc and email_bcc into outgoing email values."""
         results = super()._prepare_outgoing_list(
             mail_server=mail_server,
             doc_to_followers=doc_to_followers
         )
 
-        # Inject BCC into headers if present
-        if self.email_bcc:
-            bcc_list = tools.mail.email_split_and_format_normalize(self.email_bcc)
-            for email_values in results:
-                # Add BCC to headers (this is the standard way to include BCC in emails)
-                if not email_values.get('headers'):
-                    email_values['headers'] = {}
-                email_values['headers']['Bcc'] = ', '.join(bcc_list)
+        for email_values in results:
+            # Inject CC into headers if present
+            if self.email_cc:
+                cc_list = tools.mail.email_split_and_format_normalize(self.email_cc)
+                if cc_list:
+                    if not email_values.get('headers'):
+                        email_values['headers'] = {}
+                    email_values['headers']['Cc'] = ', '.join(cc_list)
+            
+            # Inject BCC into headers if present
+            if self.email_bcc:
+                bcc_list = tools.mail.email_split_and_format_normalize(self.email_bcc)
+                if bcc_list:
+                    if not email_values.get('headers'):
+                        email_values['headers'] = {}
+                    email_values['headers']['Bcc'] = ', '.join(bcc_list)
 
         return results
 
