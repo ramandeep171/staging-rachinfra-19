@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend mail compose message form to add CC and BCC fields -->
+    <record id="email_compose_message_wizard_form_cc_bcc" model="ir.ui.view">
+        <field name="name">mail.compose.message.form.cc.bcc</field>
+        <field name="model">mail.compose.message</field>
+        <field name="inherit_id" ref="mail.email_compose_message_wizard_form"/>
+        <field name="arch" type="xml">
+            <!-- Add CC and BCC fields after partner_ids with proper labels and widgets -->
+            <xpath expr="//field[@name='partner_ids']" position="after">
+                <!-- CC Field with label and contact picker -->
+                <label for="cc_partner_ids" string="CC"/>
+                <div>
+                    <field name="cc_partner_ids"
+                           widget="many2many_tags_email"
+                           placeholder="Add contacts to CC..."
+                           options="{'no_quick_create': True}"
+                           context="{'show_email': True, 'form_view_ref': 'base.view_partner_simple_form'}"/>
+                    <field name="email_cc"
+                           placeholder="Or enter emails separated by commas: email1@example.com, email2@example.com"
+                           class="mt-2"/>
+                </div>
+
+                <!-- BCC Field with label and contact picker -->
+                <label for="bcc_partner_ids" string="BCC"/>
+                <div>
+                    <field name="bcc_partner_ids"
+                           widget="many2many_tags_email"
+                           placeholder="Add contacts to BCC..."
+                           options="{'no_quick_create': True}"
+                           context="{'show_email': True, 'form_view_ref': 'base.view_partner_simple_form'}"/>
+                    <field name="email_bcc"
+                           placeholder="Or enter emails separated by commas: email1@example.com, email2@example.com"
+                           class="mt-2"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend mail.mail form view to show BCC -->
+    <record id="view_mail_mail_form_bcc" model="ir.ui.view">
+        <field name="name">mail.mail.form.bcc</field>
+        <field name="model">mail.mail</field>
+        <field name="inherit_id" ref="mail.view_mail_form"/>
+        <field name="arch" type="xml">
+            <!-- Add BCC after existing email_cc field -->
+            <field name="email_cc" position="after">
+                <field name="email_bcc"/>
+            </field>
+        </field>
+    </record>
+</odoo>
