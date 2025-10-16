@@ -1,0 +1,780 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Full RMC Landing Page with Calculator at Bottom -->
+    <template id="rmc_landing_full_page" name="RMC Landing Page">
+        <t t-call="website.layout">
+            <div id="wrap" class="oe_structure oe_empty">
+
+                <!-- Hero Section -->
+                <section class="pt160 pb160" style="background-image: url('/website_rmc_calculator/static/src/img/rmc%20landing%20page.webp'); background-size: cover; background-position: center; position: relative;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5);"></div>
+                    <div class="container" style="position: relative; z-index: 1;">
+                        <div class="row">
+                            <div class="col-lg-12 text-center">
+                                <h1 class="display-2 text-white">Premium Ready-Mix Concrete</h1>
+                                <h2 class="display-4 text-warning">Delivered On-Time, Every Time</h2>
+                                <p class="lead text-white mt-3 mb-4">
+                                    Laboratory-tested quality with 99% on-time delivery rate
+                                </p>
+                                <a class="btn btn-primary btn-lg me-2" href="#calculator">Get Instant Quote</a>
+                                <a class="btn btn-outline-light btn-lg" href="/contactus">Check Delivery Area</a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Construction Delays Cost Section -->
+                <section class="pt64 pb64" style="background-color: #f8fafc;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2 class="display-5">Construction Delays Cost You Money</h2>
+                            <p class="lead text-muted">Poor concrete quality and delivery delays can derail your entire project timeline and budget.</p>
+                        </div>
+                        <div class="row g-4">
+                            <!-- Traditional Suppliers -->
+                            <div class="col-lg-6">
+                                <div class="card border-danger h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                                <i class="fa fa-exclamation fa-2x"></i>
+                                            </div>
+                                            <h3 class="text-danger mb-0">Traditional Suppliers</h3>
+                                        </div>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2"><i class="fa fa-times text-danger me-2"></i> Inconsistent concrete quality leads to structural issues</li>
+                                            <li class="mb-2"><i class="fa fa-times text-danger me-2"></i> Delivery delays cause project timeline setbacks</li>
+                                            <li class="mb-2"><i class="fa fa-times text-danger me-2"></i> No technical support when problems arise</li>
+                                            <li class="mb-2"><i class="fa fa-times text-danger me-2"></i> Hidden costs and unreliable pricing</li>
+                                        </ul>
+                                        <div class="alert alert-warning mt-3">
+                                            <div class="fw-bold text-danger">Average Project Delay Cost</div>
+                                            <div class="h4 text-danger mb-0">₹2,50,000 per week</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RachInfra RMC Pro -->
+                            <div class="col-lg-6">
+                                <div class="card border-success h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                                <i class="fa fa-check fa-2x"></i>
+                                            </div>
+                                            <h3 class="text-success mb-0">RachInfra RMC Pro</h3>
+                                        </div>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Laboratory-tested quality with consistent strength ratings</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> 99% on-time delivery with real-time tracking</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> 24/7 technical support from concrete experts</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Transparent pricing with bulk discounts</li>
+                                        </ul>
+                                        <div class="alert alert-success mt-3">
+                                            <div class="fw-bold text-success">Average Project Savings</div>
+                                            <div class="h4 text-success mb-0">₹5,00,000 per project</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Concrete Grades Section -->
+                <section class="pt64 pb64">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2 class="display-5">Choose Your Perfect Concrete Grade</h2>
+                            <p class="lead text-muted">Select from our range of laboratory-tested concrete grades</p>
+                        </div>
+                        <div class="row g-4">
+                            <!-- M20 -->
+                            <div class="col-lg-4">
+                                <div class="card h-100 border-primary">
+                                    <div class="card-body text-center">
+                                        <div class="rounded-circle bg-primary text-white mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                                            <span class="h4 mb-0">M20</span>
+                                        </div>
+                                        <h3>Standard Grade</h3>
+                                        <div class="display-6 text-primary my-3">₹4,200/m³</div>
+                                        <ul class="list-unstyled text-start">
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> 20 MPa compressive strength</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Residential construction</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Slabs &amp; foundations</li>
+                                        </ul>
+                                        <a href="/shop" class="btn btn-primary w-100 mt-3">Select M20</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- M25 -->
+                            <div class="col-lg-4">
+                                <div class="card h-100 border-primary">
+                                    <div class="card-body text-center">
+                                        <div class="rounded-circle bg-primary text-white mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                                            <span class="h4 mb-0">M25</span>
+                                        </div>
+                                        <h3>Premium Grade</h3>
+                                        <div class="display-6 text-primary my-3">₹4,800/m³</div>
+                                        <ul class="list-unstyled text-start">
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> 25 MPa compressive strength</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Commercial construction</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Beams &amp; columns</li>
+                                        </ul>
+                                        <a href="/shop" class="btn btn-primary w-100 mt-3">Select M25</a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- M30 -->
+                            <div class="col-lg-4">
+                                <div class="card h-100 border-primary">
+                                    <div class="card-body text-center">
+                                        <div class="rounded-circle bg-primary text-white mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                                            <span class="h4 mb-0">M30</span>
+                                        </div>
+                                        <h3>High Strength</h3>
+                                        <div class="display-6 text-primary my-3">₹5,500/m³</div>
+                                        <ul class="list-unstyled text-start">
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> 30 MPa compressive strength</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> Infrastructure projects</li>
+                                            <li class="mb-2"><i class="fa fa-check text-success me-2"></i> High-rise buildings</li>
+                                        </ul>
+                                        <a href="/shop" class="btn btn-primary w-100 mt-3">Select M30</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Why Choose Us Section -->
+                <section class="pt64 pb64" style="background-color: #f8fafc;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2>Why Contractors Choose RachInfra RMC Pro</h2>
+                            <p class="mx-auto">Experience the difference with our comprehensive concrete solutions designed for construction professionals.</p>
+                        </div>
+                        <div class="row g-4">
+                            <!-- Consistent Quality -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <span class="fa fa-check fa-3x text-warning rounded-circle mb-3" style="background-color: #fef3c7; padding: 15px;"></span>
+                                        <h5><strong>Consistent Quality</strong></h5>
+                                        <p>Laboratory-tested concrete with guaranteed strength ratings and quality certificates for every batch.</p>
+                                        <p class="text-warning"><strong>99.8% Quality consistency</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Timely Delivery -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <span class="fa fa-clock-o fa-3x text-success rounded-circle mb-3" style="background-color: #d1fae5; padding: 15px;"></span>
+                                        <h5><strong>Timely Delivery</strong></h5>
+                                        <p>Real-time tracking and 99% on-time delivery rate with GPS-enabled fleet management system.</p>
+                                        <p class="text-success"><strong>99% On-Time Delivery</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Cost Efficiency -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <span class="fa fa-dot-circle-o fa-3x text-info rounded-circle mb-3" style="background-color: #dbeafe; padding: 15px;"></span>
+                                        <h5><strong>Cost Efficiency</strong></h5>
+                                        <p>Competitive pricing with bulk discounts and transparent billing. No hidden costs or surprise charges.</p>
+                                        <p class="text-info"><strong>Up to 15% Savings</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Technical Support -->
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <div class="card-body text-center">
+                                        <span class="fa fa-tv fa-3x text-primary rounded-circle mb-3" style="background-color: #e0e7ff; padding: 15px;"></span>
+                                        <h5><strong>Technical Support</strong></h5>
+                                        <p>24/7 expert support from concrete engineers and technical consultants for all your project needs.</p>
+                                        <p class="text-primary"><strong>24/7 Expert Support</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Laboratory Testing Section -->
+                <section class="pt64 pb64" style="background-color: #f5f5f5;">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-6 mb-4 mb-lg-0">
+                                <h2 class="mb-4"><strong>Laboratory-Tested Quality Assurance</strong></h2>
+                                <p class="mb-5 text-muted">Every batch of concrete undergoes rigorous testing in our state-of-the-art laboratory to ensure consistent quality and strength.</p>
+
+                                <!-- Raw Material Testing -->
+                                <div class="d-flex align-items-start mb-4">
+                                    <div style="min-width: 50px; width: 50px; height: 50px; background-color: #6ba54a; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 20px;">
+                                        <i class="fa fa-check" style="color: white; font-size: 20px;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-2"><strong>Raw Material Testing</strong></h4>
+                                        <p class="text-muted mb-0">All aggregates, cement, and additives tested for quality compliance before mixing.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Mix Design Optimization -->
+                                <div class="d-flex align-items-start mb-4">
+                                    <div style="min-width: 50px; width: 50px; height: 50px; background-color: #6ba54a; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 20px;">
+                                        <i class="fa fa-check" style="color: white; font-size: 20px;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-2"><strong>Mix Design Optimization</strong></h4>
+                                        <p class="text-muted mb-0">Computer-controlled batching ensures precise mix proportions for consistent strength.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Strength Testing -->
+                                <div class="d-flex align-items-start mb-4">
+                                    <div style="min-width: 50px; width: 50px; height: 50px; background-color: #6ba54a; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 20px;">
+                                        <i class="fa fa-check" style="color: white; font-size: 20px;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-2"><strong>Strength Testing</strong></h4>
+                                        <p class="text-muted mb-0">Cube testing at 7, 14, and 28 days to verify compressive strength compliance.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Quality Certification -->
+                                <div class="d-flex align-items-start mb-0">
+                                    <div style="min-width: 50px; width: 50px; height: 50px; background-color: #6ba54a; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-right: 20px;">
+                                        <i class="fa fa-check" style="color: white; font-size: 20px;"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-2"><strong>Quality Certification</strong></h4>
+                                        <p class="text-muted mb-0">Digital quality certificates provided with every delivery for your records.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6 d-flex align-items-center justify-content-center">
+                                <img src="/website_rmc_calculator/static/src/img/Laboratory.webp" alt="Laboratory Testing - Hand with keys" class="img img-fluid rounded shadow-lg" loading="lazy" style="max-width: 100%; height: auto; object-fit: cover;"/>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Testimonials Section -->
+                <section class="pb32 pt64" style="background-color: #f8fafc;">
+                    <div class="container">
+                        <h2 class="text-center mb-2"><strong>Trusted by Leading Construction Companies</strong></h2>
+                        <p class="text-center h5 text-muted mx-auto">See what contractors and builders say about our reliable concrete delivery and quality service.</p>
+                    </div>
+                </section>
+
+                <section class="pb64" style="background-color: #f8fafc;">
+                    <style>
+                        .testimonial-card {
+                            background-color: #ffffff;
+                            border-radius: 0.75rem;
+                            padding: 1.5rem;
+                            border: 1px solid #e5e7eb;
+                            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+                            transition: transform 0.2s ease, box-shadow 0.2s ease;
+                            height: 100%;
+                        }
+                        .testimonial-card:hover {
+                            transform: translateY(-4px);
+                            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+                        }
+                        .testimonial-header {
+                            display: flex;
+                            align-items: center;
+                            margin-bottom: 1rem;
+                        }
+                        .testimonial-header img {
+                            width: 48px;
+                            height: 48px;
+                            border-radius: 50%;
+                            object-fit: cover;
+                            margin-right: 1rem;
+                        }
+                        .testimonial-name {
+                            font-weight: 600;
+                            color: #111827;
+                            font-size: 1rem;
+                        }
+                        .testimonial-role {
+                            font-size: 0.875rem;
+                            color: #6b7280;
+                        }
+                        .stars {
+                            color: #f59e0b;
+                            font-size: 1.1rem;
+                            margin-bottom: 0.75rem;
+                        }
+                        .testimonial-text {
+                            color: #374151;
+                            margin-bottom: 1rem;
+                            font-size: 0.95rem;
+                        }
+                        .testimonial-project {
+                            font-size: 0.875rem;
+                            font-weight: 600;
+                            color: #e3642e;
+                        }
+                    </style>
+                    <div class="container">
+                        <div class="row g-4">
+                            <div class="col-lg-4 col-md-6">
+                                <div class="testimonial-card">
+                                    <div class="testimonial-header">
+                                        <img src="/web/image/website.s_default_avatar_2" alt="Rajesh Kumar" loading="lazy"/>
+                                        <div>
+                                            <div class="testimonial-name">Rajesh Kumar</div>
+                                            <div class="testimonial-role">Site Engineer, BuildTech Solutions</div>
+                                        </div>
+                                    </div>
+                                    <div class="stars">★★★★★</div>
+                                    <div class="testimonial-text">
+                                        "RachInfra's concrete quality is exceptional. We've completed 15 projects with them and never faced any quality issues. Their on-time delivery helped us finish our mall project 2 weeks ahead of schedule."
+                                    </div>
+                                    <div class="testimonial-project">Project: Metro Mall Complex - 2,500 m³</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-6">
+                                <div class="testimonial-card">
+                                    <div class="testimonial-header">
+                                        <img src="/web/image/website.s_default_avatar_1" alt="Priya Sharma" loading="lazy"/>
+                                        <div>
+                                            <div class="testimonial-name">Priya Sharma</div>
+                                            <div class="testimonial-role">Project Manager, Prime Builders</div>
+                                        </div>
+                                    </div>
+                                    <div class="stars">★★★★★</div>
+                                    <div class="testimonial-text">
+                                        "The technical support team is outstanding. When we had questions about concrete curing in monsoon season, their engineers provided detailed guidance that saved our project timeline."
+                                    </div>
+                                    <div class="testimonial-project">Project: Residential Complex - 1,800 m³</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-md-6">
+                                <div class="testimonial-card">
+                                    <div class="testimonial-header">
+                                        <img src="/web/image/website.s_default_avatar_3" alt="Amit Patel" loading="lazy"/>
+                                        <div>
+                                            <div class="testimonial-name">Amit Patel</div>
+                                            <div class="testimonial-role">Contractor, Urban Infrastructure</div>
+                                        </div>
+                                    </div>
+                                    <div class="stars">★★★★★</div>
+                                    <div class="testimonial-text">
+                                        "Cost-effective pricing with bulk discounts made a huge difference in our project budget. The transparent billing and no hidden charges policy builds trust for long-term partnerships."
+                                    </div>
+                                    <div class="testimonial-project">Project: Highway Bridge - 3,200 m³</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Project Portfolio Section -->
+                <section class="pt64 pb64">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2><strong>Our Project Portfolio</strong></h2>
+                            <p class="h5 text-muted mx-auto">From residential complexes to major infrastructure projects, see how our concrete solutions have built success stories across India.</p>
+                        </div>
+                        <div class="row g-4">
+                            <!-- Project 1 -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <img src="/web/image/website.s_banner_default_image" class="card-img-top" alt="Metro Mall Complex" loading="lazy" style="height: 250px; object-fit: cover;"/>
+                                    <div class="card-body">
+                                        <span class="badge bg-primary mb-2">Commercial</span>
+                                        <h4><strong>Metro Mall Complex</strong></h4>
+                                        <p class="text-muted">Large-scale commercial project with complex structural requirements and tight deadlines.</p>
+                                        <div class="row mt-3">
+                                            <div class="col-6">
+                                                <small class="text-muted">Concrete Volume</small>
+                                                <p><strong>2,500 m³</strong></p>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">Grade Used</small>
+                                                <p><strong>M25, M30</strong></p>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <p class="text-success mb-0"><strong>Completed 2 weeks early</strong></p>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <small class="text-muted">Mumbai, Maharashtra</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Project 2 -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <img src="/web/image/website.s_banner_default_image" class="card-img-top" alt="Green Valley Residences" loading="lazy" style="height: 250px; object-fit: cover;"/>
+                                    <div class="card-body">
+                                        <span class="badge bg-success mb-2">Residential</span>
+                                        <h4><strong>Green Valley Residences</strong></h4>
+                                        <p class="text-muted">Premium residential complex with sustainable construction practices and quality finishes.</p>
+                                        <div class="row mt-3">
+                                            <div class="col-6">
+                                                <small class="text-muted">Concrete Volume</small>
+                                                <p><strong>1,800 m³</strong></p>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">Grade Used</small>
+                                                <p><strong>M20, M25</strong></p>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <p class="text-success mb-0"><strong>Zero quality issues</strong></p>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <small class="text-muted">Pune, Maharashtra</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Project 3 -->
+                            <div class="col-lg-4 col-md-6">
+                                <div class="card h-100 shadow-sm">
+                                    <img src="/web/image/website.s_banner_default_image" class="card-img-top" alt="NH-48 Highway Bridge" loading="lazy" style="height: 250px; object-fit: cover;"/>
+                                    <div class="card-body">
+                                        <span class="badge bg-warning mb-2">Infrastructure</span>
+                                        <h4><strong>NH-48 Highway Bridge</strong></h4>
+                                        <p class="text-muted">Critical infrastructure project requiring high-strength concrete and precise delivery scheduling.</p>
+                                        <div class="row mt-3">
+                                            <div class="col-6">
+                                                <small class="text-muted">Concrete Volume</small>
+                                                <p><strong>3,200 m³</strong></p>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">Grade Used</small>
+                                                <p><strong>M30, M35</strong></p>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <p class="text-success mb-0"><strong>100% on-time delivery</strong></p>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <small class="text-muted">Nashik, Maharashtra</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Comparison Table Section -->
+                <section class="pt64 pb64" style="background-color: #f8fafc;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2><strong>Why Choose RachInfra Over Others?</strong></h2>
+                            <p class="h5 text-muted">Compare our superior service standards with traditional concrete suppliers.</p>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered bg-white shadow-sm">
+                                <thead style="background-color: #e3642e;">
+                                    <tr>
+                                        <th style="color: white; padding: 15px;"><strong>Features</strong></th>
+                                        <th style="color: white; padding: 15px; text-align: center;"><strong>RachInfra RMC Pro</strong></th>
+                                        <th style="color: white; padding: 15px; text-align: center;"><strong>Traditional Suppliers</strong></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 15px;"><strong>Quality Testing</strong></td>
+                                        <td style="padding: 15px; text-align: center; color: #059669;">✓ Laboratory Tested</td>
+                                        <td style="padding: 15px; text-align: center; color: #dc2626;">✗ Basic Testing</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 15px;"><strong>Delivery Reliability</strong></td>
+                                        <td style="padding: 15px; text-align: center; color: #059669;">✓ 99% On-Time</td>
+                                        <td style="padding: 15px; text-align: center; color: #dc2626;">✗ Often Delayed</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 15px;"><strong>Technical Support</strong></td>
+                                        <td style="padding: 15px; text-align: center; color: #059669;">✓ 24/7 Expert Support</td>
+                                        <td style="padding: 15px; text-align: center; color: #dc2626;">✗ Limited Support</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 15px;"><strong>Real-Time Tracking</strong></td>
+                                        <td style="padding: 15px; text-align: center; color: #059669;">✓ GPS Tracking</td>
+                                        <td style="padding: 15px; text-align: center; color: #dc2626;">✗ No Tracking</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 15px;"><strong>Pricing Transparency</strong></td>
+                                        <td style="padding: 15px; text-align: center; color: #059669;">✓ Transparent Billing</td>
+                                        <td style="padding: 15px; text-align: center; color: #dc2626;">✗ Hidden Charges</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Certifications Section -->
+                <section class="pt64 pb64">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2><strong>Certifications &amp; Compliance</strong></h2>
+                            <p class="h5 text-muted">Fully compliant with Indian construction standards and environmental regulations.</p>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 text-center shadow-sm p-4">
+                                    <div style="width: 80px; height: 80px; background-color: #fef3c7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                                        <i class="fa fa-check fa-2x" style="color: #f59e0b;"></i>
+                                    </div>
+                                    <h4><strong>ISO 9001:2015</strong></h4>
+                                    <p class="text-muted">Quality Management System Certified</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 text-center shadow-sm p-4">
+                                    <div style="width: 80px; height: 80px; background-color: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                                        <i class="fa fa-file-text fa-2x" style="color: #059669;"></i>
+                                    </div>
+                                    <h4><strong>BIS Certified</strong></h4>
+                                    <p class="text-muted">Bureau of Indian Standards Compliance</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 text-center shadow-sm p-4">
+                                    <div style="width: 80px; height: 80px; background-color: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                                        <i class="fa fa-leaf fa-2x" style="color: #3b82f6;"></i>
+                                    </div>
+                                    <h4><strong>Green Building</strong></h4>
+                                    <p class="text-muted">Sustainable Construction Practices</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="card h-100 text-center shadow-sm p-4">
+                                    <div style="width: 80px; height: 80px; background-color: #e0e7ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                                        <i class="fa fa-certificate fa-2x" style="color: #6366f1;"></i>
+                                    </div>
+                                    <h4><strong>NABL Accredited</strong></h4>
+                                    <p class="text-muted">Laboratory Testing Standards</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <p class="badge bg-success p-3" style="font-size: 1rem;">
+                                <i class="fa fa-check-circle"></i> All certifications verified and up-to-date
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Editable Area for Additional Blocks -->
+                <div class="oe_structure"/>
+
+                <!-- Secure Your Concrete Supply Today Section -->
+                <section class="pt64 pb64" style="background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);">
+                    <div class="container">
+                        <div class="text-center mb-4">
+                            <p class="text-white mb-2">
+                                <i class="fa fa-exclamation-circle"></i> Peak Construction Season - Limited Supplier Capacity
+                            </p>
+                            <h2 class="display-5 text-white fw-bold mb-3">Secure Your Concrete Supply Today</h2>
+                            <p class="lead text-white mb-5">
+                                Don't let concrete supply delays derail your project timeline. Get guaranteed delivery slots for the upcoming construction season.
+                            </p>
+                        </div>
+
+                        <!-- Statistics Row -->
+                        <div class="row text-center g-4 mb-5">
+                            <div class="col-lg-4">
+                                <div class="p-4">
+                                    <h2 class="display-3 text-white fw-bold mb-2">2-4 Hours</h2>
+                                    <p class="text-white h5">Average Delivery Time</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="p-4">
+                                    <h2 class="display-3 text-white fw-bold mb-2">₹5,00,000</h2>
+                                    <p class="text-white h5">Average Project Savings</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="p-4">
+                                    <h2 class="display-3 text-white fw-bold mb-2">99%</h2>
+                                    <p class="text-white h5">Customer Satisfaction</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA Buttons -->
+                        <div class="text-center mb-4">
+                            <a href="#calculator" class="btn btn-light btn-lg me-3 px-5 py-3">
+                                <i class="fa fa-calculator"></i> Get Instant Quote - Free
+                            </a>
+                            <a href="tel:+919876543210" class="btn btn-outline-light btn-lg px-5 py-3">
+                                <i class="fa fa-phone"></i> Call Now: +91 98765 43210
+                            </a>
+                        </div>
+
+                        <!-- Benefits -->
+                        <div class="text-center">
+                            <p class="text-white mb-0">
+                                <i class="fa fa-check-circle"></i> No commitment required
+                                <i class="fa fa-check-circle ms-3"></i> Instant pricing
+                                <i class="fa fa-check-circle ms-3"></i> Expert consultation included
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- GET INSTANT QUOTE CALCULATOR SECTION - MOVED TO BOTTOM -->
+                <section id="calculator" class="pt64 pb64" style="background-color: #f2f6fc;">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-10 offset-lg-1">
+                                <div class="card shadow-lg">
+                                    <div class="card-body p-5">
+                                        <div class="text-center mb-4">
+                                            <h2>Get Instant Quote Calculator</h2>
+                                            <p class="text-muted">Calculate your concrete requirements and get instant pricing</p>
+                                        </div>
+
+                                        <form method="POST" action="/calculate_quote">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Project Type</label>
+                                                    <select name="project_type" class="form-select">
+                                                        <option>Select project type</option>
+                                                        <option>Residential Building</option>
+                                                        <option>Commercial Complex</option>
+                                                        <option>Infrastructure Project</option>
+                                                        <option>Industrial Construction</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Concrete Grade</label>
+                                                    <select name="grade" id="grade_select" class="form-select">
+                                                        <option value="">Select concrete grade</option>
+                                                        <t t-set="rmc_templates" t-value="request.env['product.template'].sudo().search([('categ_id.name', 'ilike', 'rmc'), ('sale_ok', '=', True), ('website_published', '=', True)])"/>
+                                                        <t t-foreach="rmc_templates" t-as="tmpl">
+                                                            <option t-att-value="tmpl.id"><t t-esc="tmpl.name"/></option>
+                                                        </t>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Brand</label>
+                                                    <select id="brand_select" class="form-select">
+                                                        <option value="">All brands</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Grade Type</label>
+                                                    <select id="grade_type_select" class="form-select">
+                                                        <option value="">All grade types</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-12">
+                                                    <select id="variant_select" class="form-select d-none">
+                                                        <option value="">Select variant (optional)</option>
+                                                    </select>
+                                                    <div id="variant_details" class="mt-2 text-muted small"></div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Volume (m³)</label>
+                                                    <div class="input-group">
+                                                        <input id="rmc_volume" type="number" class="form-control" placeholder="Enter volume"/>
+                                                        <button id="open_dim_popup" type="button" class="btn btn-outline-secondary">
+                                                            <i class="fa fa-calculator"></i> Calculate
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Delivery Date</label>
+                                                    <input type="date" name="delivery_date" class="form-control"/>
+                                                </div>
+
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">Delivery Location</label>
+                                                    <input type="text" name="location" placeholder="Enter delivery address" class="form-control"/>
+                                                </div>
+                                            </div>
+
+                                            <!-- Price Summary -->
+                                            <div class="card mt-4 bg-light">
+                                                <div class="card-body">
+                                                    <div class="text-center mb-3">
+                                                        <h5 class="text-muted">Estimated Total Cost</h5>
+                                                        <h2 class="text-primary mb-0" id="estimated_total">₹0</h2>
+                                                        <p class="text-muted small mb-0" id="variant_price">Unit price: ₹0</p>
+                                                    </div>
+
+                                                    <div class="row text-center g-3">
+                                                        <div class="col-4">
+                                                            <div class="small text-muted">Base Total</div>
+                                                            <div class="fw-bold" id="base_price">₹0</div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="small text-muted">Bulk Discount</div>
+                                                            <div class="fw-bold text-success" id="bulk_discount">₹0</div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="small text-muted">Truck Loads</div>
+                                                            <div class="fw-bold" id="truck_count">0</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="row g-2 mt-4">
+                                                <div class="col-md-4">
+                                                    <button id="calculate_quote_btn" type="button" class="btn btn-primary w-100">
+                                                        <i class="fa fa-calculator"></i> Calculate Quote
+                                                    </button>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" id="request_quote_btn" class="btn btn-secondary w-100">
+                                                        <i class="fa fa-file-text"></i> Request Quote
+                                                    </button>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="button" id="add_to_cart_rmc" class="btn btn-success w-100">
+                                                        <i class="fa fa-shopping-cart"></i> Add to Cart
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </t>
+    </template>
+</odoo>
