@@ -1,6 +1,19 @@
 /** @odoo-module **/
-(function () {
+(function() {
   'use strict';
+
+  // Wait for DOM to be fully loaded before initializing
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('RMC Calculator: DOM loaded, initializing...');
+      initializeCalculator();
+    });
+  } else {
+    console.log('RMC Calculator: DOM already loaded, initializing...');
+    initializeCalculator();
+  }
+
+  function initializeCalculator() {
 
   const MODAL_ID = 'rmc-calc-modal';
   const RESULT_ID = 'dim_result';
@@ -614,7 +627,14 @@
           })
           .catch(function (err) {
             console.error('request_quote error', err);
-            alert('Request failed. Please try again.');
+            var errorMsg = 'Request failed. Please try again.';
+            if (err && err.message) {
+              errorMsg += '\nError: ' + err.message;
+            }
+            if (err && err.data && err.data.message) {
+              errorMsg += '\nDetails: ' + err.data.message;
+            }
+            alert(errorMsg);
           });
       });
       requestQuoteBtn._rmcBound = true;
@@ -889,28 +909,52 @@
       /* ignore */
     }
 
-    // if we have a variant id, submit immediately
+    // if we have a variant id, add to cart using form submission
     if (product_id) {
-      const form = document.createElement('form');
+      console.log('Adding to cart - product_id:', product_id, 'qty:', qty);
+
+      // Create a hidden form and submit it with express=1 to bypass CSRF check
+      var form = document.createElement('form');
       form.method = 'POST';
-      form.action = '/shop/cart/update';
+      form.action = '/rmc/cart/add';
       form.style.display = 'none';
-      const pid = document.createElement('input'); pid.type = 'hidden'; pid.name = 'product_id'; pid.value = product_id;
-      const addq = document.createElement('input'); addq.type = 'hidden'; addq.name = 'add_qty'; addq.value = qty;
-      // include csrf token if available
-      var csrfVal = '';
-      if (window.odoo && window.odoo.csrf_token) csrfVal = window.odoo.csrf_token;
-      else {
-        var el = document.querySelector('input[name="csrf_token"]');
-        if (el) csrfVal = el.value;
+
+      // Add product_id field
+      var pidInput = document.createElement('input');
+      pidInput.type = 'hidden';
+      pidInput.name = 'product_id';
+      pidInput.value = product_id;
+      form.appendChild(pidInput);
+
+      // Add add_qty field
+      var qtyInput = document.createElement('input');
+      qtyInput.type = 'hidden';
+      qtyInput.name = 'add_qty';
+      qtyInput.value = qty;
+      form.appendChild(qtyInput);
+
+      // Add CSRF token
+      var csrfToken = '';
+      if (window.odoo && window.odoo.csrf_token) {
+        csrfToken = window.odoo.csrf_token;
+      } else {
+        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (csrfMeta) {
+          csrfToken = csrfMeta.getAttribute('content');
+        }
       }
-      const csrfIn = document.createElement('input'); csrfIn.type = 'hidden'; csrfIn.name = 'csrf_token'; csrfIn.value = csrfVal;
-      form.appendChild(pid); form.appendChild(addq);
-      form.appendChild(csrfIn);
+
+      if (csrfToken) {
+        var csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+      }
+
+      // Append form to body and submit
       document.body.appendChild(form);
       form.submit();
-      // Redirect to cart after submission
-      setTimeout(function() { window.location.href = '/shop/cart'; }, 100);
       return;
     }
     // helper: resolve a variant id for a template, preferring current brand/grade selections
@@ -1036,4 +1080,6 @@
       if (gradeTypeSel) gradeTypeSel.addEventListener('change', function () { populateVariants(fallbackGrade && fallbackGrade.value); });
     });
   }
+
+  } // End of initializeCalculator function
 })();

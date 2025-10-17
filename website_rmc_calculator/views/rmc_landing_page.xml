@@ -3,6 +3,9 @@
     <!-- Full RMC Landing Page with Calculator at Bottom -->
     <template id="rmc_landing_full_page" name="RMC Landing Page">
         <t t-call="website.layout">
+            <!-- Load Calculator JavaScript -->
+            <script type="text/javascript" src="/website_rmc_calculator/static/src/js/popup_calc.js"/>
+
             <div id="wrap" class="oe_structure oe_empty">
 
                 <!-- Hero Section -->
@@ -673,9 +676,12 @@
                                                     <label class="form-label fw-bold">Concrete Grade</label>
                                                     <select name="grade" id="grade_select" class="form-select">
                                                         <option value="">Select concrete grade</option>
-                                                        <t t-set="rmc_templates" t-value="request.env['product.template'].sudo().search([('categ_id.name', 'ilike', 'rmc'), ('sale_ok', '=', True), ('website_published', '=', True)])"/>
+                                                        <t t-set="rmc_category" t-value="request.env['product.category'].sudo().search([('name', 'ilike', 'RMC')], limit=1)"/>
+                                                        <t t-set="rmc_templates" t-value="request.env['product.template'].sudo().search([('categ_id', 'child_of', rmc_category.id if rmc_category else 0), ('sale_ok', '=', True)], limit=100, order='name')"/>
                                                         <t t-foreach="rmc_templates" t-as="tmpl">
-                                                            <option t-att-value="tmpl.id"><t t-esc="tmpl.name"/></option>
+                                                            <option t-att-value="tmpl.id" t-att-data-brand="tmpl.x_brand or ''" t-att-data-grade-type="tmpl.x_grade_type or ''">
+                                                                <t t-esc="tmpl.name"/>
+                                                            </option>
                                                         </t>
                                                     </select>
                                                 </div>
@@ -767,6 +773,204 @@
                                                 </div>
                                             </div>
                                         </form>
+
+                                        <!-- Inline Calculator Initialization Script -->
+                                        <script type="text/javascript">
+                                        //<![CDATA[
+                                        (function() {
+                                            console.log('Inline calculator script loaded');
+
+                                            // Populate Brand and Grade Type dropdowns from grade select options
+                                            function populateFilters() {
+                                                var gradeSelect = document.getElementById('grade_select');
+                                                var brandSelect = document.getElementById('brand_select');
+                                                var gradeTypeSelect = document.getElementById('grade_type_select');
+
+                                                if (!gradeSelect || !brandSelect || !gradeTypeSelect) {
+                                                    console.log('Dropdowns not found, skipping filter population');
+                                                    return;
+                                                }
+
+                                                var brands = new Set();
+                                                var gradeTypes = new Set();
+
+                                                // Extract brands and grade types from grade options
+                                                for (var i = 0; i < gradeSelect.options.length; i++) {
+                                                    var opt = gradeSelect.options[i];
+                                                    var brand = opt.getAttribute('data-brand');
+                                                    var gradeType = opt.getAttribute('data-grade-type');
+
+                                                    if (brand) brands.add(brand);
+                                                    if (gradeType) gradeTypes.add(gradeType);
+                                                }
+
+                                                // Clear and populate brand dropdown
+                                                var currentBrand = brandSelect.value;
+                                                brandSelect.innerHTML = '';
+                                                var defaultBrandOpt = document.createElement('option');
+                                                defaultBrandOpt.value = '';
+                                                defaultBrandOpt.textContent = 'All brands';
+                                                brandSelect.appendChild(defaultBrandOpt);
+
+                                                Array.from(brands).sort().forEach(function(b) {
+                                                    var o = document.createElement('option');
+                                                    o.value = b;
+                                                    o.textContent = b;
+                                                    brandSelect.appendChild(o);
+                                                });
+                                                if (currentBrand) brandSelect.value = currentBrand;
+
+                                                // Clear and populate grade type dropdown
+                                                var currentGradeType = gradeTypeSelect.value;
+                                                gradeTypeSelect.innerHTML = '';
+                                                var defaultGradeTypeOpt = document.createElement('option');
+                                                defaultGradeTypeOpt.value = '';
+                                                defaultGradeTypeOpt.textContent = 'All grade types';
+                                                gradeTypeSelect.appendChild(defaultGradeTypeOpt);
+
+                                                Array.from(gradeTypes).sort().forEach(function(g) {
+                                                    var o = document.createElement('option');
+                                                    o.value = g;
+                                                    o.textContent = g;
+                                                    gradeTypeSelect.appendChild(o);
+                                                });
+                                                if (currentGradeType) gradeTypeSelect.value = currentGradeType;
+
+                                                console.log('Populated filters: ' + brands.size + ' brands, ' + gradeTypes.size + ' grade types');
+                                            }
+
+                                            // When grade is selected, auto-populate brand and grade type
+                                            function updateFiltersBasedOnGrade() {
+                                                var gradeSelect = document.getElementById('grade_select');
+                                                var brandSelect = document.getElementById('brand_select');
+                                                var gradeTypeSelect = document.getElementById('grade_type_select');
+
+                                                if (!gradeSelect || !brandSelect || !gradeTypeSelect) return;
+
+                                                var selectedGradeOption = gradeSelect.options[gradeSelect.selectedIndex];
+
+                                                if (!selectedGradeOption || !selectedGradeOption.value) {
+                                                    // No grade selected, reset filters
+                                                    brandSelect.value = '';
+                                                    gradeTypeSelect.value = '';
+                                                    return;
+                                                }
+
+                                                // Get the brand and grade type of the selected grade
+                                                var gradeBrand = selectedGradeOption.getAttribute('data-brand') || '';
+                                                var gradeType = selectedGradeOption.getAttribute('data-grade-type') || '';
+
+                                                // Auto-set brand dropdown
+                                                if (gradeBrand) {
+                                                    brandSelect.value = gradeBrand;
+                                                }
+
+                                                // Auto-set grade type dropdown
+                                                if (gradeType) {
+                                                    gradeTypeSelect.value = gradeType;
+                                                }
+
+                                                console.log('Auto-populated filters - Brand:', gradeBrand, 'Grade Type:', gradeType);
+                                            }
+
+                                            // Populate on page load
+                                            if (document.readyState === 'loading') {
+                                                document.addEventListener('DOMContentLoaded', populateFilters);
+                                            } else {
+                                                populateFilters();
+                                            }
+
+                                            // Filter grades based on brand and grade type selection
+                                            function filterGradesByBrandAndType() {
+                                                var gradeSelect = document.getElementById('grade_select');
+                                                var brandSelect = document.getElementById('brand_select');
+                                                var gradeTypeSelect = document.getElementById('grade_type_select');
+
+                                                if (!gradeSelect || !brandSelect || !gradeTypeSelect) return;
+
+                                                var selectedBrand = brandSelect.value;
+                                                var selectedGradeType = gradeTypeSelect.value;
+                                                var currentGradeValue = gradeSelect.value;
+
+                                                // Show/hide grade options based on filters
+                                                for (var i = 0; i < gradeSelect.options.length; i++) {
+                                                    var opt = gradeSelect.options[i];
+                                                    if (i === 0) continue; // Skip the first "Select concrete grade" option
+
+                                                    var optBrand = opt.getAttribute('data-brand') || '';
+                                                    var optGradeType = opt.getAttribute('data-grade-type') || '';
+
+                                                    var brandMatch = !selectedBrand || optBrand === selectedBrand;
+                                                    var gradeTypeMatch = !selectedGradeType || optGradeType === selectedGradeType;
+
+                                                    if (brandMatch && gradeTypeMatch) {
+                                                        opt.style.display = '';
+                                                        opt.disabled = false;
+                                                    } else {
+                                                        opt.style.display = 'none';
+                                                        opt.disabled = true;
+                                                    }
+                                                }
+
+                                                // If current grade doesn't match filters, keep it but show warning in console
+                                                if (currentGradeValue && gradeSelect.selectedIndex > 0) {
+                                                    var currentOpt = gradeSelect.options[gradeSelect.selectedIndex];
+                                                    if (currentOpt.style.display === 'none') {
+                                                        console.warn('Current grade selection does not match filters');
+                                                    }
+                                                }
+
+                                                console.log('Filtered grades by brand:', selectedBrand, 'and grade type:', selectedGradeType);
+                                            }
+
+                                            // Add event listener to grade select to auto-populate brand and grade type
+                                            var gradeSelectEl = document.getElementById('grade_select');
+                                            if (gradeSelectEl) {
+                                                gradeSelectEl.addEventListener('change', updateFiltersBasedOnGrade);
+                                            }
+
+                                            // Add event listeners to brand and grade type to filter grades
+                                            var brandSelectEl = document.getElementById('brand_select');
+                                            var gradeTypeSelectEl = document.getElementById('grade_type_select');
+
+                                            if (brandSelectEl) {
+                                                brandSelectEl.addEventListener('change', filterGradesByBrandAndType);
+                                            }
+
+                                            if (gradeTypeSelectEl) {
+                                                gradeTypeSelectEl.addEventListener('change', filterGradesByBrandAndType);
+                                            }
+
+                                            // Wait for RMC object to be available
+                                            var checkRMC = setInterval(function() {
+                                                if (typeof window.RMC !== 'undefined' && window.RMC.openCalculator) {
+                                                    console.log('RMC object found, binding buttons...');
+                                                    clearInterval(checkRMC);
+
+                                                    // Re-bind Calculate Volume button
+                                                    var calcVolBtn = document.getElementById('open_dim_popup');
+                                                    if (calcVolBtn && !calcVolBtn._bound) {
+                                                        calcVolBtn._bound = true;
+                                                        calcVolBtn.addEventListener('click', function(e) {
+                                                            e.preventDefault();
+                                                            console.log('Calculate Volume clicked');
+                                                            window.RMC.openCalculator();
+                                                        });
+                                                        console.log('Calculate Volume button bound');
+                                                    }
+                                                }
+                                            }, 100);
+
+                                            // Timeout after 10 seconds
+                                            setTimeout(function() {
+                                                clearInterval(checkRMC);
+                                                if (typeof window.RMC === 'undefined') {
+                                                    console.error('RMC Calculator failed to load after 10 seconds');
+                                                }
+                                            }, 10000);
+                                        })();
+                                        //]]>
+                                        </script>
                                     </div>
                                 </div>
                             </div>

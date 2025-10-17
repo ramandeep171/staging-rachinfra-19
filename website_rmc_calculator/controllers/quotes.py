@@ -72,7 +72,18 @@ class RMCQuoteController(http.Controller):
         if not partner:
             partner = env.ref('base.public_partner').sudo()
 
-        pricelist = request.website.get_current_pricelist() if getattr(request, 'website', None) else partner.property_product_pricelist
+        pricelist = None
+        try:
+            if getattr(request, 'website', None) and hasattr(request.website, 'get_current_pricelist'):
+                pricelist = request.website.get_current_pricelist()
+        except Exception as e:
+            _logger.warning('Failed to get website pricelist: %s', e)
+
+        if not pricelist:
+            try:
+                pricelist = partner.property_product_pricelist
+            except Exception as e:
+                _logger.warning('Failed to get partner pricelist: %s', e)
 
         # locate existing draft quotation for this visitor/customer to avoid duplicates
         order = None
@@ -136,8 +147,9 @@ class RMCQuoteController(http.Controller):
                 'product_uom_qty': qty_f,
                 'price_unit': price_unit,
             }
+            # In Odoo 19, the field is product_uom_id, not product_uom
             if getattr(prod, 'uom_id', False):
-                line_vals['product_uom'] = prod.uom_id.id
+                line_vals['product_uom_id'] = prod.uom_id.id
             SaleLine.create(line_vals)
 
         try:
@@ -167,8 +179,9 @@ class RMCQuoteController(http.Controller):
                 lead_vals['street'] = location
             if delivery_date:
                 lead_vals['date_deadline'] = delivery_date
-            if getattr(request, 'website', None):
-                lead_vals['website_id'] = request.website.id
+            # Note: website_id field doesn't exist in crm.lead in Odoo 19
+            # Removed: if getattr(request, 'website', None):
+            #     lead_vals['website_id'] = request.website.id
             if visitor:
                 try:
                     lead_vals['visitor_ids'] = [(4, visitor.id)]
@@ -239,8 +252,27 @@ class RMCQuoteController(http.Controller):
             return {'success': False, 'error': 'product_not_found'}
 
         partner = env.user.sudo().partner_id if request.session.uid and env.user.partner_id else env.ref('base.public_partner').sudo()
-        pricelist = request.website.get_current_pricelist() if getattr(request, 'website', None) else partner.property_product_pricelist
-        currency = (pricelist and pricelist.currency_id) or prod.currency_id or request.website.currency_id
+
+        pricelist = None
+        try:
+            if getattr(request, 'website', None) and hasattr(request.website, 'get_current_pricelist'):
+                pricelist = request.website.get_current_pricelist()
+        except Exception as e:
+            _logger.warning('Failed to get website pricelist in price_breakdown: %s', e)
+
+        if not pricelist:
+            try:
+                pricelist = partner.property_product_pricelist
+            except Exception:
+                pass
+
+        currency = None
+        try:
+            currency = (pricelist and pricelist.currency_id) or prod.currency_id
+            if not currency and getattr(request, 'website', None):
+                currency = request.website.currency_id
+        except Exception:
+            currency = env.company.currency_id
 
         base_unit_price = prod.list_price
         unit_price = base_unit_price
