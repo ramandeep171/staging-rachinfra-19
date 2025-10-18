@@ -198,9 +198,9 @@ class RMCQuoteController(http.Controller):
         price_data = self.price_breakdown(product_id=prod.id, qty=qty_f)
         report_url = None
         try:
-            report = env['ir.actions.report'].sudo().search([('model', '=', 'sale.order'), ('report_type', '=', 'qweb-pdf')], limit=1)
-            if report:
-                report_url = f"/report/pdf/{report.report_name}/{order.id}"
+            # leverage the sale portal route so the access token grants safe report access
+            order._portal_ensure_token()
+            report_url = order.get_portal_url(report_type='pdf', download=True)
         except Exception:
             report_url = None
 
