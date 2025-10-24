@@ -4,7 +4,7 @@
     'version': '19.0.1.0.0',
     'author': 'SmarterPeak',
     'summary': 'Extends customer portal with multi-category dashboards and role-based access',
-    'depends': ['portal', 'sale_management', 'stock', 'account'],
+    'depends': ['portal', 'sale_management', 'stock', 'account', 'rmc_management_system'],
     'data': [
         'security/ir.model.access.csv',
         'views/portal_templates.xml',
