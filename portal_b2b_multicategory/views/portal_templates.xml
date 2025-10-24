@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_b2b_dashboard" name="B2B Multi-Category Dashboard">
+        <t t-call="portal.portal_layout">
+            <t t-set="translate" t-value="request.env._"/>
+            <t t-set="portal_title">B2B Portal Dashboard</t>
+            <div class="portal-b2b-dashboard o_portal_wrap container mt-3">
+                <t t-if="categories">
+                    <ul class="nav nav-pills category-tabs mb-4">
+                        <t t-foreach="categories" t-as="category">
+                            <li class="nav-item">
+                                <a t-att-class="'nav-link active' if selected_category and selected_category.id == category.id else 'nav-link'"
+                                   t-attf-href="/my/b2b-dashboard/#{category.id}">
+                                    <t t-esc="category.display_name"/>
+                                </a>
+                            </li>
+                        </t>
+                    </ul>
+                </t>
+                <t t-if="not categories">
+                    <div class="alert alert-info" role="alert">
+                        <t t-esc="translate('No category data available yet. Confirming orders will populate your dashboard.')"/>
+                    </div>
+                </t>
+                <t t-if="selected_category">
+                    <div class="mb-4">
+                        <h4><t t-esc="selected_category.display_name"/></h4>
+                        <p class="text-muted">
+                            <t t-esc="translate('Category specific performance overview for your confirmed orders.')"/>
+                        </p>
+                        <t t-if="selected_category_is_rmc">
+                            <div class="alert alert-secondary">
+                                <strong><t t-esc="translate('RMC Insight:')"/></strong>
+                                <t t-esc="translate('Track production throughput, quality tests and dispatch timelines tailored for ready-mix concrete deliveries.')"/>
+                            </div>
+                        </t>
+                        <t t-if="selected_category_is_rmc and category_summary">
+                            <div class="card mb-4 border-0 shadow-sm bg-light">
+                                <div class="card-header bg-transparent border-0 pb-0">
+                                    <h5 class="mb-1"><t t-esc="translate('RMC Performance Snapshot')"/></h5>
+                                    <p class="text-muted mb-0"><t t-esc="translate('High level metrics for ready-mix concrete orders confirmed with your organisation.')"/></p>
+                                </div>
+                                <div class="card-body py-3">
+                                    <div class="rmc-metric-grid">
+                                        <a class="rmc-metric-card" t-att-href="'/my/orders'">
+                                            <span class="metric-circle"><t t-esc="category_summary['order_count']"/></span>
+                                            <div class="metric-label"><t t-esc="translate('Total Orders')"/></div>
+                                            <div class="metric-hint"><t t-esc="translate('Confirmed in this category to date.')"/></div>
+                                        </a>
+                                        <a class="rmc-metric-card" t-att-href="'/my/orders'">
+                                            <span class="metric-circle"><t t-esc="category_summary['total_qty']"/></span>
+                                            <div class="metric-label"><t t-esc="translate('Ordered Quantity (M³)')"/></div>
+                                            <div class="metric-hint"><t t-esc="translate('Cumulative ordered volume across RMC lines.')"/></div>
+                                        </a>
+                                        <a class="rmc-metric-card" t-att-href="'/my/rmc/subcontractor'">
+                                            <span class="metric-circle"><t t-esc="category_summary['delivered_qty']"/></span>
+                                            <div class="metric-label"><t t-esc="translate('Delivered Quantity (M³)')"/></div>
+                                            <div class="metric-hint"><t t-esc="translate('Delivered volume recorded on pickings.')"/></div>
+                                        </a>
+                                        <a class="rmc-metric-card" t-att-href="'/my/invoices'">
+                                            <span class="metric-circle">
+                                                <t t-if="category_summary['currency']">
+                                                    <t t-esc="format_amount(category_summary['total_amount'], category_summary['currency'])"/>
+                                                </t>
+                                                <t t-if="not category_summary['currency']">-</t>
+                                            </span>
+                                            <div class="metric-label"><t t-esc="translate('Order Value')"/></div>
+                                            <div class="metric-hint"><t t-esc="translate('Total monetary value of confirmed RMC orders.')"/></div>
+                                        </a>
+                                        <!-- <a class="rmc-metric-card" t-att-href="'/my/invoices'">
+                                            <span class="metric-circle">
+                                                <t t-if="category_summary['currency']">
+                                                    <t t-esc="format_amount(category_summary['invoice_amount'], category_summary['currency'])"/>
+                                                </t>
+                                                <t t-if="not category_summary['currency']">-</t>
+                                            </span>
+                                            <div class="metric-label"><t t-esc="translate('Invoiced Value')"/></div>
+                                            <div class="metric-hint"><t t-esc="translate('Posted customer invoices linked to these orders.')"/></div>
+                                        </a> -->
+                                        <div class="rmc-metric-card disabled">
+                                            <span class="metric-circle">
+                                                <t t-if="category_summary['last_order_date']">
+                                                    <t t-esc="format_datetime(category_summary['last_order_date'])"/>
+                                                </t>
+                                                <t t-if="not category_summary['last_order_date']">-</t>
+                                            </span>
+                                            <div class="metric-label"><t t-esc="translate('Last Order Date')"/></div>
+                                            <div class="metric-hint"><t t-esc="translate('Most recent confirmed RMC order.')"/></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                    <t t-if="orders_data">
+                        <t t-foreach="orders_data" t-as="item">
+                            <div class="card mb-4 shadow-sm">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="mb-0">
+                                            <a t-attf-href="/my/orders/#{item['order'].id}" class="text-decoration-none">
+                                                <t t-esc="item['order'].name"/>
+                                            </a>
+                                        </h5>
+                                        <small class="text-muted">
+                                            <t t-esc="translate('Order Date:')"/> <t t-esc="format_datetime(item['order'].date_order)"/>
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-primary text-uppercase">
+                                        <t t-esc="item['order'].state"/>
+                                    </span>
+                                    <button class="btn btn-sm btn-secondary" type="button" data-bs-toggle="collapse" t-attf-data-bs-target="#orderCollapse#{item['order'].id}" aria-expanded="true" t-attf-aria-controls="orderCollapse#{item['order'].id}">
+                                        <t t-esc="translate('Toggle details')"/>
+                                    </button>
+                                </div>
+                                <div class="card-body collapse show" t-attf-id="orderCollapse#{item['order'].id}">
+                                    <t t-if="selected_category_is_rmc">
+                                        <div class="workorder-section mb-4">
+                                            <h6 class="text-uppercase text-muted"><t t-esc="translate('Workorders &amp; Tickets')"/></h6>
+                                            <t t-if="item['workorders']">
+                                                <div class="accordion" t-attf-id="workorderAccordion#{item['order'].id}">
+                                                    <t t-foreach="item['workorders']" t-as="workorder_info">
+                                                        <div class="accordion-item mb-2" t-if="workorder_info['record']">
+                                                            <h2 class="accordion-header" t-attf-id="woHeading#{workorder_info['record'].id}">
+                                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" t-attf-data-bs-target="#woCollapse#{workorder_info['record'].id}" aria-expanded="false" t-attf-aria-controls="woCollapse#{workorder_info['record'].id}">
+                                                                    <span class="fw-semibold me-2"><t t-esc="workorder_info['record'].name"/></span>
+                                                                    <span class="small text-muted me-3">
+                                                                        <t t-esc="workorder_info['record'].sale_order_id.name or '-'"/>
+                                                                    </span>
+                                                                    <span class="badge bg-secondary ms-auto text-uppercase">
+                                                                        <t t-esc="workorder_info['state_label']"/>
+                                                                    </span>
+                                                                </button>
+                                                            </h2>
+                                                            <div class="accordion-collapse collapse" t-attf-id="woCollapse#{workorder_info['record'].id}" t-attf-aria-labelledby="woHeading#{workorder_info['record'].id}" t-attf-data-bs-parent="#workorderAccordion#{item['order'].id}">
+                                                                <div class="accordion-body">
+                                                                    <div class="row g-3 mb-3">
+                                                                        <div class="col-6 col-md-3">
+                                                                            <div class="small text-muted text-uppercase fw-semibold"><t t-esc="translate('Ordered Qty (M³)')"/></div>
+                                                                            <div class="h5 mb-0"><t t-esc="'%.2f' % (workorder_info['ordered_qty'] or 0.0)"/></div>
+                                                                        </div>
+                                                                        <div class="col-6 col-md-3">
+                                                                            <div class="small text-muted text-uppercase fw-semibold"><t t-esc="translate('Delivered Qty (M³)')"/></div>
+                                                                            <div class="h5 mb-0"><t t-esc="'%.2f' % (workorder_info['delivered_qty'] or 0.0)"/></div>
+                                                                        </div>
+                                                                        <div class="col-6 col-md-3">
+                                                                            <div class="small text-muted text-uppercase fw-semibold"><t t-esc="translate('Remaining Qty (M³)')"/></div>
+                                                                            <div class="h5 mb-0"><t t-esc="'%.2f' % (workorder_info['remaining_qty'] or 0.0)"/></div>
+                                                                        </div>
+                                                                        <div class="col-6 col-md-3">
+                                                                            <div class="small text-muted text-uppercase fw-semibold"><t t-esc="translate('Delivery Date')"/></div>
+                                                                            <div class="h5 mb-0">
+                                                                                <t t-if="workorder_info['delivery_date']">
+                                                                                    <t t-esc="format_datetime(workorder_info['delivery_date'])"/>
+                                                                                </t>
+                                                                                <t t-if="not workorder_info['delivery_date']">-</t>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <t t-if="workorder_info['tickets']">
+                                                                        <div class="table-responsive">
+                                                                            <table class="table table-sm align-middle mb-0">
+                                                                                <thead class="table-light">
+                                                                                    <tr>
+                                                                                        <th><t t-esc="translate('Ticket')"/></th>
+                                                                                        <th class="text-end"><t t-esc="translate('Quantity (M³)')"/></th>
+                                                                                        <th><t t-esc="translate('Status')"/></th>
+                                                                                        <th><t t-esc="translate('Delivery Date')"/></th>
+                                                                                        <th class="text-center"><t t-esc="translate('Flow')"/></th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    <t t-foreach="workorder_info['tickets']" t-as="ticket_info">
+                                                                                        <t t-set="ticket" t-value="ticket_info['record']"/>
+                                                                                        <tr>
+                                                                                            <td><t t-esc="ticket.name"/></td>
+                                                                                            <td class="text-end"><t t-esc="'%.2f' % (ticket.quantity or 0.0)"/></td>
+                                                                                            <td>
+                                                                                                <span class="badge bg-light text-dark text-uppercase">
+                                                                                                    <t t-esc="ticket_info['state_label']"/>
+                                                                                                </span>
+                                                                                            </td>
+                                                                                            <td>
+                                                                                                <t t-if="ticket.delivery_date">
+                                                                                                    <t t-esc="format_datetime(ticket.delivery_date)"/>
+                                                                                                </t>
+                                                                                                <t t-if="not ticket.delivery_date">-</t>
+                                                                                            </td>
+                                                                                            <td class="text-center">
+                                                                                                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" t-attf-data-bs-target="#ticketFlow#{ticket.id}" t-attf-aria-controls="ticketFlow#{ticket.id}" aria-expanded="false">
+                                                                                                    <t t-esc="translate('View details')"/>
+                                                                                                </button>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                        <tr class="collapse" t-attf-id="ticketFlow#{ticket.id}" t-attf-data-bs-parent="#workorderAccordion#{item['order'].id}">
+                                                                                            <td colspan="5">
+                                                                                                <t t-if="ticket_info['timeline']">
+                                                                                                    <div class="timeline mb-0">
+                                                                                                        <t t-foreach="ticket_info['timeline']" t-as="step">
+                                                                                                            <div class="timeline-step">
+                                                                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                                                                    <strong><t t-esc="step['label']"/></strong>
+                                                                                                                    <span t-attf-class="badge #{'bg-success' if step['completed'] else 'bg-secondary'} text-uppercase">
+                                                                                                                        <t t-esc="translate('Done') if step['completed'] else translate('Pending')"/>
+                                                                                                                    </span>
+                                                                                                                </div>
+                                                                                                                <div class="small text-muted">
+                                                                                                                    <t t-if="step['display_date']"><t t-esc="step['display_date']"/></t>
+                                                                                                                    <t t-if="not step['display_date']">-</t>
+                                                                                                                </div>
+                                                                                                                <div class="text-muted"><small><t t-esc="step['details']"/></small></div>
+                                                                                                            </div>
+                                                                                                        </t>
+                                                                                                    </div>
+                                                                                                </t>
+                                                                                                <t t-if="not ticket_info['timeline']">
+                                                                                                    <div class="alert alert-light mb-0">
+                                                                                                        <t t-esc="translate('No activity recorded for this ticket yet.')"/>
+                                                                                                    </div>
+                                                                                                </t>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    </t>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </t>
+                                                                    <t t-if="not workorder_info['tickets']">
+                                                                        <div class="alert alert-light mb-0">
+                                                                            <t t-esc="translate('No tickets logged for this workorder yet.')"/>
+                                                                        </div>
+                                                                    </t>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+                                            <t t-if="not item['workorders']">
+                                                <div class="alert alert-light mb-0">
+                                                    <t t-esc="translate('No workorders have been generated for this sale order yet.')"/>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-if="not selected_category_is_rmc">
+                                        <div class="timeline mb-3">
+                                            <t t-foreach="item['timeline']" t-as="step">
+                                                <div class="timeline-step">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <strong><t t-esc="step['label']"/></strong>
+                                                        <span t-attf-class="badge #{'bg-success' if step['completed'] else 'bg-secondary'}">
+                                                            <t t-esc="translate('Done') if step['completed'] else translate('Pending')"/>
+                                                        </span>
+                                                    </div>
+                                                    <div class="small text-muted">
+                                                        <t t-if="step['date']"><t t-esc="format_datetime(step['date'])"/></t>
+                                                        <t t-if="not step['date']"><t t-esc="translate('Not yet scheduled')"/></t>
+                                                    </div>
+                                                    <div class="text-muted"><small><t t-esc="step['details']"/></small></div>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-if="role in ['team_leader', 'quality']">
+                                        <div class="quality-section mb-3">
+                                            <h6 class="text-uppercase text-muted"><t t-esc="translate('Quality Overview')"/></h6>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm align-middle">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th><t t-esc="translate('Product')"/></th>
+                                                            <th class="text-end"><t t-esc="translate('Ordered Qty')"/></th>
+                                                            <th class="text-end"><t t-esc="translate('Delivered Qty')"/></th>
+                                                            <th class="text-end"><t t-esc="translate('Invoiced Qty')"/></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <t t-foreach="item['quality_lines']" t-as="line">
+                                                            <tr>
+                                                                <td><t t-esc="line.product_id.display_name"/></td>
+                                                                <td class="text-end"><t t-esc="line.product_uom_qty"/></td>
+                                                                <td class="text-end"><t t-esc="line.qty_delivered"/></td>
+                                                                <td class="text-end"><t t-esc="line.qty_invoiced"/></td>
+                                                            </tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    <t t-if="role in ['team_leader', 'logistics']">
+                                        <div class="logistics-section mb-3">
+                                            <h6 class="text-uppercase text-muted"><t t-esc="translate('Logistics &amp; Dispatch')"/></h6>
+                                            <t t-if="item['logistics_pickings']">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm align-middle">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th><t t-esc="translate('Shipment')"/></th>
+                                                                <th><t t-esc="translate('Scheduled')"/></th>
+                                                                <th><t t-esc="translate('Tracking')"/></th>
+                                                                <th><t t-esc="translate('State')"/></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <t t-foreach="item['logistics_pickings']" t-as="picking">
+                                                                <tr>
+                                                                    <td><t t-esc="picking.name"/></td>
+                                                                    <td><t t-esc="format_datetime(picking.scheduled_date) if picking.scheduled_date else '-'"/></td>
+                                                                    <td><t t-esc="picking.carrier_tracking_ref or '-'"/></td>
+                                                                    <td><t t-esc="picking.state"/></td>
+                                                                </tr>
+                                                            </t>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </t>
+                                            <t t-if="not item['logistics_pickings']">
+                                                <div class="alert alert-light mb-0">
+                                                    <t t-esc="translate('No dispatch information available yet.')"/>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                    <t t-if="role in ['team_leader', 'finance']">
+                                        <div class="finance-section">
+                                            <h6 class="text-uppercase text-muted"><t t-esc="translate('Finance &amp; Invoices')"/></h6>
+                                            <t t-if="item['finance_invoices']">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm align-middle">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th><t t-esc="translate('Invoice')"/></th>
+                                                                <th><t t-esc="translate('Invoice Date')"/></th>
+                                                                <th class="text-end"><t t-esc="translate('Amount Total')"/></th>
+                                                                <th><t t-esc="translate('Status')"/></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <t t-foreach="item['finance_invoices']" t-as="invoice">
+                                                                <tr>
+                                                                    <td>
+                                                                        <a t-attf-href="/my/invoices/#{invoice.id}" class="text-decoration-none">
+                                                                            <t t-esc="invoice.name"/>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td><t t-esc="format_date(invoice.invoice_date or invoice.date) if (invoice.invoice_date or invoice.date) else '-'"/></td>
+                                                                    <td class="text-end"><t t-esc="format_amount(invoice.amount_total, invoice.currency_id)"/></td>
+                                                                    <td><t t-esc="invoice.state"/></td>
+                                                                </tr>
+                                                            </t>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </t>
+                                            <t t-if="not item['finance_invoices']">
+                                                <div class="alert alert-light mb-0">
+                                                    <t t-esc="translate('No posted invoices yet for this order.')"/>
+                                                </div>
+                                            </t>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-if="not orders_data">
+                        <div class="alert alert-info" role="alert">
+                            <t t-esc="translate('No orders yet for this category. Confirmed orders will appear here.')"/>
+                        </div>
+                    </t>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_my_home_b2b_entry" inherit_id="portal.portal_my_home">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-set="b2b_categories" t-value="request.env.user.partner_id.get_portal_dashboard_categories()"/>
+            <t t-if="b2b_categories">
+                <t t-set="translate" t-value="request.env._"/>
+                <t t-foreach="b2b_categories" t-as="category">
+                    <t t-set="is_rmc_category" t-value="'rmc' in (category.name or '').lower() or 'ready mix' in (category.name or '').lower()"/>
+                    <t t-set="card_text" t-value="is_rmc_category and translate('Review ready-mix concrete orders, production status, and deliveries.') or category.name == 'AAC' and translate('Monitor AAC plant progress, curing, and dispatch updates.') or translate('Open the dashboard tailored for this product category.')"/>
+                    <t t-call="portal.portal_docs_entry">
+                        <t t-set="icon" t-value="'/portal_b2b_multicategory/static/src/img/portal-b2b.svg'"/>
+                        <t t-set="title"><t t-esc="category.display_name"/></t>
+                        <t t-set="text"><t t-esc="card_text"/></t>
+                        <t t-set="url" t-value="'/my/b2b-dashboard/%s' % category.id"/>
+                        <t t-set="bg_color" t-value="'bg-primary text-black'"/>
+                        <t t-set="config_card" t-value="True"/>
+                    </t>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_subcontractor_ticket_inherit" inherit_id="rmc_management_system.portal_subcontractor_ticket">
+        <xpath expr="//div[@class='o_portal_wrap']/div[@class='card border-0 shadow-sm'][1]" position="after">
+            <t t-set="ticket_timeline" t-value="request.env['portal.b2b.helper'].prepare_rmc_ticket_timeline(wo_ticket)"/>
+            <t t-if="ticket_timeline">
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase"><t t-esc="request.env._('Flow Status')"/></h4>
+                        <div class="timeline mb-0">
+                            <t t-foreach="ticket_timeline" t-as="step">
+                                <div class="timeline-step">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong><t t-esc="step['label']"/></strong>
+                                        <span t-attf-class="badge #{'bg-success' if step['completed'] else 'bg-secondary'} text-uppercase">
+                                            <t t-esc="request.env._('Done') if step['completed'] else request.env._('Pending')"/>
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <t t-if="step['display_date']"><t t-esc="step['display_date']"/></t>
+                                        <t t-if="not step['display_date']">-</t>
+                                    </div>
+                                    <div class="text-muted"><small><t t-esc="step['details']"/></small></div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>

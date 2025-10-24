@@ -1,0 +1,92 @@
+/* Styling for the multi-category portal dashboard timeline and layout */
+.portal-b2b-dashboard {
+    .category-tabs {
+        margin-bottom: 1.5rem;
+    }
+    .timeline-step {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .timeline-step::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.5rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: var(--portal-primary-color, #004080);
+    }
+    .timeline-step::after {
+        content: '';
+        position: absolute;
+        left: 0.35rem;
+        top: 1.25rem;
+        bottom: -1rem;
+        width: 0.05rem;
+        background-color: var(--portal-border-color, #d3d3d3);
+    }
+    .timeline-step:last-child::after {
+        display: none;
+    }
+}
+
+.rmc-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.25rem;
+
+    .rmc-metric-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 1.5rem 1rem;
+        border-radius: 1rem;
+        background: #ffffff;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        &.disabled {
+            pointer-events: none;
+            opacity: 0.75;
+        }
+
+        .metric-circle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f4f4f4, #ffffff);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2f4858;
+            margin-bottom: 1rem;
+            border: 6px solid rgba(47,72,88,0.1);
+        }
+
+        .metric-label {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            color: #2f4858;
+        }
+
+        .metric-hint {
+            font-size: 0.75rem;
+            color: #8a9aa9;
+            margin-top: 0.35rem;
+        }
+    }
+}
