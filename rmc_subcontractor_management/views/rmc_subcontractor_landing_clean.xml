@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Load CSS Assets -->
+    <template id="subcontractor_landing_assets_clean" name="Subcontractor Landing Assets">
+        <link rel="stylesheet" href="/rmc_subcontractor_management/static/src/css/subcontractor_landing.css"/>
+        <script type="text/javascript" src="/rmc_subcontractor_management/static/src/js/subcontractor_landing.js"/>
+    </template>
+
+    <template id="website_subcontractor_landing_clean" name="Subcontractor Landing Clean" inherit_id="rmc_subcontractor_management.website_subcontractor_landing" primary="True">
+        <xpath expr="//div[@class='subcontractor-landing']" position="replace">
+            <div class="subcontractor-landing">
+                <!-- Hero Section -->
+                <section class="hero">
+                    <div class="container">
+                        <div class="hero-content">
+                            <div class="hero-badge">
+                                <span>🚀 Join 100+ Active Subcontractors</span>
+                            </div>
+                            <h1 style="color: white; margin-bottom: 24px;">Hamare Orders, Aapka Supply — Become a Verified Subcontractor</h1>
+                            <p style="color: white; font-size: 18px; margin-bottom: 32px;">Manual ho ya online — saare orders hum route karte hain partner network par. <strong>Guaranteed order flow</strong> with complete diesel management in one platform.</p>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div style="text-align: center; margin-bottom: 24px;">
+                                        <div style="font-size: 48px; font-weight: bold; color: white;">100+</div>
+                                        <div style="color: white;">Active Subcontractors</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div style="text-align: center; margin-bottom: 24px;">
+                                        <div style="font-size: 48px; font-weight: bold; color: white;">85%</div>
+                                        <div style="color: white;">Partner Retention Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Registration Form -->
+                            <div class="row justify-content-center mt-4">
+                                <div class="col-md-6">
+                                    <div class="card" style="background: rgba(255,255,255,0.95); padding: 30px; border-radius: 12px;">
+                                        <h3 style="text-align: center; margin-bottom: 20px; color: #21808d;">⚡ Register in 2 mins — No fees</h3>
+                                        <form action="/subcontractor/lead" method="post">
+                                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                            <div class="form-group">
+                                                <input type="text" name="name" class="form-control form-control-lg" placeholder="Your Name" required="required"/>
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="tel" name="mobile" class="form-control form-control-lg" placeholder="Phone Number (10 digits)" pattern="[0-9]{10}" required="required"/>
+                                            </div>
+                                            <div class="form-group">
+                                                <input type="text" name="city" class="form-control form-control-lg" placeholder="Your City" required="required"/>
+                                            </div>
+                                            <button class="btn btn-primary btn-lg btn-block" type="submit" style="background: linear-gradient(135deg, #e53e3e 0%, #f56500 100%); border: none; padding: 15px; font-size: 16px; font-weight: 600;">
+                                                🚀 Get Verified Today - Start Earning Tomorrow
+                                            </button>
+                                            <p style="font-size: 12px; text-align: center; margin-top: 12px; color: #666;">✅ Free registration • ⚡ Call within 15 mins • 🚀 First order in 48 hours</p>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Proof Stack Section -->
+                <section style="padding: 80px 0; background: #f8f9fa;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2 style="margin-bottom: 16px;">🏆 Trusted by India's Leading Builders</h2>
+                            <p style="font-size: 18px; color: #666;">100+ contractors fulfill orders across NCR weekly for top-tier clients</p>
+                        </div>
+
+                        <!-- Client Logos -->
+                        <div class="row mb-5">
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; margin-bottom: 20px;">
+                                    <h4 style="color: #21808d;">L&amp;T</h4>
+                                    <p style="font-size: 14px; color: #666; margin: 0;">Larsen &amp; Toubro</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; margin-bottom: 20px;">
+                                    <h4 style="color: #21808d;">Shapoorji Pallonji</h4>
+                                    <p style="font-size: 14px; color: #666; margin: 0;">Major Infrastructure</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; margin-bottom: 20px;">
+                                    <h4 style="color: #21808d;">DMRC</h4>
+                                    <p style="font-size: 14px; color: #666; margin: 0;">Delhi Metro Rail</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; margin-bottom: 20px;">
+                                    <h4 style="color: #21808d;">Tata Projects</h4>
+                                    <p style="font-size: 14px; color: #666; margin: 0;">Enterprise Construction</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Metrics -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; background: rgba(34, 197, 94, 0.08);">
+                                    <div style="font-size: 36px; font-weight: bold; color: #21808d; margin-bottom: 8px;">₹12L+</div>
+                                    <div style="font-weight: 600;">Average Monthly Revenue</div>
+                                    <small style="color: #666;">Per active partner</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; background: rgba(245, 158, 11, 0.08);">
+                                    <div style="font-size: 36px; font-weight: bold; color: #21808d; margin-bottom: 8px;">24hrs</div>
+                                    <div style="font-weight: 600;">Payment Settlement</div>
+                                    <small style="color: #666;">Post-delivery confirmation</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; background: rgba(147, 51, 234, 0.08);">
+                                    <div style="font-size: 36px; font-weight: bold; color: #21808d; margin-bottom: 8px;">98%</div>
+                                    <div style="font-weight: 600;">On-time Delivery</div>
+                                    <small style="color: #666;">Network success rate</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center" style="padding: 20px; background: rgba(239, 68, 68, 0.08);">
+                                    <div style="font-size: 36px; font-weight: bold; color: #21808d; margin-bottom: 8px;">15+</div>
+                                    <div style="font-weight: 600;">RMC Plants</div>
+                                    <small style="color: #666;">Supporting network</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- How It Works Section -->
+                <section id="how-it-works" style="padding: 80px 0;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2 style="margin-bottom: 16px;">🔄 How Order Assignment Works</h2>
+                            <p style="font-size: 18px; color: #666;">Interactive 3-step flow - Manual ya online orders direct aapko assign</p>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card" style="padding: 30px; background: rgba(34, 197, 94, 0.08); height: 100%;">
+                                    <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">✅</div>
+                                    <h3 style="margin-bottom: 16px; text-align: center;">Step 1: Register &amp; Get Verified</h3>
+                                    <p style="margin-bottom: 16px;">Quick KYC process with document verification</p>
+                                    <ul style="list-style: none; padding: 0;">
+                                        <li style="padding: 4px 0;">• Basic company registration</li>
+                                        <li style="padding: 4px 0;">• Equipment &amp; capacity verification</li>
+                                        <li style="padding: 4px 0;">• Territory mapping</li>
+                                        <li style="padding: 4px 0;">• Quality compliance check</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="card" style="padding: 30px; background: rgba(245, 158, 11, 0.08); height: 100%;">
+                                    <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">📱</div>
+                                    <h3 style="margin-bottom: 16px; text-align: center;">Step 2: Receive Order Assignments</h3>
+                                    <p style="margin-bottom: 16px;">Manual ya online orders direct aapko assign</p>
+                                    <ul style="list-style: none; padding: 0;">
+                                        <li style="padding: 4px 0;">• WhatsApp/SMS notifications</li>
+                                        <li style="padding: 4px 0;">• Location-based routing</li>
+                                        <li style="padding: 4px 0;">• Capacity matching</li>
+                                        <li style="padding: 4px 0;">• 24-hour acceptance window</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="card" style="padding: 30px; background: rgba(239, 68, 68, 0.08); height: 100%;">
+                                    <div style="font-size: 48px; text-align: center; margin-bottom: 16px;">💰</div>
+                                    <h3 style="margin-bottom: 16px; text-align: center;">Step 3: Deliver &amp; Get Paid</h3>
+                                    <p style="margin-bottom: 16px;">Complete delivery, instant payment processing</p>
+                                    <ul style="list-style: none; padding: 0;">
+                                        <li style="padding: 4px 0;">• Quality inspection support</li>
+                                        <li style="padding: 4px 0;">• Digital delivery confirmation</li>
+                                        <li style="padding: 4px 0;">• 24-hour payment settlement</li>
+                                        <li style="padding: 4px 0;">• Performance tracking</li>
+                                    </ul>
+                                    <div style="margin-top: 16px; text-align: center;">
+                                        <strong style="color: #21808d;">Guaranteed payment within 24 hours</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Testimonials Section -->
+                <section style="padding: 80px 0; background: #f8f9fa;">
+                    <div class="container">
+                        <div class="text-center mb-5">
+                            <h2 style="margin-bottom: 16px;">🏆 Success Stories from Our Subcontractors</h2>
+                            <p style="font-size: 18px; color: #666;">Real results from partners in the Rach Infra network</p>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card" style="padding: 24px; border-left: 4px solid #21808d; margin-bottom: 20px;">
+                                    <p style="font-style: italic; font-size: 16px; margin-bottom: 16px; color: #666;">"Rach Infra ka joining ke baad orders continuous aate hain. Diesel management bhi same portal mein - bahut convenient!"</p>
+                                    <div style="font-weight: 600; color: #21808d;">Rajesh Constructions, Noida</div>
+                                    <div style="color: #21808d; margin-top: 8px;"><strong>Results:</strong> 85 orders/month + ₹12 lakh monthly revenue</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="card" style="padding: 24px; border-left: 4px solid #21808d; margin-bottom: 20px;">
+                                    <p style="font-style: italic; font-size: 16px; margin-bottom: 16px; color: #666;">"Portal se diesel buy karna aur track karna easy hai. Orders bhi regular aate rehte hain - business stable ho gaya."</p>
+                                    <div style="font-weight: 600; color: #21808d;">Sharma Logistics, Gurgaon</div>
+                                    <div style="color: #21808d; margin-top: 8px;"><strong>Results:</strong> 65 orders/month + ₹45,000 monthly fuel savings</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="card" style="padding: 24px; border-left: 4px solid #21808d; margin-bottom: 20px;">
+                                    <p style="font-style: italic; font-size: 16px; margin-bottom: 16px; color: #666;">"Professional platform hai - payments on time, support excellent, diesel management bonus feature hai."</p>
+                                    <div style="font-weight: 600; color: #21808d;">Delhi Metro Suppliers</div>
+                                    <div style="color: #21808d; margin-top: 8px;"><strong>Results:</strong> 120 orders/month + 300% business growth in 6 months</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CTA Section -->
+                <section id="registration" style="padding: 80px 0; background: linear-gradient(135deg, #1a365d 0%, #2d5a7b 50%, #38b2ac 100%); color: white; text-align: center;">
+                    <div class="container">
+                        <h2 style="color: white; margin-bottom: 24px;">🚀 Ready to Become a Verified Subcontractor?</h2>
+                        <p style="font-size: 20px; margin-bottom: 32px;">Join 100+ contractors earning with guaranteed order flow! Manual ho ya online - saare orders direct aapko assign. Start earning tomorrow!</p>
+                        <a href="#" class="btn btn-lg" style="background: linear-gradient(135deg, #e53e3e 0%, #f56500 100%); color: white; border: none; padding: 15px 40px; font-size: 18px; font-weight: 600; border-radius: 8px; text-decoration: none;">
+                            🚀 Register Now - It's Free
+                        </a>
+                        <p style="font-size: 14px; opacity: 0.8; margin-top: 24px;">✅ Free registration • ⚡ Call within 15 mins • 🚀 First order in 48 hours</p>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+    </template>
+</odoo>

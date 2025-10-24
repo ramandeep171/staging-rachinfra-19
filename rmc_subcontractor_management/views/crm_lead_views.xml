@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_crm_lead_form_subcontractor" model="ir.ui.view">
+        <field name="name">crm.lead.form.subcontractor</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_create_subcontractor"
+                        type="object"
+                        string="Create Subcontractor"
+                        class="btn-primary"
+                        invisible="not is_subcontractor_lead"/>
+                <button name="action_trigger_more_info_token"
+                        type="object"
+                        string="Send More-Info Link"
+                        invisible="not is_subcontractor_lead"/>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']" position="after">
+                <page string="Subcontractor" invisible="not is_subcontractor_lead">
+                    <group>
+                        <group>
+                            <field name="is_subcontractor_lead"/>
+                            <field name="subcontractor_city"/>
+                            <field name="subcontractor_token_id" readonly="1"/>
+                            <field name="subcontractor_more_info_deadline" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="subcontractor_profile_id" readonly="1"/>
+                            <field name="subcontractor_hot_zone_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_list_subcontractor" model="ir.ui.view">
+        <field name="name">crm.lead.list.subcontractor</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='email_from']" position="after">
+                <field name="subcontractor_city" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

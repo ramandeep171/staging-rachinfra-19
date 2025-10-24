@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="0">
+    <record id="checklist_gstin" model="rmc.subcontractor.checklist.template">
+        <field name="name">GST Registration</field>
+        <field name="required" eval="True"/>
+        <field name="weight">1.0</field>
+    </record>
+
+    <record id="checklist_pan" model="rmc.subcontractor.checklist.template">
+        <field name="name">PAN Card</field>
+        <field name="required" eval="True"/>
+        <field name="weight">1.0</field>
+    </record>
+
+    <record id="checklist_cancelled_cheque" model="rmc.subcontractor.checklist.template">
+        <field name="name">Cancelled Cheque</field>
+        <field name="required" eval="True"/>
+        <field name="weight">0.8</field>
+    </record>
+
+    <record id="checklist_lab_certificates" model="rmc.subcontractor.checklist.template">
+        <field name="name">Lab / ISO Certificates</field>
+        <field name="required" eval="False"/>
+        <field name="weight">0.6</field>
+    </record>
+
+    <record id="geo_area_generic" model="rmc.subcontractor.geo.area">
+        <field name="name">Generic</field>
+        <field name="code">GEN</field>
+        <field name="is_primary" eval="True"/>
+        <field name="hot_zone_id" ref="rmc_subcontractor_management.hot_zone_default"/>
+    </record>
+
+    <record id="geo_area_mumbai" model="rmc.subcontractor.geo.area">
+        <field name="name">Mumbai</field>
+        <field name="code">MUM</field>
+        <field name="hot_zone_id" ref="rmc_subcontractor_management.hot_zone_default"/>
+    </record>
+</odoo>

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="portal_subcontractor_status" name="Subcontractor Portal Status">
+        <t t-call="portal.portal_layout">
+            <div class="o_subc_portal">
+                <section class="o_subc_portal_header">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h2>
+                                    <t t-if="subcontractor">
+                                        <t t-esc="subcontractor.name"/> Status
+                                    </t>
+                                    <t t-else="">
+                                        Subcontractor Status
+                                    </t>
+                                </h2>
+                                <p>Track your onboarding tasks, upload documents, and access agreements.</p>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <div class="o_subc_stage_badge">
+                                    Stage:
+                                    <span class="badge badge-primary"><t t-esc="stage and stage.name or 'Pending'"/></span>
+                                </div>
+                                <div class="o_subc_completion">
+                                    Completion
+                                    <div class="o_progress_ring" t-att-data-progress="completion">
+                                        <span><t t-esc="round(completion, 1)"/>%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="o_subc_stats">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="o_stat_card">
+                                    <span class="o_stat_label">Plants</span>
+                                    <span class="o_stat_value"><t t-esc="plants and len(plants) or 0"/></span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="o_stat_card">
+                                    <span class="o_stat_label">Mixers</span>
+                                    <span class="o_stat_value"><t t-esc="mixers"/></span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="o_stat_card">
+                                    <span class="o_stat_label">Pumps</span>
+                                    <span class="o_stat_value"><t t-esc="pumps"/></span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="o_stat_card">
+                                    <span class="o_stat_label">Checklist</span>
+                                    <span class="o_stat_value"><t t-esc="round(completion, 1)"/>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="o_subc_actions">
+                    <div class="container">
+                        <div class="o_actions_bar">
+                            <a href="#" class="btn btn-secondary">Upload Document</a>
+                            <a href="#" class="btn btn-secondary">Add Mixer</a>
+                            <a href="#" class="btn btn-secondary">Add Pump</a>
+                            <a t-if="subcontractor and subcontractor.purchase_agreement_id" t-att-href="'/web#id=%s&amp;model=purchase.requisition&amp;view_type=form' % subcontractor.purchase_agreement_id.id" class="btn btn-primary">Open Purchase Agreement</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="o_subc_tabs">
+                    <div class="container">
+                        <ul class="nav nav-tabs" id="subcPortalTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="overview-tab" data-toggle="tab" href="#tab-overview" role="tab">Overview</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="plants-tab" data-toggle="tab" href="#tab-plants" role="tab">Plants</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="mixers-tab" data-toggle="tab" href="#tab-mixers" role="tab">Mixers</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="pumps-tab" data-toggle="tab" href="#tab-pumps" role="tab">Pumps</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="docs-tab" data-toggle="tab" href="#tab-docs" role="tab">Documents</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="assets-tab" data-toggle="tab" href="#tab-assets" role="tab">Assets</a>
+                            </li>
+                        </ul>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="tab-overview" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card shadow-sm">
+                                            <div class="card-header">Checklist</div>
+                                            <div class="card-body">
+                                                <ul class="list-unstyled">
+                                                    <li t-foreach="subcontractor and subcontractor.profile_checklist_ids or []" t-as="check">
+                                                        <i t-attf-class="fa #{'fa-check-circle text-success' if check.completed else 'fa-circle-o'}"></i>
+                                                        <t t-esc="check.name"/>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card shadow-sm">
+                                            <div class="card-header">Timeline</div>
+                                            <div class="card-body">
+                                                <ul class="timeline">
+                                                    <li t-foreach="subcontractor and subcontractor.log_ids[:5] or []" t-as="log">
+                                                        <span class="timeline-date">
+                                                            <t t-esc="log.create_date and log.create_date.strftime('%d %b %Y %H:%M')"/>
+                                                        </span>
+                                                        <p><t t-esc="log.message"/></p>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tab-plants" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-4" t-foreach="plants" t-as="plant">
+                                        <div class="card o_facility_card">
+                                            <div class="card-header">
+                                                <h5><t t-esc="plant.plant_code or plant.location"/></h5>
+                                                <span class="badge badge-light"><t t-esc="plant.capacity_m3ph or 0"/> m³/hr</span>
+                                            </div>
+                                            <div class="card-body">
+                                                <p><strong>Location:</strong> <t t-esc="plant.location or 'N/A'"/></p>
+                                                <p><strong>Mixers:</strong> <t t-esc="len(plant.mixer_ids)"/></p>
+                                                <p><strong>Pumps:</strong> <t t-esc="len(plant.pump_ids)"/></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="tab-mixers" role="tabpanel">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Plant</th>
+                                            <th>Capacity</th>
+                                            <th>Ownership</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="subcontractor and subcontractor.plant_ids.mapped('mixer_ids') or []" t-as="mixer">
+                                            <td><t t-esc="mixer.transport_code"/></td>
+                                            <td><t t-esc="mixer.plant_id.plant_code"/></td>
+                                            <td><t t-esc="mixer.capacity_m3"/></td>
+                                            <td><t t-esc="mixer.ownership"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="tab-pumps" role="tabpanel">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Plant</th>
+                                            <th>Type</th>
+                                            <th>Reach (m)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="subcontractor and subcontractor.plant_ids.mapped('pump_ids') or []" t-as="pump">
+                                            <td><t t-esc="pump.name"/></td>
+                                            <td><t t-esc="pump.plant_id.plant_code"/></td>
+                                            <td><t t-esc="pump.pump_type"/></td>
+                                            <td><t t-esc="pump.reach_m"/></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="tab-pane fade" id="tab-docs" role="tabpanel">
+                                <p>Document uploads will appear here.</p>
+                            </div>
+                            <div class="tab-pane fade" id="tab-assets" role="tabpanel">
+                                <div class="list-group">
+                                    <a t-foreach="assets" t-as="asset" t-att-href="asset.attachment_id and '/web/content/%s?download=1' % asset.attachment_id.id or '#'" class="list-group-item list-group-item-action">
+                                        <i class="fa fa-download"></i> <t t-esc="asset.name"/>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </t>
+    </template>
+</odoo>

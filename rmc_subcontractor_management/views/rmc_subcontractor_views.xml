@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_rmc_subcontractor_list" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.list</field>
+        <field name="model">rmc.subcontractor</field>
+        <field name="arch" type="xml">
+            <list string="Subcontractors">
+                <field name="subcontractor_code"/>
+                <field name="name"/>
+                <field name="stage_id"/>
+                <field name="lead_id"/>
+                <field name="opportunity_id"/>
+                <field name="hot_zone_id"/>
+                <field name="auto_priority_score"/>
+                <field name="plant_count"/>
+                <field name="mixer_count"/>
+                <field name="pump_count"/>
+                <field name="compliance_complete_percent"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rmc_subcontractor_kanban" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.kanban</field>
+        <field name="model">rmc.subcontractor</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id" create="false" class="o_rmc_subcontractor_kanban">
+                <field name="subcontractor_code"/>
+                <field name="name"/>
+                <field name="stage_id"/>
+                <field name="plant_count"/>
+                <field name="mixer_count"/>
+                <field name="pump_count"/>
+                <field name="auto_priority_score"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="o_kanban_card_header">
+                            <strong>
+                                <field name="name"/>
+                            </strong>
+                            <div class="o_kanban_badge">
+                                <field name="subcontractor_code"/>
+                            </div>
+                        </div>
+                        <div class="o_kanban_primary_badges">
+                            <span class="badge badge-primary">
+                                <i class="fa fa-industry"/> <field name="plant_count"/>
+                            </span>
+                            <span class="badge badge-info">
+                                <i class="fa fa-truck"/> <field name="mixer_count"/>
+                            </span>
+                            <span class="badge badge-warning">
+                                <i class="fa fa-cogs"/> <field name="pump_count"/>
+                            </span>
+                        </div>
+                        <div class="o_kanban_secondary">
+                            <span t-if="record.hot_zone_id.value">
+                                <i class="fa fa-map-marker"/> <field name="hot_zone_id"/>
+                            </span>
+                            <span>
+                                <i class="fa fa-star"/> <field name="auto_priority_score"/>
+                            </span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_rmc_subcontractor_form" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.form</field>
+        <field name="model">rmc.subcontractor</field>
+        <field name="arch" type="xml">
+            <form string="Subcontractor">
+                <header>
+                    <field name="stage_id" widget="statusbar" options="{'clickable': True}"/>
+                    <button name="action_create_vendor_partner" type="object" class="btn-secondary" string="Create/Link Vendor"/>
+                    <button name="action_generate_plant_codes" type="object" class="btn-secondary" string="Generate Plant Codes"/>
+                    <button name="action_generate_purchase_agreement" type="object" class="btn-primary" string="Open Purchase Agreement" invisible="not purchase_agreement_id"/>
+                    <button name="action_open_status_page" type="object" class="btn-secondary" string="Status Page"/>
+                    <button name="%(rmc_subcontractor_management.action_rmc_subcontractor_onboard_wizard)d"
+                            string="Onboarding Wizard"
+                            type="action"
+                            class="btn-secondary"
+                            context="{'default_subcontractor_id': id, 'default_profile_id': profile_id}"/>
+                    <span class="o_form_label">Total Completion</span>
+                    <widget name="progressbar" field="checklist_progress"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_create_vendor_partner" type="object" class="oe_stat_button" icon="fa-user">
+                            <field name="vendor_partner_id"/>
+                        </button>
+                        <button name="action_generate_purchase_agreement" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="purchase_agreement_id"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="subcontractor_code" readonly="1"/>
+                            <field name="name"/>
+                            <field name="lead_id"/>
+                            <field name="opportunity_id"/>
+                            <field name="profile_id"/>
+                            <field name="vendor_partner_id"/>
+                            <field name="portal_user_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="hot_zone_id"/>
+                            <field name="geo_primary"/>
+                            <field name="contact_person"/>
+                            <field name="contact_mobile"/>
+                            <field name="contact_email"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Operations">
+                            <group>
+                                <field name="plant_ids" widget="one2many_list">
+                                    <list editable="bottom">
+                                        <field name="plant_code"/>
+                                        <field name="location"/>
+                                        <field name="brand_id"/>
+                                        <field name="capacity_m3ph"/>
+                                        <field name="status"/>
+                                    </list>
+                                    <form string="Plant">
+                                        <group>
+                                            <field name="plant_code"/>
+                                            <field name="location"/>
+                                            <field name="address"/>
+                                            <field name="brand_id"/>
+                                            <field name="capacity_m3ph"/>
+                                            <field name="compliance_attachment_ids" widget="many2many_binary"/>
+                                        </group>
+                                        <notebook>
+                                            <page string="Mixers">
+                                                <field name="mixer_ids">
+                                                    <list editable="bottom">
+                                                        <field name="transport_code"/>
+                                                        <field name="reg_no"/>
+                                                        <field name="capacity_m3"/>
+                                                        <field name="ownership"/>
+                                                    </list>
+                                                </field>
+                                            </page>
+                                            <page string="Pumps">
+                                                <field name="pump_ids">
+                                                    <list editable="bottom">
+                                                        <field name="name"/>
+                                                        <field name="pump_type"/>
+                                                        <field name="reach_m"/>
+                                                        <field name="ownership"/>
+                                                    </list>
+                                                </field>
+                                            </page>
+                                        </notebook>
+                                    </form>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="Checklist">
+                            <group>
+                                <group>
+                                    <field name="profile_id" readonly="1"/>
+                                    <field name="compliance_partial_percent"/>
+                                    <field name="compliance_complete_percent"/>
+                                    <field name="checklist_progress" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="profile_checklist_ids" readonly="1">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="completed"/>
+                                            <field name="required"/>
+                                        </list>
+                                    </field>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Assets">
+                            <field name="asset_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="asset_type"/>
+                                    <field name="attachment_id"/>
+                                    <field name="portal_published"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Logs">
+                            <field name="log_ids">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="user_id"/>
+                                    <field name="activity"/>
+                                    <field name="message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

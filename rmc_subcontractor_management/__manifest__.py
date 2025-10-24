@@ -1,0 +1,58 @@
+# Copyright 2024 RMC
+# SPDX-License-Identifier: LGPL-3.0-or-later
+{
+    "name": "RMC Subcontractor Management",
+    "summary": "Subcontractor acquisition, onboarding, and operations pipeline for RMC.",
+    "version": "19.0.1.0.0",
+    "category": "Sales/CRM",
+    "author": "RMC Tech",
+    "website": "https://www.rmc.example.com",
+    "license": "LGPL-3",
+    "depends": [
+        "crm",
+        "crm_enterprise",
+        "mail",
+        "portal",
+        "website",
+        "utm",
+        "contacts",
+        "sale_management",
+        "purchase_requisition",
+        "rmc_management_system",
+    ],
+    "data": [
+        "security/rmc_subcontractor_groups.xml",
+        "security/ir.model.access.csv",
+        "security/rmc_subcontractor_rules.xml",
+        "data/rmc_subcontractor_sequences.xml",
+        "data/rmc_subcontractor_team.xml",
+        "data/rmc_subcontractor_stages.xml",
+        "data/rmc_subcontractor_checklist.xml",
+        "data/rmc_subcontractor_mail_templates.xml",
+        "data/rmc_subcontractor_cron.xml",
+        "data/rmc_subcontractor_actions.xml",
+        "views/rmc_subcontractor_menu.xml",
+        "views/crm_lead_views.xml",
+        "views/rmc_subcontractor_views.xml",
+        "views/rmc_subcontractor_profile_views.xml",
+        "views/rmc_subcontractor_assets_templates.xml",
+        "views/rmc_subcontractor_portal_templates.xml",
+        "views/rmc_subcontractor_wizard_views.xml",
+    ],
+    "assets": {
+        "web.assets_frontend": [
+            "rmc_subcontractor_management/static/src/css/landing_page.css",
+            "rmc_subcontractor_management/static/src/js/landing_page.js",
+        ],
+        "web.assets_backend": [
+            "rmc_subcontractor_management/static/src/css/backend.css",
+        ],
+        "web.assets_portal": [
+            "rmc_subcontractor_management/static/src/css/portal.css",
+            "rmc_subcontractor_management/static/src/js/portal_dashboard.js",
+        ],
+    },
+    "installable": True,
+    "application": True,
+    "auto_install": True,
+}

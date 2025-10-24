@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="group_rmc_subcontractor_user" model="res.groups">
+        <field name="name">RMC Subcontractor User</field>
+    </record>
+
+    <record id="group_rmc_subcontractor_manager" model="res.groups">
+        <field name="name">RMC Subcontractor Manager</field>
+        <field name="implied_ids" eval="[(4, ref('group_rmc_subcontractor_user'))]"/>
+    </record>
+
+    <record id="group_rmc_subcontractor_portal" model="res.groups">
+        <field name="name">Portal Subcontractor</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+    </record>
+</odoo>

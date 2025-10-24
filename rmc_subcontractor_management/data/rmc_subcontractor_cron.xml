@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <record id="cron_phase_two_reminder" model="ir.cron">
+        <field name="name">Subcontractor Phase-2 Reminder</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_phase_two_reminder()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+
+    <record id="cron_stage_idle_reminder" model="ir.cron">
+        <field name="name">Subcontractor Stage Idle Reminder</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_stage_idle_reminder()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

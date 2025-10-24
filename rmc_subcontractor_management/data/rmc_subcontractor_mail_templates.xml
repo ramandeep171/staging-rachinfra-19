@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="mail_template_subcontractor_inquiry_ack" model="mail.template">
+        <field name="name">Subcontractor Inquiry Acknowledgement</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Thanks for registering with RMC</field>
+        <field name="email_to">${object.email_from or object.email_cc}</field>
+        <field name="body_html"><![CDATA[
+<p>Hello ${object.contact_name or 'Partner'},</p>
+<p>Thanks for reaching out to RMC. Our onboarding specialists will connect with you within 15 minutes.</p>
+<p>You can continue sharing documents using the secure link below:</p>
+<p><a t-att-href="object.subcontractor_token_id.access_url">Complete more information</a></p>
+<p>Regards,<br/>RMC Vendor Desk</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <record id="mail_template_subcontractor_more_info" model="mail.template">
+        <field name="name">Subcontractor Token Link</field>
+        <field name="model_id" ref="crm.model_crm_lead"/>
+        <field name="subject">Share more details with RMC</field>
+        <field name="email_to">${object.email_from or object.email_cc}</field>
+        <field name="body_html"><![CDATA[
+<p>Hi ${object.contact_name or 'Partner'},</p>
+<p>Thanks for your interest in partnering with RMC. Use the secure button below to submit company, plant, and fleet details. The link stays active for the next 24 hours.</p>
+<p><a href="${object.subcontractor_token_id.access_url}">Enter More Information</a></p>
+<p>If you face any issues, call our vendor support desk at +91-000-000-0000.</p>
+<p>Thank you,<br/>RMC Vendor Success Team</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <record id="mail_template_subcontractor_docs_reminder" model="mail.template">
+        <field name="name">Subcontractor Missing Documents Reminder</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="subject">Pending documents for ${object.name}</field>
+        <field name="email_to">${object.contact_email}</field>
+        <field name="body_html"><![CDATA[
+<p>Dear ${object.contact_name or object.name},</p>
+<p>We still need the pending documents listed below to progress your onboarding:</p>
+<ul>
+    <li t-foreach="object.profile_id.checklist_line_ids.filtered(lambda l: not l.completed)" t-as="line">
+        ${line.name}
+    </li>
+</ul>
+<p>Please upload the documents via your <a href="/subcontractor/status/${object.more_info_token_id.name}">status page</a>.</p>
+<p>Regards,<br/>RMC Compliance Team</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+    <record id="mail_template_subcontractor_approved" model="mail.template">
+        <field name="name">Subcontractor Approved</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="subject">RMC Onboarding Approved - ${object.name}</field>
+        <field name="email_to">${object.contact_email}</field>
+        <field name="body_html"><![CDATA[
+<p>Congratulations ${object.contact_name or object.name},</p>
+<p>Your subcontractor application has been approved. The purchase agreement and onboarding pack are available in your portal workspace.</p>
+<p>Stage: <strong>${object.stage_id.name}</strong></p>
+<p>Regards,<br/>RMC Vendor Desk</p>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

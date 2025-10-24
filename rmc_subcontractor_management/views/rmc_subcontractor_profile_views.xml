@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_rmc_subcontractor_profile_list" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.profile.list</field>
+        <field name="model">rmc.subcontractor.profile</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="legal_name"/>
+                <field name="gstin"/>
+                <field name="city"/>
+                <field name="mobile"/>
+                <field name="email"/>
+                <field name="completion_percent"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rmc_subcontractor_profile_form" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.profile.form</field>
+        <field name="model">rmc.subcontractor.profile</field>
+        <field name="arch" type="xml">
+            <form string="Subcontractor Profile">
+                <header>
+                    <button name="%(rmc_subcontractor_management.action_rmc_subcontractor_pipeline)d"
+                            string="Open Subcontractor"
+                            type="action"
+                            invisible="not subcontractor_id"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="legal_name"/>
+                            <field name="brand_trade_name"/>
+                            <field name="lead_id"/>
+                            <field name="subcontractor_id"/>
+                        </group>
+                        <group>
+                            <field name="city"/>
+                            <field name="contact_person"/>
+                            <field name="mobile"/>
+                            <field name="email"/>
+                            <field name="whatsapp"/>
+                            <field name="hot_zone_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Company Summary">
+                            <group>
+                                <group>
+                                    <field name="gstin"/>
+                                    <field name="pan"/>
+                                    <field name="msme_udyam"/>
+                                    <field name="established_year"/>
+                                </group>
+                                <group>
+                                    <field name="bank_name"/>
+                                    <field name="bank_account_no"/>
+                                    <field name="ifsc"/>
+                                    <field name="upi_id"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group>
+                                    <field name="service_radius_km"/>
+                                    <field name="preferred_geo_area_ids" widget="many2many_tags"/>
+                                    <field name="brand_ids" widget="many2many_tags"/>
+                                </group>
+                                <group>
+                                    <field name="plants_total"/>
+                                    <field name="mixers_total"/>
+                                    <field name="pumps_total"/>
+                                </group>
+                                <group>
+                                    <field name="plant_details"/>
+                                    <field name="mixer_details"/>
+                                    <field name="pump_details"/>
+                                    <field name="portal_totals_locked" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Pricing">
+                            <group>
+                                <field name="base_pricing_note"/>
+                                <group>
+                                    <field name="cut_percent"/>
+                                    <field name="mgq_per_month_m3"/>
+                                    <field name="rental_amount"/>
+                                    <field name="pricing_terms"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Documents">
+                            <field name="document_ids" widget="many2many_binary"/>
+                        </page>
+                        <page string="Checklist">
+                            <field name="checklist_line_ids" context="{'default_profile_id': id}">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="completed"/>
+                                    <field name="required"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Placeholders">
+                            <field name="plant_placeholder_ids" context="{'default_profile_id': id}">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="status"/>
+                                    <field name="plant_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

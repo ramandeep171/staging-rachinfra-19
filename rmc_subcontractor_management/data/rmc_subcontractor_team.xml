@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="team_subc" model="crm.team">
+        <field name="name">Subcontractor Team</field>
+        <field name="use_leads" eval="True"/>
+    </record>
+
+    <record id="crm_tag_subcontractor" model="crm.tag">
+        <field name="name">Subcontractor</field>
+    </record>
+
+    <record id="crm_stage_subc_new" model="crm.stage">
+        <field name="name">New Lead</field>
+        <field name="sequence">1</field>
+        <field name="team_ids" eval="[(4, ref('rmc_subcontractor_management.team_subc'))]"/>
+    </record>
+
+    <record id="crm_stage_subc_phone_verified" model="crm.stage">
+        <field name="name">Phone Verified</field>
+        <field name="sequence">5</field>
+        <field name="team_ids" eval="[(4, ref('rmc_subcontractor_management.team_subc'))]"/>
+    </record>
+
+    <record id="crm_stage_subc_qualified" model="crm.stage">
+        <field name="name">Qualified</field>
+        <field name="sequence">10</field>
+        <field name="team_ids" eval="[(4, ref('rmc_subcontractor_management.team_subc'))]"/>
+        <field name="fold" eval="True"/>
+    </record>
+</odoo>

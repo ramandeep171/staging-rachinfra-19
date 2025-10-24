@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_rmc_subcontractor_root"
+              name="Subcontractors"
+              parent="rmc_management_system.menu_rmc_root"
+              sequence="15"
+              groups="rmc_subcontractor_management.group_rmc_subcontractor_user,rmc_subcontractor_management.group_rmc_subcontractor_manager"/>
+
+    <menuitem id="menu_rmc_subcontractor_pipeline"
+              name="Pipeline"
+              parent="menu_rmc_subcontractor_root"
+              action="rmc_subcontractor_management.action_rmc_subcontractor_pipeline"
+              sequence="10"/>
+
+    <menuitem id="menu_rmc_subcontractor_profiles"
+              name="Profiles"
+              parent="menu_rmc_subcontractor_root"
+              action="rmc_subcontractor_management.action_rmc_subcontractor_profiles"
+              sequence="20"/>
+
+    <menuitem id="menu_rmc_subcontractor_config"
+              name="Configuration"
+              parent="menu_rmc_subcontractor_root"
+              sequence="90"
+              groups="rmc_subcontractor_management.group_rmc_subcontractor_manager"/>
+
+    <menuitem id="menu_rmc_subcontractor_config_stages"
+              name="Stages"
+              parent="rmc_subcontractor_management.menu_rmc_subcontractor_config"
+              action="rmc_subcontractor_management.action_rmc_subcontractor_config_stage"
+              sequence="10"/>
+
+    <menuitem id="menu_rmc_subcontractor_config_geo"
+              name="Areas"
+              parent="rmc_subcontractor_management.menu_rmc_subcontractor_config"
+              action="rmc_subcontractor_management.action_rmc_subcontractor_config_geo"
+              sequence="20"/>
+
+    <menuitem id="menu_rmc_subcontractor_config_hot_zone"
+              name="Hot Zones"
+              parent="rmc_subcontractor_management.menu_rmc_subcontractor_config"
+              action="rmc_subcontractor_management.action_rmc_subcontractor_config_hot_zone"
+              sequence="30"/>
+</odoo>

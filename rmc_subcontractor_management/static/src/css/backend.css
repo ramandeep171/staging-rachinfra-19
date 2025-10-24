@@ -1,0 +1,11 @@
+.o_rmc_subcontractor_kanban .o_kanban_card_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.o_rmc_subcontractor_kanban .o_kanban_primary_badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}

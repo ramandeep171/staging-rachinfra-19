@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.recaptcha.signup</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='integration']" position="inside">
+                <setting id="recaptcha_signup_v2_setting" string="Signup reCAPTCHA V2"
+                         help="Protect the signup form with Google reCAPTCHA v2.">
+                    <field name="recaptcha2_enabled"/>
+                    <div class="content-group" invisible="not recaptcha2_enabled" id="recaptcha_signup_v2_config">
+                        <div class="mt16 row">
+                            <label for="recaptcha2_public_key" class="col-3 o_light_label"/>
+                            <field name="recaptcha2_public_key" required="recaptcha2_enabled"/>
+                        </div>
+                        <div class="mt16 row">
+                            <label for="recaptcha2_private_key" class="col-3 o_light_label"/>
+                            <field name="recaptcha2_private_key" required="recaptcha2_enabled"/>
+                        </div>
+                        <div>
+                            <a href="https://www.google.com/recaptcha/admin/create" class="oe_link" target="_blank">
+                                <i class="oi oi-arrow-right"/> Generate reCAPTCHA v2 keys
+                            </a>
+                        </div>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

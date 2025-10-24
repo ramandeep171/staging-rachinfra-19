@@ -1,0 +1,23 @@
+"id","name","model_id:id","group_id:id","perm_read","perm_write","perm_create","perm_unlink"
+"access_rmc_subcontractor_profile_user","rmc.subcontractor.profile user","model_rmc_subcontractor_profile","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_subcontractor_profile_manager","rmc.subcontractor.profile manager","model_rmc_subcontractor_profile","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_subcontractor_stage","rmc.subcontractor.stage manager","model_rmc_subcontractor_stage","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_subcontractor_asset","rmc.subcontractor.asset user","model_rmc_subcontractor_asset","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_subcontractor_token","rmc.subcontractor.portal.token user","model_rmc_subcontractor_portal_token","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_subcontractor_hot_zone","rmc.subcontractor.hot.zone user","model_rmc_subcontractor_hot_zone","rmc_subcontractor_management.group_rmc_subcontractor_user",1,0,0,0
+"access_rmc_subcontractor_geo_area","rmc.subcontractor.geo.area user","model_rmc_subcontractor_geo_area","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_mixer_user","rmc.mixer user","model_rmc_mixer","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_mixer_manager","rmc.mixer manager","model_rmc_mixer","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_pump_user","rmc.pump.code user","model_rmc_pump_code","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_pump_manager","rmc.pump.code manager","model_rmc_pump_code","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_profile_log_manager","rmc.profile.log manager","model_rmc_profile_log","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_profile_log_user","rmc.profile.log user","model_rmc_profile_log","rmc_subcontractor_management.group_rmc_subcontractor_user",1,0,0,0
+"access_rmc_subcontractor_portal","rmc.subcontractor portal","model_rmc_subcontractor","rmc_subcontractor_management.group_rmc_subcontractor_portal",1,0,0,0
+"access_rmc_product_brand_user","rmc.product.brand user","model_rmc_product_brand","rmc_subcontractor_management.group_rmc_subcontractor_user",1,0,0,0
+"access_rmc_product_brand_manager","rmc.product.brand manager","model_rmc_product_brand","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_subcontractor_profile_checklist_user","rmc.subcontractor.profile.checklist user","model_rmc_subcontractor_profile_checklist","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_subcontractor_profile_checklist_manager","rmc.subcontractor.profile.checklist manager","model_rmc_subcontractor_profile_checklist","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_subcontractor_checklist_template_user","rmc.subcontractor.checklist.template user","model_rmc_subcontractor_checklist_template","rmc_subcontractor_management.group_rmc_subcontractor_user",1,0,0,0
+"access_rmc_subcontractor_checklist_template_manager","rmc.subcontractor.checklist.template manager","model_rmc_subcontractor_checklist_template","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1
+"access_rmc_subcontractor_plant_placeholder_user","rmc.subcontractor.plant.placeholder user","model_rmc_subcontractor_plant_placeholder","rmc_subcontractor_management.group_rmc_subcontractor_user",1,1,1,0
+"access_rmc_subcontractor_plant_placeholder_manager","rmc.subcontractor.plant.placeholder manager","model_rmc_subcontractor_plant_placeholder","rmc_subcontractor_management.group_rmc_subcontractor_manager",1,1,1,1

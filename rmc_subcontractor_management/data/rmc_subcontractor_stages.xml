@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="stage_subc_new" model="rmc.subcontractor.stage">
+        <field name="name">New</field>
+        <field name="code">new</field>
+        <field name="sequence">5</field>
+        <field name="category">qualification</field>
+        <field name="fold" eval="False"/>
+        <field name="sla_to_hours">15</field>
+    </record>
+
+    <record id="stage_subc_docs_partial" model="rmc.subcontractor.stage">
+        <field name="name">Docs Received (Partial)</field>
+        <field name="code">docs_partial</field>
+        <field name="sequence">10</field>
+        <field name="category">qualification</field>
+        <field name="is_docs_partial" eval="True"/>
+    </record>
+
+    <record id="stage_subc_docs_complete" model="rmc.subcontractor.stage">
+        <field name="name">Docs Received (Complete)</field>
+        <field name="code">docs_complete</field>
+        <field name="sequence">20</field>
+        <field name="category">onboarding</field>
+        <field name="is_docs_complete" eval="True"/>
+    </record>
+
+    <record id="stage_subc_trial_mix" model="rmc.subcontractor.stage">
+        <field name="name">Trial Mix / Plant Visit</field>
+        <field name="code">trial_mix</field>
+        <field name="sequence">40</field>
+        <field name="category">onboarding</field>
+    </record>
+
+    <record id="stage_subc_approved" model="rmc.subcontractor.stage">
+        <field name="name">Approved</field>
+        <field name="code">approved</field>
+        <field name="sequence">60</field>
+        <field name="category">onboarding</field>
+    </record>
+
+    <record id="stage_subc_onboarding" model="rmc.subcontractor.stage">
+        <field name="name">Onboarding</field>
+        <field name="code">onboarding</field>
+        <field name="sequence">70</field>
+        <field name="category">onboarding</field>
+    </record>
+
+    <record id="stage_subc_active" model="rmc.subcontractor.stage">
+        <field name="name">Active</field>
+        <field name="code">active</field>
+        <field name="sequence">90</field>
+        <field name="category">active</field>
+        <field name="auto_lock_codes" eval="True"/>
+    </record>
+
+    <record id="stage_subc_suspended" model="rmc.subcontractor.stage">
+        <field name="name">Suspended / Blacklisted</field>
+        <field name="code">suspended</field>
+        <field name="sequence">110</field>
+        <field name="category">blocked</field>
+        <field name="fold" eval="True"/>
+        <field name="auto_lock_codes" eval="True"/>
+    </record>
+
+    <record id="hot_zone_default" model="rmc.subcontractor.hot.zone">
+        <field name="name">Default Hot Zone</field>
+        <field name="code">GEN</field>
+    </record>
+</odoo>

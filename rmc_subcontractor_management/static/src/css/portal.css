@@ -1,0 +1,55 @@
+.o_subc_portal_header {
+    background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+    color: #fff;
+    padding: 30px 0;
+}
+
+.o_subc_stage_badge .badge {
+    font-size: 16px;
+}
+
+.o_subc_completion .o_progress_ring {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+}
+
+.o_stat_card {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    margin-bottom: 16px;
+}
+
+.o_actions_bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.o_facility_card {
+    margin-bottom: 24px;
+}
+
+.timeline {
+    list-style: none;
+    padding: 0;
+}
+
+.timeline li {
+    margin-bottom: 16px;
+}
+
+.timeline-date {
+    font-size: 12px;
+    color: #64748b;
+    text-transform: uppercase;
+}

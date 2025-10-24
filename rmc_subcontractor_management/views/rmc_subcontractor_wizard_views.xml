@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_rmc_subcontractor_onboard_wizard" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.onboard.wizard.form</field>
+        <field name="model">rmc.subcontractor.onboard.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Onboard Subcontractor" create="false" edit="false">
+                <header>
+                    <button name="action_save_phase1" string="Save Phase 1" type="object" invisible="phase != 'phase1'"/>
+                    <button name="action_save_phase2" string="Save Phase 2" type="object" invisible="phase != 'phase2'"/>
+                    <button name="action_open_profile" type="object" string="Open Profile"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="subcontractor_id"/>
+                            <field name="profile_id"/>
+                        </group>
+                        <group>
+                            <field name="phase"/>
+                            <field name="stepper_state"/>
+                            <field name="phase1_completion"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Phase 1" invisible="phase != 'phase1'">
+                            <group string="Company Summary">
+                                <group>
+                                    <field name="legal_name"/>
+                                    <field name="brand_trade_name"/>
+                                    <field name="gstin"/>
+                                    <field name="pan"/>
+                                    <field name="msme_udyam"/>
+                                    <field name="established_year"/>
+                                </group>
+                                <group>
+                                    <field name="contact_person"/>
+                                    <field name="mobile"/>
+                                    <field name="email"/>
+                                    <field name="whatsapp"/>
+                                </group>
+                            </group>
+                            <group string="Bank &amp; Payments">
+                                <group>
+                                    <field name="bank_name"/>
+                                    <field name="bank_account_no"/>
+                                    <field name="ifsc"/>
+                                    <field name="upi_id"/>
+                                </group>
+                                <group>
+                                    <field name="service_radius_km"/>
+                                    <field name="plants_total"/>
+                                    <field name="mixers_total"/>
+                                    <field name="pumps_total"/>
+                                </group>
+                            </group>
+                            <group string="Pricing Model">
+                                <group>
+                                    <field name="base_pricing_note"/>
+                                </group>
+                                <group>
+                                    <field name="cut_percent"/>
+                                    <field name="mgq_per_month_m3"/>
+                                    <field name="rental_amount"/>
+                                    <field name="currency_id" readonly="1"/>
+                                    <field name="pricing_terms"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Phase 2" invisible="phase != 'phase2'">
+                            <group>
+                                <field name="plant_ids"/>
+                                <field name="mixer_ids"/>
+                                <field name="pump_ids"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

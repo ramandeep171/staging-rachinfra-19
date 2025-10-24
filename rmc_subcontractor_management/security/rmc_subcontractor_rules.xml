@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Subcontractor manager full access -->
+    <record id="rule_rmc_subcontractor_manager" model="ir.rule">
+        <field name="name">Subcontractor Manager Access</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+        <field name="groups" eval="[(4, ref('rmc_subcontractor_management.group_rmc_subcontractor_manager'))]"/>
+    </record>
+
+    <!-- Subcontractor user own/team scope -->
+    <record id="rule_rmc_subcontractor_user" model="ir.rule">
+        <field name="name">Subcontractor User Scope</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="domain_force">['|',('lead_id.user_id','=',user.id),('create_uid','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('rmc_subcontractor_management.group_rmc_subcontractor_user'))]"/>
+    </record>
+
+    <!-- Subcontractor profile manager -->
+    <record id="rule_rmc_subcontractor_profile_manager" model="ir.rule">
+        <field name="name">Subcontractor Profile Manager</field>
+        <field name="model_id" ref="rmc_subcontractor_management.model_rmc_subcontractor_profile"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+        <field name="groups" eval="[(4, ref('rmc_subcontractor_management.group_rmc_subcontractor_manager'))]"/>
+    </record>
+
+    <!-- Subcontractor profile user -->
+    <record id="rule_rmc_subcontractor_profile_user" model="ir.rule">
+        <field name="name">Subcontractor Profile User</field>
+        <field name="model_id" ref="rmc_subcontractor_management.model_rmc_subcontractor_profile"/>
+        <field name="domain_force">['|',('lead_id.user_id','=',user.id),('subcontractor_id.lead_id.user_id','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('rmc_subcontractor_management.group_rmc_subcontractor_user'))]"/>
+    </record>
+
+    <!-- Portal access to subcontractor -->
+    <record id="rule_rmc_subcontractor_portal" model="ir.rule">
+        <field name="name">Subcontractor Portal Record</field>
+        <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+        <field name="domain_force">[('portal_user_id','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('rmc_subcontractor_management.group_rmc_subcontractor_portal'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+
+    <record id="rule_rmc_subcontractor_profile_portal" model="ir.rule">
+        <field name="name">Subcontractor Profile Portal</field>
+        <field name="model_id" ref="rmc_subcontractor_management.model_rmc_subcontractor_profile"/>
+        <field name="domain_force">[('subcontractor_id.portal_user_id','=',user.id)]</field>
+        <field name="groups" eval="[(4, ref('rmc_subcontractor_management.group_rmc_subcontractor_portal'))]"/>
+        <field name="perm_read" eval="1"/>
+        <field name="perm_write" eval="0"/>
+        <field name="perm_create" eval="0"/>
+        <field name="perm_unlink" eval="0"/>
+    </record>
+</odoo>
