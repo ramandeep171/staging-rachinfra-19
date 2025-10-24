@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Separate form view for equipment logs (diesel.log with log_type=equipment) -->
+    <record id="view_diesel_log_form_equipment" model="ir.ui.view">
+        <field name="name">diesel.log.form.equipment</field>
+        <field name="model">diesel.log</field>
+        <field name="arch" type="xml">
+            <form string="Equipment Log">
+                <header>
+                    <button name="action_request" type="object" string="Request" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Approve" class="btn-secondary" invisible="state != 'requested'"/>
+                    <button name="action_confirm" type="object" string="Finalize" class="btn-success" invisible="state != 'approved'"/>
+                    <button name="action_cancel" type="object" string="Cancel" class="btn-link" invisible="state not in ['draft', 'requested', 'approved']"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" groups="diesel_log.group_diesel_manager" invisible="state in ['draft', 'done']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,requested,approved,done,cancel"/>
+                    <field name="log_type" invisible="1"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="date"/>
+                            <field name="vehicle_id" domain='[("company_id","=",company_id)]'/>
+                            <field name="driver_id" readonly="1"/>
+                            <field name="company_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="quantity" readonly="1"/>
+                            <field name="fuel_consumption" readonly="1"/>
+                            <field name="fuel_efficiency" readonly="1"/>
+                            <field name="current_efficiency" readonly="1"/>
+                            <field name="fuel_short_excess_display" widget="html" readonly="1"/>
+                            <field name="fuel_short_remark" placeholder="Remark for shortage" invisible="fuel_short >= 0"/>
+                            <field name="employee_id"/>
+                            <field name="attendance_check_in" readonly="1"/>
+                            <field name="attendance_check_out" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Fuel Balance">
+                            <group>
+                                <group>
+                                   
+                                    <field name="diesel_rate"/>
+                                </group>
+                                <group>
+                                    <field name="production_name"/>
+                                    <field name="actual_fuel_cost_per_cum" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Old Logs">
+                            <field name="old_log_ids" options='{"no_create": true}'>
+                                <list create="false" edit="false">
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="quantity"/>
+                                    <field name="current_odometer"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

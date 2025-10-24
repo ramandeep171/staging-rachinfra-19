@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Fleet Vehicle Form View Extension: add smart buttons and fuel statistics -->
+    <record id="view_fleet_vehicle_form_diesel_fields" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.diesel.fields</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Fuel Stats">
+                    <group>
+                        <group>
+                            <field name="diesel_log_count" readonly="1"/>
+                           
+                            <field name="avg_fuel_efficiency_per_hr"/>
+                            <field name="fuel_tank_limit"/>
+                            <field name="total_gaje_in_tank"/>
+                            <field name="in_1_gaje_vehicle" readonly="1"/>
+                            <field name="target_cost_per_cum"/>
+                        </group>
+                        
+                    </group>
+                   
+                </page>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Fleet Vehicle Form View Extension -->
+    <record id="view_fleet_vehicle_form_inherit" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.inherit</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- Add smart buttons -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button type="object" 
+                        name="action_view_diesel_logs" 
+                        class="oe_stat_button" 
+                        icon="fa-tint"
+                        invisible="diesel_log_count == 0">
+                    <field name="diesel_log_count" widget="statinfo" string="Diesel Logs"/>
+                </button>
+                   <button type="object" 
+                         name="action_create_diesel_log" 
+                         class="oe_stat_button" 
+                         icon="fa-plus-square"
+                         string="Add Fuel" >
+
+                    <div class="o_field_widget o_stat_info">
+                         <span class="o_stat_text">Add</span>
+                        <span class="o_stat_text">Fuel</span>
+                         </div>
+                </button>
+            </xpath>
+            
+            <!-- Add fuel statistics in vehicle information -->
+            <xpath expr="//sheet/group" position="after">
+                <group string="Fuel Statistics" groups="diesel_log.group_diesel_user">
+                    <group>
+                        <!-- removed last_fuel_date & last_fuel_quantity as requested -->
+                    </group>
+                    <group>
+                        <field name="total_fuel_consumed" readonly="1"/>
+                        <field name="average_fuel_efficiency" readonly="1"/>
+                    </group>
+                </group>
+            </xpath>
+            
+        </field>
+    </record>
+    
+    <!-- Fleet Vehicle Tree View Extension -->
+    <record id="view_fleet_vehicle_tree_inherit" model="ir.ui.view">
+        <field name="name">fleet.vehicle.tree.inherit</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[last()]" position="after">
+                <field name="total_fuel_consumed" optional="hide"/>
+                <field name="average_fuel_efficiency" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    
+</odoo>

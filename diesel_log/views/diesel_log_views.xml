@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Kanban View -->
+    <record id="view_diesel_log_kanban" model="ir.ui.view">
+        <field name="name">diesel.log.kanban</field>
+        <field name="model">diesel.log</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="vehicle_id"/>
+                <field name="driver_id"/>
+                <field name="shift"/>
+                <field name="quantity"/>
+                <field name="state"/>
+                <field name="company_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <strong><field name="name"/></strong><br/>
+                            <span><field name="date"/></span><br/>
+                            <field name="company_id"/>
+                            <span><field name="vehicle_id"/></span><br/>
+                            <span>Qty: <field name="quantity"/></span><br/>
+                            <span>Status: <field name="state"/></span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Tree View -->
+    <record id="view_diesel_log_tree" model="ir.ui.view">
+        <field name="name">diesel.log.tree</field>
+        <field name="model">diesel.log</field>
+        <field name="arch" type="xml">
+            <list string="Diesel Logs" create="1" editable="bottom">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="vehicle_id"/>
+                <field name="vehicle_fuel_type" optional="show"/>
+                <field name="quantity"/>
+               
+                
+               
+                <!-- <field name="odometer_difference_display" string="Odometer Usage (Hr)"/> -->
+                <field name="fuel_efficiency"/>
+                <field name="current_efficiency"/>
+                <field name="production_name"/>
+                <field name="fuel_short"/>
+                <field name="actual_fuel_cost_per_cum"/>
+                <field name="short_excess_cost"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_diesel_log_form" model="ir.ui.view">
+    <field name="name">diesel.log.form</field>
+        <field name="model">diesel.log</field>
+        <field name="arch" type="xml">
+            <form string="Diesel Log">
+                <header>
+                    <button name="action_request" type="object" string="Request" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" type="object" string="Approve" class="btn-secondary" invisible="state != 'requested'"/>
+                    <button name="action_confirm" type="object" string="Finalize" class="btn-success" invisible="state != 'approved'"/>
+                    <button name="action_cancel" type="object" string="Cancel" class="btn-link" invisible="state not in ['draft', 'requested', 'approved']"/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" groups="diesel_log.group_diesel_manager" invisible="state in ['draft', 'done']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,requested,approved,done,cancel"/>
+                    <field name="log_type" invisible="1"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="date" required="log_type == 'diesel'"/>
+                            <field name="shift" invisible="log_type == 'equipment'"/>
+                            <field name="vehicle_id" domain="[('company_id','in',[company_id, False]), '|', ('fuel_type','=',False), ('fuel_type','in',['diesel','plug_in_hybrid_diesel'])]" required="log_type == 'diesel'"/>
+                            <field name="driver_id" readonly="1"/>
+                          
+                            
+                            <field name="current_odometer"/>
+                            <field name="odometer_unit" readonly="1"/>
+                            <field name="quantity" required="log_type == 'diesel'"/>
+                            <field name="current_gaje"/>
+                        </group>
+                            <!-- company shown above now -->
+                        <group>
+                            <field name="company_id" readonly="state != 'draft'"/>
+                            <field name="last_odometer" readonly="1"/>
+                            <field name="vehicle_fuel_type" readonly="1"/>
+                            
+                            <field name="odometer_difference_display" readonly="1"/>
+                            
+                            <field name="last_gaje" readonly="1"/>
+                            <field name="fuel_efficiency" readonly="1"/>
+                            <field name="current_efficiency" readonly="1"/>
+                             <field name="fuel_consumption" readonly="1"/>
+                            <field name="fuel_short_excess_display" widget="html" readonly="1"/>
+                            <field name="fuel_short_remark" placeholder="Enter remark for shortage" invisible="fuel_short >= 0"/>
+                             <field name="short_excess_cost" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                       
+                        <group>
+                            
+                        </group>
+                    </group>
+                    <notebook>
+                       <page string="Fuel Balance" name="fuel_balance">
+                           <group>
+                               <group name="fuel_balance_group">
+                                   <!-- <field name="in_1_gaje" readonly="1"/>
+                                    <field name="opening_diesel_display" readonly="1" widget="html"/> -->
+                                   <field name="opening_diesel" readonly="1"/>
+                                  
+                                   <field name="issue_diesel" readonly="1"/>
+                                   <field name="closing_diesel" readonly="1"/>
+                                   <field name="diesel_rate"/>
+                                    <field name="photo" widget="image" class="oe_avatar"/>
+                                 
+                                
+                               </group>
+                               <group name="Production Cost">
+                                  <field name="last_odometer_datetime" readonly="1"/>
+                                    <field name="current_odometer_datetime" readonly="1"/>
+                                     <field name="production_name"/>
+                                    
+                                      <field name="actual_fuel_cost_per_cum" readonly="1"/>
+                                    
+                               </group>
+                           </group>
+                       </page>
+                       
+                        <page string="Old Log" name="old_log_page">
+                            <separator string="Old Logs"/>
+                            <field name="old_log_ids" options="{'no_create': True}">
+                                <list string="Old Logs" create="false" edit="false">
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="quantity"/>
+                                    <field name="current_odometer"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+
+    <!-- Pivot View -->
+    <record id="view_diesel_log_pivot" model="ir.ui.view">
+        <field name="name">diesel.log.pivot</field>
+        <field name="model">diesel.log</field>
+        <field name="arch" type="xml">
+            <pivot string="Diesel Logs">
+                <field name="vehicle_id" type="row"/>
+                <field name="date" type="col" interval="month"/>
+                <field name="state" type="row"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Graph View -->
+    <record id="view_diesel_log_graph" model="ir.ui.view">
+        <field name="name">diesel.log.graph</field>
+        <field name="model">diesel.log</field>
+        <field name="arch" type="xml">
+            <graph string="Diesel Logs" type="bar">
+                <field name="date" type="row" interval="month"/>
+                <field name="vehicle_id" type="row"/>
+                <field name="quantity" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_diesel_log_list" model="ir.actions.act_window">
+        <field name="name">Diesel Logs</field>
+        <field name="res_model">diesel.log</field>
+        <field name="view_mode">kanban,list,form,pivot,graph</field>
+        <field name="domain">[("log_type","=","diesel")]</field>
+        <field name="context">{"default_log_type": "diesel"}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_diesel_log_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_diesel_log_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_diesel_log_form')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_diesel_log_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_diesel_log_graph')})
+        ]"/>
+    </record>
+
+    <!-- Equipment Logs Action (filtered) -->
+    <record id="action_diesel_equipment_log" model="ir.actions.act_window">
+        <field name="name">Equipment Logs</field>
+        <field name="res_model">diesel.log</field>
+        <field name="view_mode">kanban,list,form,pivot,graph</field>
+        <field name="domain">[("log_type","=","equipment")]</field>
+        <field name="context">{"default_log_type": "equipment"}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_diesel_log_kanban')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_diesel_log_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_diesel_log_form_equipment')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_diesel_log_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_diesel_log_graph')})
+        ]"/>
+    </record>
+
+</odoo>

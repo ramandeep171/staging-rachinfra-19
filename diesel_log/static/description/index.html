@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Diesel Log - Fleet Fuel Management</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin: 40px 0;
+        }
+        .feature {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 4px solid #667eea;
+        }
+        .feature h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 1.3em;
+        }
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+        .screenshots {
+            margin: 50px 0;
+        }
+        .screenshots h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .screenshot {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .screenshot img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #0db846;
+            color: white;
+            border-radius: 15px;
+            font-size: 0.9em;
+            margin: 5px;
+        }
+        .installation {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin: 40px 0;
+        }
+        .code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚛 Diesel Log</h1>
+        <p>Complete Fleet Fuel Management Solution for Odoo 18 Enterprise</p>
+        <div style="margin-top: 20px;">
+            <span class="badge">Fleet Integration</span>
+            <span class="badge">Stock Management</span>
+            <span class="badge">Multi-company</span>
+            <span class="badge">Security</span>
+        </div>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <div class="feature-icon">⛽</div>
+            <h3>Diesel Issuing</h3>
+            <p>Track diesel issued to vehicles with automatic inventory management. Create stock pickings automatically and maintain accurate fuel consumption records.</p>
+        </div>
+
+        <div class="feature">
+            <div class="feature-icon">📊</div>
+            <h3>Odometer Tracking</h3>
+            <p>Automatically update fleet vehicle odometer readings with validation. Calculate distance covered and fuel efficiency per vehicle.</p>
+        </div>
+
+        <div class="feature">
+            <div class="feature-icon">⚙️</div>
+            <h3>Configurable Setup</h3>
+            <p>Pre-configure Product ID and Operation Type ID for seamless integration, or let the system auto-create defaults during installation.</p>
+        </div>
+
+        <div class="feature">
+            <div class="feature-icon">🏢</div>
+            <h3>Multi-company Support</h3>
+            <p>Full multi-company compatibility with proper data isolation. Each company can have its own diesel products and operation types.</p>
+        </div>
+
+        <div class="feature">
+            <div class="feature-icon">🔒</div>
+            <h3>Security & Access Control</h3>
+            <p>Role-based access control with Diesel User and Diesel Manager groups. Users can create logs, managers can confirm them.</p>
+        </div>
+
+        <div class="feature">
+            <div class="feature-icon">📈</div>
+            <h3>Fuel Efficiency Analytics</h3>
+            <p>Calculate and track fuel consumption per 100km. Monitor vehicle performance and identify maintenance needs.</p>
+        </div>
+    </div>
+
+    <div class="installation">
+        <h2>Quick Installation</h2>
+        <p>Follow these simple steps to get started:</p>
+        <ol>
+            <li>Install the module from Odoo Apps</li>
+            <li>Configure diesel product and operation type (optional)</li>
+            <li>Start creating diesel logs for your fleet</li>
+        </ol>
+        
+        <h3>Configuration</h3>
+        <p>Navigate to <strong>Settings > Diesel Log Configuration</strong> to configure:</p>
+        <ul>
+            <li><strong>Diesel Product:</strong> Product used for fuel</li>
+            <li><strong>Fuel Operation Type:</strong> Stock operation for fuel issues</li>
+        </ul>
+        
+        <p>If not configured, the system automatically creates:</p>
+        <div class="code">
+Product: "Diesel" (Liter UoM)
+Operation Type: "Fuel Issue"
+  - Source: "Fuel Tank"
+  - Destination: "Fuel Consumption"
+        </div>
+    </div>
+
+    <div style="text-align: center; margin: 50px 0; padding: 30px; background: #f8f9fa; border-radius: 10px;">
+        <h2>Ready to Optimize Your Fleet Fuel Management?</h2>
+        <p style="font-size: 1.1em; color: #666;">Install Diesel Log today and start tracking fuel consumption with precision!</p>
+        <div style="margin-top: 20px;">
+            <strong>Compatible with Odoo 18 Enterprise</strong>
+        </div>
+    </div>
+</body>
+</html>

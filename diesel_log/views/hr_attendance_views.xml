@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Combined attendance view inheritance for diesel/equipment readings -->
+    <record id="view_hr_attendance_form_diesel_log_inherit" model="ir.ui.view">
+        <field name="name">hr.attendance.form.diesel.log.inherit</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert our equipment/diesel readings block after the check_out_group -->
+            <xpath expr="//group[@name='check_out_group']" position="after">
+                <group string="Equipment / Diesel Readings" colspan="2">
+                    <group>
+                        <field name="check_in_reading"/>
+                        <field name="check_out_reading"/>
+                    </group>
+                    <group>
+                        <field name="check_in_gaje"/>
+                        <field name="check_out_gaje"/>
+                    </group>
+                    <!-- last_gaje removed (not on hr.attendance); check_in_gaje already shows starting gaje -->
+                    <field name="diesel_log_id" invisible="1"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Simpler placement right after check_in if original positioning needed -->
+    <record id="view_hr_attendance_form_inherit_check_in_reading" model="ir.ui.view">
+        <field name="name">hr.attendance.form.inherit.check.in.reading</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='check_in']" position="after">
+                <field name="check_in_reading"/>
+                <field name="check_in_gaje"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

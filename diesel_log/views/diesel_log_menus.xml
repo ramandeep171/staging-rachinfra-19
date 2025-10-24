@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_diesel_log_root" name="Diesel Logs" sequence="50"/>
+    <menuitem id="menu_diesel_log_logs"
+              parent="menu_diesel_log_root"
+              name="Diesel Logs"
+              action="diesel_log.action_diesel_log_list"
+              sequence="10"/>
+    <menuitem id="menu_equipment_log_logs"
+              parent="menu_diesel_log_root"
+              name="Equipment Logs"
+              action="diesel_log.action_diesel_equipment_log"
+              sequence="20"/>
+</odoo>

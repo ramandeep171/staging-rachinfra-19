@@ -1,0 +1,26 @@
+<odoo>
+  <record id="view_res_config_settings_form_inherit_diesel" model="ir.ui.view">
+    <field name="name">res.config.settings.form.inherit.diesel</field>
+    <field name="model">res.config.settings</field>
+    <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form" position="inside">
+        <group string="Diesel Log">
+          <field name="diesel_log_enabled"/>
+          <field name="diesel_product_id" options="{'no_open': True}"/>
+          <field name="fuel_operation_type_id" options="{'no_open': True}"/>
+          <field name="shortage_activity_type_id" options="{'no_open': True}"/>
+          <field name="shortage_activity_user_id" options="{'no_open': True}"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+  <record id="action_diesel_log_config_settings" model="ir.actions.act_window">
+      <field name="name">Settings</field>
+      <field name="type">ir.actions.act_window</field>
+      <field name="res_model">res.config.settings</field>
+      <field name="view_mode">form</field>
+    <field name="target">new</field>
+      <field name="context">{'module': 'diesel_log'}</field>
+  </record>
+</odoo>

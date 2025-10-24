@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_activity_type_fuel_shortage" model="mail.activity.type">
+        <field name="name">Fuel Shortage Review</field>
+        <field name="category">default</field>
+        <field name="res_model">diesel.log</field>
+        <field name="default_user_id" eval="False"/>
+        <field name="icon">fa-exclamation-triangle</field>
+        <field name="summary">Review fuel shortage</field>
+    </record>
+</odoo>

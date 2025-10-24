@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_diesel_log_user,diesel.log user,model_diesel_log,,1,1,1,1
+access_diesel_log_system,diesel.log.system,model_diesel_log,base.group_system,1,1,1,1
+access_diesel_equipment_log_user,diesel.equipment.log user,model_diesel_equipment_log,,1,1,1,1
+access_diesel_equipment_log_system,diesel.equipment.log.system,model_diesel_equipment_log,base.group_system,1,1,1,1
