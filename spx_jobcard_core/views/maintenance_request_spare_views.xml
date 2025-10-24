@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- Button in header + Smart button to open picking -->
+    <record id="view_request_form_inherit_spares_btn" model="ir.ui.view">
+      <field name="name">maintenance.request.form.inherit.spares.btn</field>
+      <field name="model">maintenance.request</field>
+      <field name="inherit_id" ref="maintenance.hr_equipment_request_view_form"/>
+      <field name="arch" type="xml">
+  <!-- Header button -->
+  <xpath expr="//form/header" position="inside">
+    <button name="action_create_spare_picking"
+      type="object"
+      class="oe_highlight"
+      string="Create Inventory Request"
+      invisible="spare_picking_id"/>
+    <!-- Smart button: show when picking exists (calls server action to open) -->
+    <button name="action_view_spare_picking" type="object" class="oe_stat_button" icon="fa-truck"
+      invisible="not spare_picking_id">
+      <field name="spare_picking_count" widget="statinfo" string="Picking"/>
+    </button>
+  </xpath>
+      </field>
+    </record>
+
+    <!-- Spare Parts tab: show spare lines with product selection similar to Job Card -->
+    <record id="view_request_form_inherit_spares_tab" model="ir.ui.view">
+      <field name="name">maintenance.request.form.inherit.spares.tab</field>
+      <field name="model">maintenance.request</field>
+      <field name="inherit_id" ref="maintenance.hr_equipment_request_view_form"/>
+      <field name="priority" eval="90"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form/sheet/notebook" position="inside">
+          <page string="Spare Parts">
+            <!-- Use the One2many field only; the actual tree view for the comodel is defined separately below. -->
+            <field name="spare_line_ids"/>
+          </page>
+        </xpath>
+      </field>
+    </record>
+
+    <!-- Dedicated tree view for maintenance.request.spare so the list columns are defined on the comodel. -->
+    <record id="view_request_spare_tree" model="ir.ui.view">
+      <field name="name">maintenance.request.spare.tree</field>
+      <field name="model">maintenance.request.spare</field>
+      <field name="arch" type="xml">
+  <list string="Spare Lines" editable="bottom">
+          <field name="product_id"/>
+          <field name="qty"/>
+          <field name="uom_id"/>
+  </list>
+      </field>
+    </record>
+
+  </data>
+</odoo>

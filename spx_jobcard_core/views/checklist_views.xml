@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- Menus under Maintenance -->
+    <record id="action_spx_checklist_templates" model="ir.actions.act_window">
+      <field name="name">Checklist Templates</field>
+      <field name="res_model">spx.checklist.template</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_spx_checklist_root" name="Checklists" parent="maintenance.menu_maintenance_title" sequence="80"/>
+    <menuitem id="menu_spx_checklist_templates" name="Templates" parent="menu_spx_checklist_root" action="action_spx_checklist_templates" sequence="10"/>
+
+    <!-- Template list -->
+    <record id="view_spx_checklist_template_list" model="ir.ui.view">
+      <field name="name">spx.checklist.template.list</field>
+      <field name="model">spx.checklist.template</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+          <field name="periodicity"/>
+          <field name="equipment_category_id"/>
+          <field name="equipment_id"/>
+          <field name="active"/>
+        </list>
+      </field>
+    </record>
+
+    <!-- Template form -->
+    <record id="view_spx_checklist_template_form" model="ir.ui.view">
+      <field name="name">spx.checklist.template.form</field>
+      <field name="model">spx.checklist.template</field>
+      <field name="arch" type="xml">
+        <form string="Checklist Template">
+          <sheet>
+            <group>
+              <group>
+                <field name="name"/>
+                <field name="periodicity"/>
+                <field name="active"/>
+              </group>
+              <group>
+                <field name="equipment_category_id"/>
+                <field name="equipment_id"/>
+              </group>
+            </group>
+            <group string="Trigger">
+              <field name="trigger_type"/>
+              <group modifiers='{"invisible": [["trigger_type", "!=", "time"]] }'>
+                <field name="periodicity"/>
+              </group>
+              <group modifiers='{"invisible": [["trigger_type", "!=", "usage"]] }'>
+                <field name="usage_metric"/>
+                <field name="usage_interval"/>
+                <field name="usage_start_at"/>
+                <field name="usage_last_done" readonly="1"/>
+                <field name="usage_next_due" readonly="1"/>
+                <field name="vehicle_id" modifiers='{"invisible": [["usage_metric", "!=", "km"]] }'/>
+                <field name="equipment_id" modifiers='{"invisible": [["usage_metric", "!=", "hours"]] }'/>
+              </group>
+            </group>
+            <notebook>
+              <page string="Items">
+                <field name="item_ids">
+                  <list editable="bottom">
+                    <field name="sequence"/>
+                    <field name="name" width="40%"/>
+                    <field name="required"/>
+                    <field name="need_photo"/>
+                    <field name="notes_help" width="40%"/>
+                  </list>
+                </field>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- Filled Checklist (for reference / audit) -->
+    <record id="action_spx_checklists" model="ir.actions.act_window">
+      <field name="name">Filled Checklists</field>
+      <field name="res_model">spx.checklist</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_spx_checklists" name="Filled Checklists" parent="menu_spx_checklist_root" action="action_spx_checklists" sequence="20"/>
+
+    <record id="view_spx_checklist_list" model="ir.ui.view">
+      <field name="name">spx.checklist.list</field>
+      <field name="model">spx.checklist</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="display_name" string="Checklist"/>
+          <field name="template_id"/>
+          <field name="equipment_id"/>
+          <field name="passed"/>
+          <field name="request_id"/>
+          <field name="jobcard_id"/>
+          <field name="create_date"/>
+        </list>
+      </field>
+    </record>
+
+    <record id="view_spx_checklist_form" model="ir.ui.view">
+      <field name="name">spx.checklist.form</field>
+      <field name="model">spx.checklist</field>
+      <field name="arch" type="xml">
+        <form string="Checklist">
+          <sheet>
+            <group>
+              <group>
+                <field name="template_id" readonly="1"/>
+                <field name="equipment_id" readonly="1"/>
+                <field name="passed" readonly="1"/>
+              </group>
+              <group>
+                <field name="request_id" readonly="1"/>
+                <field name="jobcard_id" readonly="1"/>
+              </group>
+            </group>
+            <notebook>
+              <page string="Lines">
+                <field name="line_ids">
+                  <list editable="bottom">
+                    <field name="sequence"/>
+                    <field name="name" width="40%"/>
+                    <field name="required"/>
+                    <field name="need_photo"/>
+                    <field name="state"/>
+                    <field name="photo" widget="image"/>
+                    <field name="notes" width="40%"/>
+                  </list>
+                </field>
+              </page>
+              <page string="Remarks">
+                <field name="remarks" nolabel="1"/>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+  </data>
+</odoo>

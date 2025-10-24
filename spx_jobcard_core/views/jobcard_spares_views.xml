@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- Extend Job Card form -->
+    <record id="view_jobcard_form_inherit_spares" model="ir.ui.view">
+      <field name="name">maintenance.jobcard.form.inherit.spares</field>
+      <field name="model">maintenance.jobcard</field>
+      <field name="inherit_id" ref="spx_jobcard_core.view_maintenance_jobcard_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form/sheet/notebook" position="inside">
+
+          <!-- Tab: Spare Consumption -->
+          <page string="Spare Consumption">
+            <field name="spare_line_ids"/>
+          </page>
+
+        </xpath>
+
+        <!-- Multi request select -->
+        <xpath expr="//form/sheet/group/group" position="inside">
+          <field name="request_ids" widget="many2many_tags"/>
+        </xpath>
+
+      </field>
+    </record>
+
+  </data>
+</odoo>

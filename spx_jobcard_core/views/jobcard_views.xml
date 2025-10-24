@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- Action & Menus -->
+    <record id="action_maintenance_jobcard" model="ir.actions.act_window">
+      <field name="name">Job Cards</field>
+      <field name="res_model">maintenance.jobcard</field>
+      <field name="view_mode">list,form,kanban,graph,pivot</field>
+    </record>
+    <menuitem id="menu_jobcard_root" name="Job Cards"
+              parent="maintenance.menu_maintenance_title"
+              action="action_maintenance_jobcard" sequence="60"/>
+
+    <!-- list -->
+    <record id="view_maintenance_jobcard_list" model="ir.ui.view">
+      <field name="name">maintenance.jobcard.list</field>
+      <field name="model">maintenance.jobcard</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list string="Job Cards">
+          <field name="name"/>
+          <field name="type"/>
+          <field name="state"/>
+          <field name="equipment_id"/>
+          <field name="vehicle_id"/>
+          <field name="vendor_id"/>
+          <field name="start_datetime"/>
+          <field name="end_datetime"/>
+          <field name="downtime_hours"/>
+          <field name="production_loss_cum"/>
+          <field name="sla_hours"/>
+          <field name="is_sla_breached"/>
+
+        </list>
+        
+      </field>
+    </record>
+
+    <!-- Form -->
+    <record id="view_maintenance_jobcard_form" model="ir.ui.view">
+      <field name="name">maintenance.jobcard.form</field>
+      <field name="model">maintenance.jobcard</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Job Card">
+          <header>
+            <button name="action_create_spare_picking_jc" type="object" class="oe_highlight" string="Create Inventory Request"/>
+            <button name="action_view_spare_picking_jc" type="object" class="oe_stat_button" icon="fa-truck">
+              <field name="spare_picking_count" widget="statinfo" string="Picking"/>
+            </button>
+            <field name="state" widget="statusbar"
+                   statusbar_visible="draft,in_progress,waiting_vendor,done,cancel"/>
+            <button string="Start" type="object" name="action_start"
+                    invisible="state != 'draft'"/>
+            <button string="Waiting Vendor" type="object" name="action_waiting_vendor"
+                    invisible="state != 'in_progress'"/>
+            <button string="Done" type="object" name="action_done" class="oe_highlight"
+                    invisible="not (state in ('in_progress','waiting_vendor'))"/>
+            <button string="Cancel" type="object" name="action_cancel"
+                    invisible="state == 'done'"/>
+            <button type="object" name="action_view_vendor_bills" class="oe_stat_button" icon="fa-file-text-o">
+              <field name="bill_count" widget="statinfo" string="Bills"/>
+            </button>
+          </header>
+          <sheet>
+            <group>
+              <group>
+                <field name="name" readonly="1"/>
+                <field name="request_id" readonly="1"/>
+                <field name="type"/>
+                <field name="priority"/>
+                <field name="vendor_id"/>
+              </group>
+              <group>
+                <field name="equipment_id" readonly="1"/>
+                <field name="vehicle_id"/>
+                <field name="start_datetime"/>
+                <field name="end_datetime"/>
+                <field name="downtime_hours" readonly="1"/>
+              
+              </group>
+              <group string="SLA &amp; Impact">
+                <field name="sla_hours"/>
+                <field name="is_sla_breached" readonly="1"/>
+                <field name="capacity_cum_per_hr"/>
+                <field name="production_loss_cum" readonly="1"/>
+              </group>
+
+            </group>
+            <group string="LOTO">
+              <field name="loto_applied"/>
+              <field name="loto_supervisor_id"/>
+            </group>
+            <notebook>
+              <page string="Cost Lines">
+                <field name="cost_line_ids">
+                  <list editable="bottom">
+                    <field name="line_type"/>
+                    <field name="vendor_bill_id"/>
+                    <field name="description"/>
+                    <field name="product_id"/>
+                    <field name="qty" invisible="line_type == 'labour'"/>
+                    <field name="uom_id" invisible="line_type == 'labour'"/>
+                    <field name="unit_cost"/>
+                    <field name="timesheet_hours" attrs="{'invisible': [('line_type','!=','labour')]}"/>
+                    <field name="employee_id" attrs="{'invisible': [('line_type','!=','labour')]}"/>
+                    <field name="amount_total" readonly="1"/>
+                  </list>
+                </field>
+
+              </page>
+              <page string="Notes">
+                <field name="note" nolabel="1"/>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- Search -->
+    <record id="view_maintenance_jobcard_search" model="ir.ui.view">
+      <field name="name">maintenance.jobcard.search</field>
+      <field name="model">maintenance.jobcard</field>
+      <field name="type">search</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="name"/>
+          <field name="equipment_id"/>
+          <field name="vehicle_id"/>
+          <field name="vendor_id"/>
+          <filter name="type_prev" string="Preventive" domain="[('type','=','preventive')]"/>
+          <filter name="type_corr" string="Corrective" domain="[('type','=','corrective')]"/>
+          <filter name="type_emg" string="Emergency" domain="[('type','=','emergency')]"/>
+          <filter name="sla_breach" string="SLA Breached" domain="[('is_sla_breached','=',True)]"/>
+
+          <group>
+            <filter name="grp_equipment" string="Equipment" context="{'group_by':'equipment_id'}"/>
+            <filter name="grp_vehicle" string="Vehicle" context="{'group_by':'vehicle_id'}"/>
+            <filter name="grp_type" string="Type" context="{'group_by':'type'}"/>
+            <filter name="grp_state" string="State" context="{'group_by':'state'}"/>
+          </group>
+        </search>
+      </field>
+    </record>
+    <!-- Quick actions -->
+    <record id="action_jc_open_all" model="ir.actions.act_window">
+      <field name="name">Open Job Cards</field>
+      <field name="res_model">maintenance.jobcard</field>
+      <field name="view_mode">list,form,kanban</field>
+      <field name="domain">[('state','in',('draft','in_progress','waiting_vendor'))]</field>
+    </record>
+
+    <record id="action_jc_sla_breached" model="ir.actions.act_window">
+      <field name="name">SLA Breached</field>
+      <field name="res_model">maintenance.jobcard</field>
+      <field name="view_mode">list,form,kanban</field>
+      <field name="domain">[('is_sla_breached','=',True)]</field>
+    </record>
+
+    <record id="action_jc_open_by_type" model="ir.actions.act_window">
+      <field name="name">Open by Type</field>
+      <field name="res_model">maintenance.jobcard</field>
+      <field name="view_mode">pivot,graph,list</field>
+      <field name="domain">[('state','in',('draft','in_progress','waiting_vendor'))]</field>
+      <field name="context">{'group_by':'type'}</field>
+    </record>
+
+    <!-- Root + quick menus -->
+    <menuitem id="menu_jobcard_open" name="Open Job Cards"
+              parent="menu_jobcard_root" action="action_jc_open_all" sequence="10"/>
+    <menuitem id="menu_jobcard_sla" name="SLA Breached"
+              parent="menu_jobcard_root" action="action_jc_sla_breached" sequence="20"/>
+    <menuitem id="menu_jobcard_open_by_type" name="Open by Type"
+              parent="menu_jobcard_root" action="action_jc_open_by_type" sequence="30"/>
+
+
+  </data>
+</odoo>

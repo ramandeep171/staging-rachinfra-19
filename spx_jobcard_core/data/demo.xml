@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="spx_demo_equipment_category" model="maintenance.equipment.category">
+      <field name="name">Others</field>
+    </record>
+
+    <record id="demo_equipment_1" model="maintenance.equipment">
+      <field name="name">Demo Mixer</field>
+      <field name="category_id" ref="spx_demo_equipment_category"/>
+    </record>
+
+    <record id="demo_request_1" model="maintenance.request">
+      <field name="name">Emergency: Mixer jam</field>
+      <field name="equipment_id" ref="demo_equipment_1"/>
+      <field name="spx_kind">emergency</field>
+    </record>
+
+    <record id="demo_jobcard_1" model="maintenance.jobcard">
+      <field name="request_id" ref="demo_request_1"/>
+      <field name="type">emergency</field>
+      <field name="state">in_progress</field>
+    </record>
+
+    <record id="demo_jobcard_cost_1" model="maintenance.jobcard.cost.line">
+      <field name="jobcard_id" ref="demo_jobcard_1"/>
+      <field name="line_type">vendor</field>
+      <field name="description">Technician charge (demo)</field>
+      <field name="unit_cost">1000.0</field>
+      <field name="qty">1.0</field>
+    </record>
+  </data>
+</odoo>

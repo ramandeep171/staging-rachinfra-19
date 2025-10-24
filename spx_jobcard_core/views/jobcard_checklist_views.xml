@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <!-- Job Card: Checklist tab + quick create -->
+    <record id="view_jobcard_form_inherit_checklist" model="ir.ui.view">
+      <field name="name">maintenance.jobcard.form.inherit.checklist</field>
+      <field name="model">maintenance.jobcard</field>
+      <field name="inherit_id" ref="spx_jobcard_core.view_maintenance_jobcard_form"/>
+      <field name="priority" eval="90"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form/sheet/notebook" position="inside">
+          <page string="Checklist">
+      <button type="object" name="action_open_apply_checklist_wizard_jobcard"
+        string="Load from Template" class="oe_highlight"/>
+            <field name="spx_checklist_ids" context="{'default_equipment_id': equipment_id}">
+              <list>
+                <field name="display_name" string="Checklist"/>
+                <field name="passed"/>
+                <field name="create_date"/>
+              </list>
+            </field>
+          </page>
+        </xpath>
+      </field>
+    </record>
+
+    <!-- Maintenance Request: Checklist tab -->
+    <record id="view_request_form_inherit_checklist" model="ir.ui.view">
+      <field name="name">maintenance.request.form.inherit.checklist</field>
+      <field name="model">maintenance.request</field>
+      <field name="inherit_id" ref="maintenance.hr_equipment_request_view_form"/>
+      <field name="priority" eval="90"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form/sheet/notebook" position="inside">
+          <page string="Checklist">
+      <button type="object" name="action_open_apply_checklist_wizard"
+        string="Load from Template" class="oe_highlight"/>
+            <field name="spx_checklist_ids" context="{'default_equipment_id': equipment_id}">
+              <list>
+                <field name="display_name" string="Checklist"/>
+                <field name="passed"/>
+                <field name="create_date"/>
+              </list>
+            </field>
+          </page>
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>

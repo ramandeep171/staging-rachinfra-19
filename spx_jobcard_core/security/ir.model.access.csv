@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_maintenance_jobcard_user,access.maintenance.jobcard.user,model_maintenance_jobcard,base.group_user,1,1,1,1
+access_maintenance_jobcard_cost_line_user,access.maintenance.jobcard.cost.line.user,model_maintenance_jobcard_cost_line,base.group_user,1,1,1,1
+spx_chk_tmpl_user,spx_chk_tmpl_user,model_spx_checklist_template,base.group_user,1,1,1,1
+spx_chk_tmpl_item_user,spx_chk_tmpl_item_user,model_spx_checklist_template_item,base.group_user,1,1,1,1
+spx_chk_user,spx_chk_user,model_spx_checklist,base.group_user,1,1,1,1
+spx_chk_line_user,spx_chk_line_user,model_spx_checklist_line,base.group_user,1,1,1,1
+spx_chk_apply_wizard_user,spx_chk_apply_wizard_user,model_spx_checklist_apply_wizard,base.group_user,1,0,1,0
+access_maintenance_jobcard_spare_user,access.maintenance.jobcard.spare.user,model_maintenance_jobcard_spare,base.group_user,1,1,1,1
+access_maintenance_request_spare_user,access.maintenance.request.spare.user,model_maintenance_request_spare,base.group_user,1,1,1,1

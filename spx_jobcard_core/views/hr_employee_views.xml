@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- A) Header me smart button (high priority) -->
+    <record id="view_hr_employee_form_inherit_spx_sop_btn" model="ir.ui.view">
+      <field name="name">hr.employee.form.inherit.spx.sop.btn</field>
+      <field name="model">hr.employee</field>
+      <field name="inherit_id" ref="hr.view_employee_form"/>
+      <field name="priority" eval="99"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form/header" position="inside">
+          <button type="object" name="action_view_sop_acks"
+                  class="oe_stat_button" icon="fa-shield">
+            <field name="sop_ack_count" widget="statinfo" string="SOP Acks"/>
+          </button>
+        </xpath>
+      </field>
+    </record>
+
+    <!-- B) Fallback: agar header anchor na mile to sheet ke top par ek bar -->
+    <record id="view_hr_employee_form_inherit_spx_sop_bar" model="ir.ui.view">
+      <field name="name">hr.employee.form.inherit.spx.sop.bar</field>
+      <field name="model">hr.employee</field>
+      <field name="inherit_id" ref="hr.view_employee_form"/>
+      <field name="priority" eval="98"/>
+      <field name="arch" type="xml">
+        <xpath expr="//form/sheet" position="before">
+          <div class="oe_button_box" name="button_box">
+            <button type="object" name="action_view_sop_acks" class="oe_stat_button" icon="fa-shield">
+              <field name="sop_ack_count" widget="statinfo" string="SOP Acks"/>
+            </button>
+          </div>
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>
