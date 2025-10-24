@@ -1,0 +1,10 @@
+<odoo>
+  <data noupdate="1">
+    <record id="seq_quality_cube_test" model="ir.sequence">
+      <field name="name">Cube Test</field>
+      <field name="code">quality.cube.test</field>
+      <field name="padding">4</field>
+      <field name="prefix">CBT/</field>
+    </record>
+  </data>
+</odoo>

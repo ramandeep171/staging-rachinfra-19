@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Create RMC Dropshipping Workorders Team -->
+        <record id="helpdesk_team_rmc_dropshipping" model="helpdesk.team">
+            <field name="name">RMC Dropshipping Workorders</field>
+            <field name="description">Dedicated team for managing RMC dropshipping workorders and tickets</field>
+            <field name="use_website_helpdesk_form">False</field>
+            <field name="use_website_helpdesk_livechat">False</field>
+            <field name="use_website_helpdesk_slides">False</field>
+            <field name="use_website_helpdesk_forum">False</field>
+        <field name="use_rating">True</field>
+        <field name="use_sla">True</field>
+        <field name="allow_portal_ticket_closing">False</field>
+        <field name="auto_close_ticket">False</field>
+        <field name="auto_close_day">7</field>
+        <field name="alias_name">rmc-dropshipping</field>
+        <field name="alias_domain">localhost</field>
+        <field name="member_ids" eval="[(4, ref('base.user_admin'))]"/>
+    </record>
+    </data>
+</odoo>

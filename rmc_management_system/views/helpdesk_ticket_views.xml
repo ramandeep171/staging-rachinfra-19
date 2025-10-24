@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action for Field Service Tasks from Ticket -->
+    <record id="action_rmc_field_service_task_from_ticket" model="ir.actions.act_window">
+        <field name="name">Field Service Tasks</field>
+        <field name="res_model">rmc.field.service.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_rmc_field_service_task_list"/>
+        <field name="search_view_id" ref="view_rmc_field_service_task_search"/>
+        <field name="domain">[('ticket_id', '=', active_id)]</field>
+        <field name="context">{'default_ticket_id': active_id}</field>
+        <field name="help">Field Service Tasks for this Helpdesk Ticket.</field>
+    </record>
+
+    <!-- Helpdesk Cancel Wizard View and Action -->
+    <record id="view_helpdesk_ticket_cancel_wizard_form" model="ir.ui.view">
+        <field name="name">helpdesk.ticket.cancel.wizard.form</field>
+        <field name="model">helpdesk.ticket.cancel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cancel Ticket">
+                <group>
+                    <field name="ticket_id" readonly="1"/>
+                    <field name="reason_category" required="1"/>
+                    <field name="reason" required="1" placeholder="Write the detailed reason"/>
+                </group>
+                <footer>
+                    <button name="action_confirm_cancel" string="Confirm Cancel" type="object" class="btn-danger"/>
+                    <button string="Close" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_helpdesk_ticket_cancel_wizard" model="ir.actions.act_window">
+        <field name="name">Cancel Ticket</field>
+        <field name="res_model">helpdesk.ticket.cancel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+        <field name="view_id" ref="view_helpdesk_ticket_cancel_wizard_form"/>
+    </record>
+
+    <record id="view_helpdesk_ticket_form_inherit_rmc" model="ir.ui.view">
+        <field name="name">helpdesk.ticket.form.inherit.rmc</field>
+        <field name="model">helpdesk.ticket</field>
+        <field name="inherit_id" ref="helpdesk.helpdesk_ticket_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+        <button name="action_create_field_service_task" string="Create Field Service Task" type="object" class="btn-primary" 
+            modifiers="{&quot;invisible&quot;: [[&quot;fsm_task_id&quot;, &quot;!=&quot;, False]]}"/>
+       
+                <button name="action_open_divert_ticket_wizard" string="Divert Ticket" type="object" class="btn-warning"
+                  invisible="show_divert_button == False"/>
+                <button name="action_open_cancel_ticket_wizard" string="Cancel" type="object" class="btn-secondary"
+                    modifiers="{&quot;invisible&quot;: [[&quot;show_divert_button&quot;, &quot;=&quot;, True]]}"/>
+                <!-- Plant Breakdown handled via Divert wizard PB mode -->
+             
+               
+            </xpath>
+            <xpath expr="//sheet/div[@class='oe_title']" position="after">
+                <div class="oe_subtitle">
+                    <field name="rmc_status" widget="statusbar"/>
+                </div>
+            </xpath>
+            <xpath expr="//sheet/notebook" position="before">
+                <group string="RMC Summary" name="rmc_summary_group">
+                    <field name="rmc_quantity"/>
+                    <field name="rmc_qty_delivered" readonly="1"/>
+                    <field name="rmc_qty_remaining" readonly="1"/>
+                </group>
+            </xpath>
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="RMC Details">
+                    <group>
+                        <field name="workorder_id" readonly="1"/>
+                        <field name="rmc_quantity"/>
+                        <field name="rmc_qty_delivered" readonly="1"/>
+                        <field name="rmc_qty_remaining" readonly="1"/>
+                        <field name="sale_order_id"/>
+                        <field name="assigned_subcontractor_id"/>
+                        <field name="distance_to_site"/>
+                        <field name="transport_subcontractor_id"/>
+               <field name="transporter_id"
+                   domain="[('subcontractor_id','=', domain_transport_subcontractor_id)]"/>
+                        <field name="cancel_reason_category" readonly="1"/>
+                        <field name="cancel_reason" readonly="1"/>
+                        <field name="last_diverted_ticket_name" readonly="1"/>
+                        <field name="diverted_from_ticket_name" readonly="1"/>
+                        <field name="fsm_task_id" readonly="1"/>
+                        <field name="is_field_service_created" readonly="1"/>
+                    </group>
+                    <group string="Batches">
+                        <field name="batch_ids" readonly="True"/>
+                    </group>
+                    <group string="References">
+                        <field name="delivery_track_ids" readonly="1"/>
+                        <field name="docket_ids" readonly="1"/>
+                        <field name="truck_loading_ids" readonly="1"/>
+                        <field name="plant_check_ids" readonly="1"/>
+                        <field name="delivery_variance_ids" readonly="1"/>
+                        <field name="docket_batch_ids" readonly="1"/>
+                    </group>
+                    <group string="Field Service Tasks">
+                        <field name="field_service_task_ids" readonly="True"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Optional: set default order to show In Progress tickets on top in tree view (inherits base) -->
+    <record id="view_helpdesk_ticket_tree_inherit_rmc_order" model="ir.ui.view">
+        <field name="name">helpdesk.ticket.tree.inherit.rmc.order</field>
+        <field name="model">helpdesk.ticket</field>
+    <field name="inherit_id" ref="helpdesk.helpdesk_tickets_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="/list" position="attributes">
+                <attribute name="default_order">is_in_progress_stage desc, rmc_status desc, priority desc, create_date desc</attribute>
+            </xpath>
+            <xpath expr="/list" position="inside">
+                <field name="workorder_id"/>
+                <field name="is_field_service_created"/>
+                <field name="rmc_quantity"/>
+                <field name="rmc_qty_delivered"/>
+                <field name="rmc_qty_remaining"/>
+            </xpath>
+        </field>
+    </record>
+    
+    <!-- Wizard View -->
+    <record id="view_rmc_subcontractor_assignment_wizard_form" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.assignment.wizard.form</field>
+        <field name="model">rmc.subcontractor.assignment.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="ticket_id" readonly="True"/>
+                    <field name="suggested_subcontractor_id" readonly="True"/>
+                    <field name="subcontractor_id"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Assign" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

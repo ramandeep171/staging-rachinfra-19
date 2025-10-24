@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="action_report_rmc_invoice" model="ir.actions.report">
+        <field name="name">RMC Invoice</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">rmc_management_system.rmc_invoice_report</field>
+        <field name="report_file">rmc_management_system.rmc_invoice_report</field>
+        <field name="print_report_name">'(inv_' + (object.name or '').replace('/','_') + ')'</field>
+        <field name="attachment_use">True</field>
+        <field name="attachment">'(inv_' + (object.name or '').replace('/','_') + ').pdf'</field>
+        <field name="is_invoice_report">True</field>
+    </record>
+    
+    <record id="action_report_rmc_invoice_html" model="ir.actions.report">
+        <field name="name">RMC Invoice (HTML)</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-html</field>
+        <field name="report_name">rmc_management_system.rmc_invoice_report</field>
+        <field name="report_file">rmc_management_system.rmc_invoice_report</field>
+        <field name="print_report_name">'(inv_' + (object.name or '').replace('/','_') + ')'</field>
+        <field name="is_invoice_report">True</field>
+    </record>
+    <template id="rmc_invoice_report">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page ">
+                        <style>
+                            /* Compact base font for the whole page */
+                            .page { font-size: 11px; line-height: 1.25; width: 90%; margin: 0 auto; }
+                            table.rmc-bordered {
+                                width: 100%;
+                                border-collapse: collapse;
+                                page-break-inside: auto;
+                                font-size: 11px;
+                            }
+                            table.rmc-bordered th, table.rmc-bordered td {
+                                border: 1px solid #000;
+                                padding: 2px 4px;
+                                font-size: 11px;
+                            }
+                            table.rmc-bordered thead th {
+                                background: #f2f2f2;
+                            }
+                            table.rmc-bordered tr {
+                                page-break-inside: avoid;
+                                page-break-after: auto;
+                            }
+                            /* Reduce heading and list spacing to avoid premature page breaks */
+                            h3 { margin: 6px 0 4px; }
+                            h4 { margin: 4px 0 3px; }
+                            ul { margin: 4px 0 6px; padding-left: 18px; page-break-inside: auto; }
+                            ul li { page-break-inside: avoid; }
+                            /* Prevent large gaps caused by orphan controls */
+                            .rmc-avoid-break { page-break-inside: avoid; }
+                            h3 { 
+                                text-align: center;
+                                font-size: 22px;
+                            }
+                            h4 {
+                                font-size: 20px;
+                            }
+                        </style>
+                        <!-- Page 1: Common Invoice Fields -->
+                        <h3>Header Section</h3>
+                        <table class="table table-condensed rmc-bordered">
+                            <colgroup>
+                                <col style="width:25%"/>
+                                <col style="width:25%"/>
+                                <col style="width:25%"/>
+                                <col style="width:25%"/>
+                            </colgroup>
+                            <tr>
+                                <td><strong>GSTIN:</strong> <t t-esc="(doc.company_id and doc.company_id.vat) or ''"/></td>
+                                <td><strong>Invoice Number:</strong> <t t-esc="doc.name"/></td>
+                                <td><strong>Invoice Date:</strong> <t t-esc="doc.invoice_date"/></td>
+                                <td><strong>CIN:</strong> [Your CIN]</td>
+                            </tr>
+                            <tr>
+                              <td ><strong>Recipient Code No:</strong> [Your Recipient Code No]</td>
+                                <td ><strong>IRN:</strong> [Your IRN]</td>
+                                
+                            </tr>
+                                                        <tr>
+                                                        <td>
+                                                            <li><strong>Company Name:</strong> <t t-esc="doc.company_id and doc.company_id.name or ''"/></li>
+                                                                <li><strong>Company Address:</strong>
+                                                                        <t t-if="doc.company_id and doc.company_id.partner_id">
+                                                                                <t t-set="c1" t-value="doc.company_id.partner_id.street or ''"/>
+                                                                                <t t-set="c2" t-value="doc.company_id.partner_id.street2 or ''"/>
+                                                                                <t t-set="c3" t-value="doc.company_id.partner_id.city or ''"/>
+                                                                                <t t-set="c4" t-value="(doc.company_id.partner_id.state_id and doc.company_id.partner_id.state_id.name) or ''"/>
+                                                                                <t t-set="c5" t-value="doc.company_id.partner_id.zip or ''"/>
+                                                                                <t t-set="c6" t-value="(doc.company_id.partner_id.country_id and doc.company_id.partner_id.country_id.name) or ''"/>
+                                                                                <t t-esc="c1 + (', ' + c2 if c2 else '') + (', ' + c3 if c3 else '') + (', ' + c4 if c4 else '') + (', ' + c5 if c5 else '') + (', ' + c6 if c6 else '')"/>
+                                                                        </t>
+                                                                        <t t-else=""/>
+                                                                </li>
+                                                        </td>
+                                                         <td><strong>QR Code:</strong> <img t-att-src="'/report/barcode/?type=QR&amp;value=%s&amp;width=64&amp;height=64' % doc.name" style="width: 64px; height: 64px;"/></td>
+                                                        </tr>
+                            
+                            
+                        </table>
+
+                        <h3>Recipient Details</h3>
+                        <table class="table table-condensed rmc-bordered">
+                            <tr>
+                                <td><strong>Recipient Name:</strong> <t t-esc="doc.partner_id.name if doc.partner_id else ''"/></td>
+                                <td><strong>Recipient GSTIN:</strong> <t t-esc="doc.partner_id.vat if doc.partner_id else ''"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Recipient Address:</strong>
+                                    <t t-if="doc.partner_id">
+                                        <t t-set="s1" t-value="doc.partner_id.delivery_street or doc.partner_id.street or ''"/>
+                                        <t t-set="s2" t-value="doc.partner_id.delivery_city or doc.partner_id.city or ''"/>
+                                        <t t-set="s3" t-value="doc.partner_id.delivery_zip or doc.partner_id.zip or ''"/>
+                                        <t t-esc="s1 + (', ' + s2 if s2 else '') + (', ' + s3 if s3 else '')"/>
+                                    </t>
+                                    <t t-else=""/>
+                                </td>
+                                <td><strong>Place of Supply:</strong> <t t-esc="doc.partner_id.state_id.name if doc.partner_id and doc.partner_id.state_id else ''"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>State Code:</strong> <t t-esc="doc.partner_id.state_id.code if doc.partner_id and doc.partner_id.state_id else ''"/></td>
+                                <td></td>
+                            </tr>
+                        </table>
+
+                        <h3>Delivery Details</h3>
+                        <table class="table table-condensed rmc-bordered">
+                            <tr>
+                                <td><strong>LR Number:</strong> <t t-esc="doc.lr_number or 'LR/001'"/></td>
+                                <td><strong>Subcontractor Loading Point:</strong> </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Delivery Challan (DC) Number:</strong> <t t-esc="doc.delivery_challan_number or 'DC/001'"/></td>
+                                <td><strong>DC Date:</strong> <t t-esc="doc.delivery_date or doc.invoice_date"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Vehicle Number:</strong> <t t-esc="doc.vehicle_number or 'HR26AB1234'"/></td>
+                                <td><strong>Transporter Name:</strong> <t t-esc="doc.transporter_name or 'Transporter Name'"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Delivery Time:</strong> <t t-esc="doc.delivery_time or '05:30 AM'"/></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Driver Name:</strong> <t t-esc="doc.driver_name or 'Driver Name'"/></td>
+                                <td><strong>Driver Mobile Number:</strong> <t t-esc="doc.driver_mobile or '+91-9876543210'"/></td>
+                            </tr>
+                        </table>
+
+                        <h3>Product Details</h3>
+                        <table class="table table-condensed rmc-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Product Description</th>
+                                    <th>Quantity (m³)</th>
+                                    <th>Rate (₹/m³)</th>
+                                    <th>Unit</th>
+                                    <th>Basic Value (₹)</th>
+                                    <th>IGST (₹)</th>
+                                    <th>CGST (₹)</th>
+                                    <th>SGST (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.invoice_line_ids" t-as="line">
+                                    <tr>
+                                        <td><t t-esc="line.name"/></td>
+                                        <td><t t-esc="line.quantity"/></td>
+                                        <td><t t-esc="line.price_unit"/></td>
+                                        <td>m³</td>
+                                        <td><t t-esc="line.price_subtotal"/></td>
+                                        <td><t t-esc="line.tax_ids.amount * line.quantity * line.price_unit / 100 if line.tax_ids else 0"/></td>
+                                        <td><t t-esc="line.tax_ids.amount * line.quantity * line.price_unit / 200 if line.tax_ids else 0"/></td>
+                                        <td><t t-esc="line.tax_ids.amount * line.quantity * line.price_unit / 200 if line.tax_ids else 0"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5"></td>
+                                    <td><strong>Total Invoice Value:</strong> <t t-esc="doc.amount_total"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <ul class="rmc-avoid-break">
+                            <li><strong>Invoice Amount in Words:</strong> <t t-esc="doc.amount_total_words"/></li>
+                            <li>Certified that the particulars given above are true &amp; correct &amp; the amount indicated represents the price actually charged and there is no flow of any additional consideration directly or indirectly from the recipient</li>
+                        </ul>
+
+                        <h3>Payment Terms</h3>
+                        <ul>
+                            <li><strong>Payment Due Date:</strong> <t t-esc="doc.invoice_date_due"/></li>
+                            <t t-set="pm" t-value="(doc._fields.get('x_payment_method') and doc.x_payment_method) or (doc._fields.get('x_studio_payment_method') and doc.x_studio_payment_method) or (doc._fields.get('payment_method') and doc.payment_method) or (doc._fields.get('payment_mode_id') and doc.payment_mode_id and doc.payment_mode_id.name) or 'RTGS, NEFT, Cheque, UPI'"/>
+                            <li><strong>Payment Method:</strong> <t t-esc="pm"/></li>
+                            <li><strong>TDS Deduction:</strong> [TDS Details]</li>
+                            <li><strong>Interest Clause:</strong> 2\% penalty per month on late payment</li>
+                        </ul>
+
+                        <!-- Transport & Pump Details placed right below Payment Terms -->
+                        <h3>Transport &amp; Pump Details</h3>
+                        <t t-if="doc.docket_id and doc.docket_id.subcontractor_id">
+                            <table class="table table-condensed rmc-bordered">
+                                <tr>
+                                    <td><strong>Subcontractor:</strong> <t t-esc="doc.docket_id.subcontractor_id.name"/></td>
+                                    <td><strong>Vendor:</strong> <t t-esc="doc.docket_id.subcontractor_id.partner_id and doc.docket_id.subcontractor_id.partner_id.name or ''"/></td>
+                                </tr>
+                            </table>
+                            <!-- Combined Transport (left) and Pump (right) table -->
+                            <t t-set="transports" t-value="doc.docket_id.subcontractor_id.transport_ids"/>
+                            <t t-set="pumps" t-value="doc.docket_id.subcontractor_id.pump_ids"/>
+                            <t t-set="t_count" t-value="len(transports)"/>
+                            <t t-set="p_count" t-value="len(pumps)"/>
+                            <t t-set="max_count" t-value="t_count if t_count &gt;= p_count else p_count"/>
+
+                            <t t-if="t_count or p_count">
+                                <table class="table table-condensed rmc-bordered">
+                                    <tr>
+                                        <!-- Left box: Transport Vehicles -->
+                                        <td style="width:50%; vertical-align:top;">
+                                            <h4>Transport Vehicles</h4>
+                                            <table class="table table-condensed rmc-bordered">
+                                                <tbody>
+                                                    <t t-if="t_count">
+                                                        <t t-foreach="transports" t-as="trn">
+                                                            <tr>
+                                                                <th style="width:55%;">Code</th>
+                                                                <td><t t-esc="trn.transport_code or ''"/></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Vehicle Type</th>
+                                                                <td><t t-esc="trn.vehicle_type or ''"/></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Driver Name</th>
+                                                                <td><t t-esc="trn.driver_name or ''"/></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Driver Mobile</th>
+                                                                <td><t t-esc="trn.driver_mobile or ''"/></td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td colspan="2"></td>
+                                                            </tr>
+                                                        </t>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <tr><td colspan="2">No transport records.</td></tr>
+                                                    </t>
+                                                </tbody>
+                                            </table>
+                                        </td>
+
+                                        <!-- Right box: Pumps -->
+                                        <td style="width:50%; vertical-align:top;">
+                                            <h4>Pumps</h4>
+                                            <t t-if="doc.pump_required">
+                                                <table class="table table-condensed rmc-bordered">
+                                                    <tbody>
+                                                        <t t-if="p_count">
+                                                            <t t-foreach="pumps" t-as="pmp">
+                                                                <tr>
+                                                                    <th style="width:55%;">Pump Code</th>
+                                                                    <td><t t-esc="pmp.pump_code or ''"/></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Capacity (M3/hr)</th>
+                                                                    <td><t t-esc="pmp.pump_capacity or 0.0"/></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Operator Name</th>
+                                                                    <td><t t-esc="pmp.operator_name or ''"/></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <th>Operator Mobile</th>
+                                                                    <td><t t-esc="pmp.operator_mobile or ''"/></td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td colspan="2"></td>
+                                                                </tr>
+                                                            </t>
+                                                        </t>
+                                                        <t t-else="">
+                                                            <tr><td colspan="2">No pump records.</td></tr>
+                                                        </t>
+                                                    </tbody>
+                                                </table>
+                                            </t>
+                                            <t t-else="">
+                                                <div style="min-height:40px;"></div>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <p>No transport/pump details available.</p>
+                            </t>
+                        </t>
+                        <t t-else="">
+                            <p>No subcontractor transport/pump details available.</p>
+                        </t>
+
+                      
+                        <ul>
+                            <li><strong>Terms and Conditions:</strong> </li>
+                            <li>1.Subject to DELHI Jurisdiction.</li>
+                            <li>2.Payment against this invoice should be made by RTGS/NEFT/ACH/IMPS in favour of "RACH INFRASTRUCTURE (OPC) PRIVATE LIMITED". Payment against this Invoice  can also be made by Alc Payee Cheque/DD in favour of "RACH INFRASTRUCTURE (OPC) PRIVATE LIMITED" Payment can also be made at our Zonal Offices through Rupay Debit Card/UPI-BHIM UPI UPI QR Code/ BHIM UPI QR Code in favour of "RACH INFRASTRUCTURE (OPC) PRIVATE LIMITED".
+</li>
+                            <li>3.Payment Should be made in advance or within due period from the date of issue of this invoice, otherwise interest @18% p.a. Shall be charged on the outstanding amount from the due date</li>
+                            <li>4.TDS deducted by you as per Income Tax Act, shall be credited to your account by rachinfrastructure after receipt of TDS certificate. Consequential loss, if any will be to your account. </li>
+                            <li><strong>Authorized Signatory:</strong> [Name, Signature]</li>
+                            <li><strong>Company Stamp:</strong> [Stamp Placeholder]</li>
+                        </ul>
+
+                        <!-- Signature block: end of first page, aligned right -->
+                        <div class="rmc-signature" style="text-align:right; margin-top: 8px;">
+                            <t t-set="sign_name" t-value="(doc.company_id and doc.company_id._fields.get('authorized_signatory_name') and doc.company_id.authorized_signatory_name) or (doc.invoice_user_id and doc.invoice_user_id.name) or (doc.company_id and doc.company_id.name) or 'Authorized Signatory'"/>
+                            <t t-if="doc.company_id and doc.company_id._fields.get('authorized_signature') and doc.company_id.authorized_signature">
+                                <div>
+                                    <img t-att-src="image_data_uri(doc.company_id.authorized_signature)" style="height:40px;"/>
+                                </div>
+                            </t>
+                            <t t-elif="doc.company_id and doc.company_id.logo">
+                                <div>
+                                    <img t-att-src="image_data_uri(doc.company_id.logo)" style="height:40px; opacity:0.8;"/>
+                                </div>
+                            </t>
+                            <div><strong><t t-esc="sign_name"/></strong></div>
+                            <div>Authorized Signatory</div>
+                        </div>
+
+                        <!-- Page 2: Production Info Fields -->
+                        <div class="page">
+                            <h3>Production Details</h3>
+                            <table class="table table-condensed rmc-bordered">
+                    <tr>
+                    <td><strong>Batch Number:</strong> <t t-esc="doc.batch_number or 'BATCH001'"/></td>
+                        <td><strong>Batching Time:</strong> <t t-esc="doc.batching_time or '05:00 AM'"/></td>
+                    </tr>
+                                <tr>
+                                    <td><strong>Cement Type:</strong> OPC</td>
+                                    <td><strong>Minimum Cement Content:</strong> 320 kg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Maximum Water-Cement Ratio:</strong> 0.45</td>
+                                    <td><strong>Slump at Site:</strong> <t t-esc="doc.slump_at_site or 100"/> mm</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Admixture Added:</strong> Plasticizer (1.5 kg)</td>
+                                    <td><strong>Chemical Admixture Type:</strong> Plasticizer</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Mineral Admixture Type:</strong> Fly Ash</td>
+                                    <td><strong>Grade of Concrete:</strong> M20</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Delivery Time:</strong> <t t-esc="doc.delivery_time or '05:30 AM'"/></td>
+                                    <td><strong>Site Conditions:</strong> Clear Weather</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Air Content:</strong> 3\%</td>
+                                    <td><strong>Setting Time:</strong> Initial 120 min, Final 240 min</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Carbon Footprint:</strong> 150 kg CO₂</td>
+                                    <td><strong>Waste Management:</strong> 0.5\% recycled</td>
+                                </tr>
+                            </table>
+
+                            
+                            <h3> Rmc BatchDetails</h3>
+                            <table class="table table-condensed rmc-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Sr. No.</th>
+                                        <th>Raw Material</th>
+                                        <th>Code</th>
+                                        <th>Design Qty (kg)</th>
+                                        <th>%Mois/%Abs/Corr(Kg)</th>
+                                        <th>Corrected (Kg)</th>
+                                        <th>Required (Kg)</th>
+                                        <th>Batched (Kg)</th>
+                                        <th>Variance (Kg)</th>
+                                        <th>Variation (\%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-if="doc.docket_id and doc.docket_id.docket_line_ids">
+                                        <t t-set="sr" t-value="0"/>
+                                        <t t-foreach="doc.docket_id.docket_line_ids" t-as="line">
+                                            <t t-set="sr" t-value="sr + 1"/>
+                                            <t t-set="design_qty" t-value="line.design_qty or 0.0"/>
+                                            <t t-set="correction" t-value="line.Correction or 0.0"/>
+                                            <t t-set="corrected" t-value="line.Corrected or 0.0"/>
+                                            <t t-set="required_qty" t-value="line.Required or 0.0"/>
+                                            <t t-set="batched_qty" t-value="line.Batched or 0.0"/>
+                                            <t t-set="variance_qty" t-value="line.variance or 0.0"/>
+                                            <t t-set="variance_pct" t-value="line.variance_percentage or 0.0"/>
+                                            <tr>
+                                                <td><t t-esc="sr"/></td>
+                                                <td><t t-esc="line.material_name or ''"/></td>
+                                                <td><t t-esc="line.material_code or ''"/></td>
+                                                <td><t t-esc="design_qty"/></td>
+                                                <td><t t-esc="correction"/></td>
+                                                <td><t t-esc="corrected"/></td>
+                                                <td><t t-esc="required_qty"/></td>
+                                                <td><t t-esc="batched_qty"/></td>
+                                                <td><t t-esc="variance_qty"/></td>
+                                                <td><t t-esc="variance_pct"/></td>
+                                            </tr>
+                                        </t>
+                                    </t>
+                                    <t t-else="">
+                                        <tr>
+                                            <td colspan="10">No raw material details available.</td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+
+                            <h3>Quality Testing Information</h3>
+                            <table class="table table-condensed rmc-bordered">
+                                <tr>
+                                    <td><strong>Compressive Strength:</strong> </td>
+                                    <td>25 MPa</td>
+                                    
+                                    
+                                </tr>
+                                <tr>
+                                <td><strong>Density:</strong> </td>
+                                    <td>2400 kg/m³</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Workability:</strong>  </td>
+                                    <td>Slump <t t-esc="doc.slump_at_site or 100"/> mm</td>
+                                    
+                                </tr>
+                                <tr>
+                                 <td><strong>Temperature:</strong> </td>
+                                    <td>28°C</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Testing Standards:</strong> </td>
+                                    <td>IS 456, IS 4926</td>
+                                </tr>
+                                
+                            </table>
+
+                            <h3>Customer Acknowledgment</h3>
+                            <p>We here by confirm that we have received_______cubic metres/Sq. ft. of UltraTech RMC in good condition along with Tax Invoice, as per below details,</p>
+                            <table class="table table-condensed rmc-bordered">
+                                <tr>
+                                    <td><strong>Customer Firm Name:</strong></td>
+                                    <td><t t-esc="(doc.partner_id.parent_id.name if doc.partner_id and doc.partner_id.parent_id else (doc.partner_id.name if doc.partner_id else ''))"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Name of Receiver:</strong></td>
+                                    <td>[Receiver Name]</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Position/Role of Receiver:</strong></td>
+                                    <td>Site Engineer</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Mobile Number of Receiver:</strong></td>
+                                    <td><t t-esc="doc.receiver_mobile or '+91-9876543210'"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Signature of Receiver:</strong></td>
+                                    <td>[Signature Placeholder]</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rubber Stamp:</strong></td>
+                                    <td>[Stamp Placeholder]</td>
+                                </tr>
+                            </table>
+
+                            <h3>Additional Notes</h3>
+                            <ul>
+                                <li><strong>1.Cautionary Notes:</strong> WET CEMENT AND CONCERETE ARE CAUSTIC MATERIAL WHICH CAN CAUSE SERIOUS SKIN INJURY. TO AVOID RISK OF SUCH INJURY, PROTECTIVE CLOTHING (GLOVES, BOOTS ETC.) SHOULD BE WORN AT ALL TIMES DURING HANDLING OPERATION, WHERE DIRECT SKIN CONTACT OCCURS, IT SHOULD BE WASHED THOROUGHLY WITH CLEAN WATER, PROLONGED SKIN CONTACT SHOULD BE AVOIDED. COMPANY IS NOT RESPONSIBLE FOR THE SLUMP, STRENGTH OR QUALITY OF THE CONCRETE WHEN WATER HAS BEEN ADDED AT THE SITE ON THE REQUEST OF THE CUSTOMER.</li>
+                                <li><strong>2.Warranty Disclaimer:</strong>  UltraTech Cement Limited warrant that the products identified are in accordance with appropriate BIS specification. No one is authorized to make any modification or additions to this warranty. UltraTech Cement Limited makes no warranty or representation, either expressed or implied with respect to this product and disclaims any implied warranty or merchantability or fitness for particular purpose, as Ultratech Cement Limited has no control over the other ingredients mixed with the products, the final application or the finished work. In no event shall UltraTech Cement Limited be liable for direct, indirect, special, incidental or consequential damages, including without limitation, loss of profit or earnings arising out of the use of this product, even if you are notified or advised of the possibilities of such damages. In no case shall Ultratech Cement Limited#s liability exceed the purchase price of the product.</li>
+                                <li>3.If necessary, additional dose of admixture may be added at project site to regain the workability of concrete with the mutual agreement between the consignor and the consignee.</li>
+                                <li>4.Once Goods are loaded in Vehicle, the Goods will not be taken back.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+    </data>
+</odoo>

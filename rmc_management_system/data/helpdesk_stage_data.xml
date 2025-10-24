@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Helpdesk Stage: Diverted (scoped to RMC Dropshipping Workorders team) -->
+        <record id="helpdesk_stage_diverted_rmc" model="helpdesk.stage">
+            <field name="name">Diverted</field>
+            <field name="sequence" eval="35"/>
+            <field name="fold" eval="False"/>
+            <field name="team_ids" eval="[(6, 0, [ref('rmc_management_system.helpdesk_team_rmc_dropshipping')])]"/>
+        </record>
+    </data>
+</odoo>

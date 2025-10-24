@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_rmc_weighbridge_list" model="ir.ui.view">
+        <field name="name">rmc.weighbridge.list</field>
+        <field name="model">rmc.weighbridge</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="transaction_date"/>
+                <field name="sale_order_id"/>
+                <field name="batch_id"/>
+                <field name="subcontractor_id"/>
+                <field name="vehicle_number"/>
+                <field name="plant_net_weight"/>
+                <field name="customer_net_weight"/>
+                <field name="weight_variance"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_weighbridge_form" model="ir.ui.view">
+        <field name="name">rmc.weighbridge.form</field>
+        <field name="model">rmc.weighbridge</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="transaction_date"/>
+                        <field name="sale_order_id"/>
+                        <field name="batch_id"/>
+                        <field name="subcontractor_id"/>
+                        <field name="vehicle_number"/>
+                        <field name="driver_name"/>
+                        <field name="driver_mobile"/>
+                        <field name="transporter"/>
+                        <field name="plant_empty_weight"/>
+                        <field name="plant_loaded_weight"/>
+                        <field name="plant_net_weight"/>
+                        <field name="customer_empty_weight"/>
+                        <field name="customer_loaded_weight"/>
+                        <field name="customer_net_weight"/>
+                        <field name="weight_variance"/>
+                        <field name="variance_percentage"/>
+                        <field name="tolerance_percentage"/>
+                        <field name="variance_action"/>
+                        <field name="kanta_parchi"/>
+                        <field name="delivery_challan"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_rmc_weighbridge" model="ir.actions.act_window">
+        <field name="name">RMC Weighbridge</field>
+        <field name="res_model">rmc.weighbridge</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    </data>
+</odoo>

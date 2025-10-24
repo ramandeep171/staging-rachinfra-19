@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend fleet vehicle form to show RMC fields -->
+    <record id="view_fleet_vehicle_form_rmc" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.rmc</field>
+        <field name="model">fleet.vehicle</field>
+        <!-- correct inherit id from fleet module -->
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <!-- insert RMC mapping before the notebook so it exists across fleet versions -->
+            <xpath expr="//sheet/notebook" position="before">
+                <group name="rmc_info" string="RMC Mapping">
+                    <field name="rmc_plant_id"/>
+                    <field name="rmc_category"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_move_form_inherit_rmc" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.rmc</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_print_rmc_invoice"
+                        type="object"
+                        string="Print RMC Invoice"
+                        class="oe_highlight"
+                        modifiers='{"invisible": ["|", ["is_rmc_product", "=", false], ["move_type", "not in", ["out_invoice", "out_refund"]]]}'/>
+            </xpath>
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="RMC Details" modifiers="{&quot;invisible&quot;: [[&quot;is_rmc_product&quot;, &quot;=&quot;, false]]}">
+                    <group>
+                        <field name="docket_id"/>
+                        <field name="plant_check_id"/>
+                        <field name="delivery_challan_number"/>
+                        <field name="delivery_date"/>
+                        <field name="vehicle_number"/>
+                        <field name="transporter_name"/>
+                        <field name="driver_name"/>
+                        <field name="driver_mobile"/>
+                        <field name="batch_number"/>
+                        <field name="batching_time"/>
+                        <field name="delivery_time"/>
+                        <field name="slump_at_site"/>
+                        <field name="receiver_mobile"/>
+                        <separator string="Pump"/>
+                        <field name="pump_required"/>
+                        <field name="pump_provider_name"/>
+                        <field name="pump_code"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    </data>
+</odoo>

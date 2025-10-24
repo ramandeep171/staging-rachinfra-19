@@ -1,0 +1,12 @@
+<odoo>
+    <record id="ir_cron_auto_operator_day_report" model="ir.cron">
+        <field name="name">Generate Operator Day Reports</field>
+        <field name="model_id" ref="model_rmc_operator_day_report"/>
+        <field name="state">code</field>
+        <field name="code">model.sudo().cron_generate_day_reports()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+        <field name="nextcall" eval="(DateTime.now() + relativedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+</odoo>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_rmc_docket_list" model="ir.ui.view">
+        <field name="name">rmc.docket.list</field>
+        <field name="model">rmc.docket</field>
+    <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="docket_number"/>
+                <field name="docket_date"/>
+                <field name="current_capacity"/>
+               
+                <field name="sale_order_id"/>
+                <field name="quantity_ordered"/>
+                <field name="quantity_produced"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_docket_form" model="ir.ui.view">
+        <field name="name">rmc.docket.form</field>
+        <field name="model">rmc.docket</field>
+    <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"/>
+                    <!-- <button name="action_generate_batches" type="object" string="Generate Batches" class="oe_highlight"/> -->
+                     <button name="action_create_truck_loading" string="Create Truck Loading" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_manufacturing_ready" string="Manufacturing is Ready" type="object" class="btn-primary" invisible="state != 'in_production'"/>
+                </header>
+                <sheet>
+                 <group>
+                    <group>
+                        <field name="name"/>
+                        <field name="has_truck_loading" invisible="1"/>
+                        <field name="docket_number" readonly="has_truck_loading=='False'"/>
+                        <field name="docket_date"/>
+                        <field name="sale_order_id"/>
+                        <field name="workorder_id" options='{"no_create": true}' context="{'default_sale_order_id': sale_order_id}"/>
+                        <field name="helpdesk_ticket_id"/>
+                        <field name="subcontractor_id"/>
+                        <field name="subcontractor_transport_id" invisible="has_truck_loading=='False'"/>
+                        <field name="subcontractor_plant_id"/>
+                        <field name="recipe_id" readonly="1"/>
+                        <field name="concrete_grade"/>
+                        <field name="current_capacity"/>
+                        <!-- <field name="current_truck_loading_id" readonly="1"/> -->
+                        <field name="current_plant_check_id" readonly="1"/>
+
+                    </group>
+
+                  <group string="Production Details">
+                        <field name="quantity_ordered"/>
+                        <field name="quantity_ticket" readonly="1"/>
+                        <field name="quantity_produced"/>
+                        <field name="cumulative_quantity"/>
+                        <field name="pour_structure"/>
+                        <field name="batching_time"/>
+                        <field name="water_ratio_actual"/>
+                        <field name="slump_flow_actual"/>
+                       
+                        <field name="notes"/>
+                    </group>
+                  
+                    </group>
+                   
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_open_truck_loadings" icon="fa-truck">
+                            <field string="Truck Loadings" name="truck_loading_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_plant_checks" icon="fa-industry">
+                            <field string="Plant Checks" name="plant_check_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_docket_batches" icon="fa-th-large">
+                            <field string="Batches" name="docket_batch_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_customer_invoice" icon="fa-file-pdf-o" modifiers='{"invisible": [["invoice_count", "=", 0]]}'>
+                            <field string="Invoice" name="invoice_count" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_vendor_bills" icon="fa-file-text-o">
+                            <field string="Vendor Bills" name="vendor_bill_count" widget="statinfo"/>
+                        </button>
+                    </div>
+
+                    <notebook>
+                        <page string="Docket Lines">
+                            <!-- use the standard one2many field; the detailed tree is registered below as a separate view for rmc.docket.line -->
+                            <field name="docket_line_ids"/>
+                        </page>
+                        <page string="Batches">
+                            <field name="docket_batch_ids"/>
+                        </page>
+                        <page string="Workorder">
+                            <group string="Workorder Tickets">
+                                <field name="workorder_ticket_ids" readonly="1" widget="one2many_list">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="quantity"/>
+                                        <field name="state"/>
+                                        <field name="delivery_date"/>
+                                        <field name="delivery_location"/>
+                                    </list>
+                                </field>
+                            </group>
+                            <group>
+                                <group string="Current Operations">
+                                    <!-- <field name="current_truck_loading_id" readonly="1"/> -->
+                                    <field name="current_plant_check_id" readonly="1"/>
+                                    <button name="action_create_truck_loading" string="Create Truck Loading" type="object" class="btn-primary"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Truck Loadings">
+                            <field name="truck_loading_ids"/>
+                        </page>
+                        <page string="Plant Checks">
+                            <field name="plant_check_ids"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+
+    <!-- Separate tree view for the one2many model so fields validate against rmc.docket.line -->
+    <record id="view_rmc_docket_line_tree" model="ir.ui.view">
+        <field name="name">rmc.docket.line.list</field>
+        <field name="model">rmc.docket.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="material_name"/>
+                <field name="material_code"/>
+                <field name="design_qty"/>
+                <field name="Correction"/>
+                <field name="Corrected"/>
+                <field name="Required"/>
+                <field name="Batched"/>
+                <field name="variance"/>
+                <field name="variance_percentage"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_rmc_docket" model="ir.actions.act_window">
+        <field name="name">RMC Dockets</field>
+        <field name="res_model">rmc.docket</field>
+        <field name="view_mode">list,form</field>
+        
+    </record>
+
+    <record id="view_rmc_batch_line_tree" model="ir.ui.view">
+        <field name="name">rmc.docket.batch.list</field>
+        <field name="model">rmc.docket.batch</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="batch_id"/>
+                <field name="batch_code"/>
+                <field name="ten_mm" sum="1"/>
+                <field name="twenty_mm" sum="1"/>
+                <field name="facs" sum="1"/>
+                <field name="water_batch" sum="1"/>
+                <field name="flyash" sum="1"/>
+                <field name="adm_plast" sum="1"/>
+                <field name="WATERR" sum="1"/>
+            </list>
+        </field>
+    </record>
+    </data>
+</odoo>

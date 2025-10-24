@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Existing menu items under RMC root (defined in rmc_root_menu.xml) -->
+    <menuitem id="menu_rmc_workorders" name="Workorders" parent="menu_rmc_root" action="action_dropshipping_workorder"/>
+    <menuitem id="menu_rmc_subcontractor" name="Subcontractors" parent="menu_rmc_root" action="action_rmc_subcontractor"/>
+  <!-- Batches menu removed as requested -->
+    <menuitem id="menu_rmc_dockets" name="Dockets" parent="menu_rmc_root" action="action_rmc_docket"/>
+    <menuitem id="menu_rmc_truck_loading" name="Truck Loadings" parent="menu_rmc_root" action="action_rmc_truck_loading"/>
+    <menuitem id="menu_rmc_plant_checks" name="Plant Checks" parent="menu_rmc_root" action="action_rmc_plant_check"/>
+  <menuitem id="menu_rmc_delivery_variances" name="Delivery Variances" parent="menu_rmc_root" action="action_rmc_delivery_variance"/>
+    <!-- Removed Recipes menu as unused -->
+    <!-- Removed Weighbridge and Quality Checks menus as unused -->
+    <menuitem id="menu_rmc_report" name="Reports" parent="menu_rmc_root"/>
+    <menuitem id="menu_rmc_report_consolidated" name="Consolidated" parent="menu_rmc_report" action="action_rmc_consolidated_report"/>
+    <menuitem id="menu_rmc_report_docket" name="Docket-wise" parent="menu_rmc_report" action="action_rmc_docket_report"/>
+    <menuitem id="menu_rmc_report_workorder" name="Workorder-wise" parent="menu_rmc_report" action="action_rmc_workorder_report"/>
+    <menuitem id="menu_rmc_report_saleorder" name="Sale Order-wise" parent="menu_rmc_report" action="action_rmc_saleorder_report"/>
+
+ <menuitem id="menu_rmc_material_balances" name="Material Balances" parent="menu_rmc_root" action="action_rmc_material_balance"/>
+    <!-- Cube Tests menus -->
+    <menuitem id="menu_quality_cube_test_root" name="Cube Tests" parent="menu_rmc_root" sequence="120"/>
+    <menuitem id="menu_quality_cube_tests" parent="menu_quality_cube_test_root" action="action_quality_cube_tests"/>
+
+</odoo>

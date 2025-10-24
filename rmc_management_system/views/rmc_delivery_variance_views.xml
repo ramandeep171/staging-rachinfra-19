@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Delivery Variance Views -->
+    <record id="view_rmc_delivery_variance_tree" model="ir.ui.view">
+        <field name="name">rmc.delivery_variance.list</field>
+        <field name="model">rmc.delivery_variance</field>
+    <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="truck_loading_id"/>
+                <field name="docket_id"/>
+                <field name="original_invoice_id"/>
+                <field name="site_weight"/>
+                <field name="weighbridge_weight"/>
+                <field name="variance_percentage"/>
+                <field name="reconciliation_status"/>
+                <field name="delivery_confirmation"/>
+                <field name="create_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rmc_delivery_variance_form" model="ir.ui.view">
+        <field name="name">rmc.delivery_variance.form</field>
+        <field name="model">rmc.delivery_variance</field>
+    <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_approve" string="Approve" type="object" class="btn-primary"
+                        modifiers='{"invisible": [["reconciliation_status","not in", ["pending","approved"]]]}'/>
+                    <button name="action_confirm_delivery" string="Confirm Delivery" type="object" class="oe_highlight"
+                        modifiers='{"invisible": [["reconciliation_status","!=","pending"], ["delivery_confirmation","=", true]]}'/>
+                    <field name="reconciliation_status" widget="statusbar" options='{"clickable": false}' statusbar_visible="pending,approved,reconciled,diverted,failed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        
+                        <group string="Delivery Information">
+                            <field name="truck_loading_id" readonly="1"/>
+                            <field name="docket_id" readonly="1"/>
+                            <field name="site_weight"/>
+                            <field name="delivery_confirmation" readonly="1"/>
+                             <field name="situation"/>
+                        </group>
+                        <group string="Weight Comparison">
+                            <field name="weighbridge_weight" readonly="1"/>
+                            <field name="net_weight" readonly="1"/>
+                            <field name="tolerance_percentage" readonly="1"/>
+                             <field name="diverted"  string="Went To Diverted" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Situation &amp; Ops Fields" invisible="situation != 'quality_failure'">
+                            <group>
+                                <field name="expected_qty"/>
+                                <field name="actual_qty"/>
+                                <field name="variance_qty" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="returned_qty"/>
+                                <field name="failed_qty"/>
+                                <field name="returned_value"/>
+                                <field name="failed_value"/>
+                            </group>
+                        </page>
+                        <page string="Diversion &amp; Delay" invisible="diverted == False">
+                            <group >
+                                <field name="divert_to_partner_id"/>
+                                <field name="diverted_qty"/>
+                            </group>
+                            <group>
+                                <field name="wait_hours"/>
+                                <field name="rate_per_hour"/>
+                                <field name="vendor_liability"/>
+                            </group>
+                        </page>
+                        <page string="Flags"  invisible="situation != 'doc_error' and situation != 'payment_dispute'">
+                  <group>
+        <field name="doc_error_flag"/>
+        <field name="payment_dispute_flag"/>
+    </group>
+</page>
+                        <page string="Reconciliation &amp; Variance Analysis" invisible="situation != 'weight_variance' and situation != 'partial_return'">
+                            <group>
+                                <group string="Variance Analysis">
+                                    <field name="variance_kg" readonly="1"/>
+                                    <field name="variance_percentage" readonly="1"/>
+                                    <field name="reconciliation_status" readonly="1"/>
+                                </group>
+                                <group string="Reconciliation Details">
+                                    <field name="reconciliation_date" readonly="1"/>
+                                    <field name="reconciled_by" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Documents &amp; Approval" invisible="situation != 'weight_variance' and situation != 'rejected_full' and situation != 'partial_return'">
+
+                            <group>
+                                <group string="Financial Documents">
+                                    <field name="original_invoice_id" readonly="1"/>
+                                    <field name="client_debit_note_id" readonly="1"/>
+                                    <field name="client_credit_note_id" readonly="1"/>
+                                </group>
+                                <group string="Vendor Documents">
+                                    <field name="original_vendor_bill_id"/>
+                                    <field name="vendor_debit_note_id" readonly="1"/>
+                                    <field name="vendor_credit_note_id" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Diversion Documents &amp; Approval" invisible="diverted == False" >
+                            <group>
+                                <group string="Diversion Documents">
+                                    <field name="diverted_client_invoice_id" readonly="1"/>
+                                    <field name="diverted_vendor_invoice_id" readonly="1"/>
+                                    <field name="notes"/>
+                                </group>
+                                <group string="Approval">
+                                    <field name="approved" readonly="1"/>
+                                    <field name="approved_by" readonly="1"/>
+                                    <field name="approved_date" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                   
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_rmc_delivery_variance" model="ir.actions.act_window">
+        <field name="name">Delivery Variances</field>
+        <field name="res_model">rmc.delivery_variance</field>
+        <field name="view_mode">list,form</field>
+        <field name="help">Manage delivery variances and reconciliations</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_rmc_delivery_variance"
+              name="Delivery Variances"
+              parent="menu_rmc_root"
+              action="action_rmc_delivery_variance"
+              sequence="60"/>
+</odoo>

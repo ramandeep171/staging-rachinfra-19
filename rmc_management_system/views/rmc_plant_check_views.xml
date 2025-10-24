@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Plant Check Form View -->
+    <record id="view_rmc_plant_check_form" model="ir.ui.view">
+        <field name="name">rmc.plant_check.form</field>
+        <field name="model">rmc.plant_check</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Plant Check">
+                <header>
+            <button name="action_complete_check" string="Complete Check" type="object"
+                class="btn-primary" modifiers="{&quot;invisible&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+            <button name="action_fail_check" string="Mark as Failed" type="object"
+                class="btn-danger" modifiers="{&quot;invisible&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                    <field name="check_status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Basic Information">
+                            <field name="truck_loading_id" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                            <field name="docket_id" readonly="1"/>
+                            <field name="check_date" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                            <field name="checked_by" readonly="1"/>
+                        </group>
+                        <group string="Weighbridge Information">
+                            <field name="initial_weight" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                            <field name="weighbridge_weight" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                            <field name="net_weight" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Quality Check">
+                            <field name="quality_slump" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                            <field name="quality_temperature" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                            <field name="quality_remarks" modifiers="{&quot;readonly&quot;: [[&quot;check_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                        </group>
+                        <group string="Completion">
+                            <field name="completed_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Related Batches">
+                            <field name="batch_ids" readonly="1"/>
+                        </page>
+                        <page string="Quality Checks">
+                            <field name="quality_check_ids" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Plant Check Tree View -->
+    <record id="view_rmc_plant_check_tree" model="ir.ui.view">
+        <field name="name">rmc.plant_check.list</field>
+        <field name="model">rmc.plant_check</field>
+    <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Plant Checks">
+                <field name="name"/>
+                <field name="truck_loading_id"/>
+                <field name="docket_id"/>
+                <field name="check_date"/>
+                <field name="check_status"/>
+                <field name="net_weight"/>
+                <field name="checked_by"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Plant Check Search View -->
+    <record id="view_rmc_plant_check_search" model="ir.ui.view">
+        <field name="name">rmc.plant_check.search</field>
+        <field name="model">rmc.plant_check</field>
+    <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search string="Plant Checks">
+                <field name="name"/>
+                <field name="truck_loading_id"/>
+                <field name="docket_id"/>
+                <field name="check_status"/>
+                <field name="checked_by"/>
+                <filter string="In Progress" name="in_progress" domain="[('check_status', '=', 'in_progress')]"/>
+                <filter string="Completed" name="completed" domain="[('check_status', '=', 'completed')]"/>
+                <filter string="Failed" name="failed" domain="[('check_status', '=', 'failed')]"/>
+                <separator/>
+                <filter string="Status" name="group_status" context="{'group_by': 'check_status'}"/>
+                <filter string="Checked By" name="group_checked_by" context="{'group_by': 'checked_by'}"/>
+                <filter string="Date" name="group_date" context="{'group_by': 'check_date'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Plant Check Action -->
+    <record id="action_rmc_plant_check" model="ir.actions.act_window">
+        <field name="name">Plant Checks</field>
+        <field name="res_model">rmc.plant_check</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_rmc_plant_check_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_rmc_plant_check_form')})]"/>
+        <field name="search_view_id" ref="view_rmc_plant_check_search"/>
+        <field name="help">Plant checks for RMC quality and weighbridge verification</field>
+    </record>
+</odoo>

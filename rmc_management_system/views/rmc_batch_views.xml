@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_rmc_batch_list" model="ir.ui.view">
+        <field name="name">rmc.batch.list</field>
+        <field name="model">rmc.batch</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="batch_number"/>
+                <field name="batch_date"/>
+                <field name="sale_order_id"/>
+                <field name="quantity_ordered"/>
+                <field name="quantity_produced"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_batch_form" model="ir.ui.view">
+        <field name="name">rmc.batch.form</field>
+        <field name="model">rmc.batch</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="batch_number"/>
+                        <field name="batch_date"/>
+                        <field name="sale_order_id"/>
+                        <field name="helpdesk_ticket_id"/>
+                        <field name="subcontractor_id"/>
+                        <field name="recipe_id"/>
+                        <field name="concrete_grade"/>
+                        <field name="quantity_ordered"/>
+                        <field name="quantity_produced"/>
+                        <field name="cumulative_quantity"/>
+                        <field name="pour_structure"/>
+                        <field name="batching_time"/>
+                        <field name="water_ratio_actual"/>
+                        <field name="slump_flow_actual"/>
+                        <field name="notes"/>
+                    </group>
+                    <notebook>
+                        <page string="Batch Lines">
+                            <field name="batch_line_ids">
+                                <list editable="bottom">
+                                    <field name="material_name"/>
+                                    <field name="material_code"/>
+                                    <field name="design_qty"/>
+                                    <field name="actual_qty"/>
+                                    <field name="tolerance_percentage"/>
+                                    <field name="variance"/>
+                                    <field name="variance_percentage"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_rmc_batch" model="ir.actions.act_window">
+        <field name="name">RMC Batches</field>
+        <field name="res_model">rmc.batch</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    </data>
+</odoo>

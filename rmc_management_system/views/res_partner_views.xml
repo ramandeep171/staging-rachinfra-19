@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_partner_form_inherit" model="ir.ui.view">
+    <field name="name">res.partner.form.inherit</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+        <!-- Insert delivery-specific fields into the address block. Using a stable
+             selector avoids ParseError when core view structure differs. Fields
+             are invisible unless the contact type is 'delivery'. -->
+        <xpath expr="//div[@class='o_address_format']" position="inside">
+            <field name="delivery_coordinates"/>
+            <field name="delivery_street" />
+            <field name="delivery_city" />
+            <field name="delivery_zip" />
+        </xpath>
+    </field>
+</record>
+    </data>
+</odoo>

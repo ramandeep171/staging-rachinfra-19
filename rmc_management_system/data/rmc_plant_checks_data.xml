@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequences for Plant Check and Truck Loading -->
+        <record id="seq_rmc_plant_check" model="ir.sequence">
+            <field name="name">RMC Plant Check</field>
+            <field name="code">rmc.plant_check</field>
+            <field name="prefix">PC/%(year)s/%(month)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <record id="seq_rmc_truck_loading" model="ir.sequence">
+            <field name="name">RMC Truck Loading</field>
+            <field name="code">rmc.truck_loading</field>
+            <field name="prefix">TL/%(year)s/%(month)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

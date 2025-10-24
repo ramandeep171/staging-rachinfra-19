@@ -1,0 +1,11 @@
+<odoo>
+  <record id="ir_cron_quality_cube_test_scheduler" model="ir.cron">
+    <field name="name">Cube Test Auto Ops</field>
+    <field name="model_id" ref="rmc_management_system.model_quality_cube_test"/>
+    <field name="state">code</field>
+    <field name="code">model.cron_generate_automatic_tests()</field>
+    <field name="active" eval="True"/>
+    <field name="interval_number">1</field>
+    <field name="interval_type">days</field>
+  </record>
+</odoo>

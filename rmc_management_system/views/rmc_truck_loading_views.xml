@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Truck Loading Tree View -->
+    <record id="view_rmc_truck_loading_tree" model="ir.ui.view">
+        <field name="name">rmc.truck_loading.list</field>
+        <field name="model">rmc.truck_loading</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Truck Loadings">
+                <field name="name"/>
+                <field name="docket_id"/>
+                <field name="subcontractor_id"/>
+                <field name="vehicle_id"/>
+                <field name="transport_code"/>
+                <field name="driver_name"/>
+                <field name="loading_date"/>
+                <field name="loading_status"/>
+                <field name="total_quantity"/>
+                <field name="loaded_by"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Truck Loading Search View -->
+    <record id="view_rmc_truck_loading_search" model="ir.ui.view">
+        <field name="name">rmc.truck_loading.search</field>
+        <field name="model">rmc.truck_loading</field>
+    <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search string="Truck Loadings">
+                <field name="name"/>
+                <field name="docket_id"/>
+                <field name="subcontractor_id"/>
+                <field name="vehicle_id"/>
+                <field name="transport_code"/>
+                <field name="driver_name"/>
+                <field name="loading_status"/>
+                <field name="loaded_by"/>
+                <filter string="Scheduled" name="scheduled" domain="[('loading_status', '=', 'scheduled')]"/>
+                <filter string="In Progress" name="in_progress" domain="[('loading_status', '=', 'in_progress')]"/>
+                <filter string="Completed" name="completed" domain="[('loading_status', '=', 'completed')]"/>
+                <separator/>
+                <filter string="Status" name="group_status" context="{'group_by': 'loading_status'}"/>
+                <filter string="Subcontractor" name="group_subcontractor" context="{'group_by': 'subcontractor_id'}"/>
+                <filter string="Loaded By" name="group_loaded_by" context="{'group_by': 'loaded_by'}"/>
+                <filter string="Date" name="group_date" context="{'group_by': 'loading_date'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Truck Loading Form View -->
+    <record id="view_rmc_truck_loading_form" model="ir.ui.view">
+        <field name="name">rmc.truck_loading.form</field>
+        <field name="model">rmc.truck_loading</field>
+    <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Truck Loading">
+                <header>
+            <button name="action_start_loading" string="Start Loading" type="object"
+                class="btn-primary" modifiers="{&quot;invisible&quot;: [[&quot;loading_status&quot;, &quot;!=&quot;, &quot;scheduled&quot;]]}"/>
+            <button name="action_complete_loading" string="Complete Loading" type="object"
+                class="btn-success" modifiers="{&quot;invisible&quot;: [[&quot;loading_status&quot;, &quot;!=&quot;, &quot;in_progress&quot;]]}"/>
+                    <field name="loading_status" widget="statusbar"/>
+                    <!-- Plant Breakdown handled via Divert wizard PB mode -->
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Basic Information">
+                            <field name="docket_id" modifiers="{&quot;readonly&quot;: [[&quot;loading_status&quot;, &quot;!=&quot;, &quot;scheduled&quot;]]}"/>
+                            <field name="subcontractor_id" readonly="1"/>
+                            <field name="subcontractor_transport_id" modifiers="{&quot;readonly&quot;: [[&quot;loading_status&quot;, &quot;!=&quot;, &quot;scheduled&quot;]]}"/>
+                            <field name="vehicle_id" modifiers="{&quot;readonly&quot;: [[&quot;loading_status&quot;, &quot;!=&quot;, &quot;scheduled&quot;]]}"/>
+                            <field name="loading_date" modifiers="{&quot;readonly&quot;: [[&quot;loading_status&quot;, &quot;!=&quot;, &quot;scheduled&quot;]]}"/>
+                            <field name="loaded_by" readonly="1"/>
+                        </group>
+                        <group string="Driver Information">
+                            <field name="transport_code" readonly="1"/>
+                            <field name="driver_name" readonly="1"/>
+                            <field name="driver_mobile" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Related Records">
+                            <field name="plant_check_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Batches">
+                            <field name="batch_ids" modifiers="{&quot;readonly&quot;: [[&quot;loading_status&quot;, &quot;=&quot;, &quot;completed&quot;]]}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Truck Loading Action -->
+    <record id="action_rmc_truck_loading" model="ir.actions.act_window">
+        <field name="name">Truck Loadings</field>
+        <field name="res_model">rmc.truck_loading</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_rmc_truck_loading_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_rmc_truck_loading_form')})]"/>
+        <field name="search_view_id" ref="view_rmc_truck_loading_search"/>
+        <field name="help">Truck loading records for RMC delivery</field>
+    </record>
+</odoo>

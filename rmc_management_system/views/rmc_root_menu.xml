@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root menu only; loaded early so other views can reference parent -->
+    <menuitem id="menu_rmc_root" name="RMC Management" parent="sale.sale_menu_root" sequence="10"/>
+</odoo>

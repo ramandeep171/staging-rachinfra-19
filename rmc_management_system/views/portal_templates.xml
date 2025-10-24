@@ -1,0 +1,1629 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_home_menu_rmc" inherit_id="portal.portal_my_home" name="Portal Menu - RMC">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-if="request.env.user.has_group('rmc_management_system.group_rmc_subcontractor_portal')">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Subcontractor Portal</t>
+                    <t t-set="text">Manage plants, fleet, operators</t>
+                    <t t-set="url" t-value="'/my/rmc/subcontractor'"/>
+                    <t t-set="bg_color" t-value="'bg-200'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+            <t t-if="request.env.user.has_group('rmc_management_system.group_rmc_operator_portal')">
+                <t t-call="portal.portal_docs_entry">
+                    <t t-set="title">Operator Portal</t>
+                    <t t-set="text">Today's dockets and day-end report</t>
+                    <t t-set="url" t-value="'/my/rmc/operator'"/>
+                    <t t-set="bg_color" t-value="'bg-200'"/>
+                    <t t-set="config_card" t-value="True"/>
+                </t>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_subcontractor_day_report">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/subcontractor">Subcontractor Portal</a></li>
+                <li class="breadcrumb-item">
+                    <a t-attf-href="/my/rmc/subcontractor/plant/{{ day_report.plant_id.id }}">
+                        Plant <t t-esc="day_report.plant_id.display_name"/>
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">Day Report</li>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h2 class="mb-1">Day Report - <span t-esc="day_report.report_date"/></h2>
+                        <div class="text-muted small">
+                            Plant: <span t-esc="day_report.plant_id.display_name"/>
+                            &#160;|&#160; Operator: <span t-esc="day_report.operator_user_id.name"/>
+                        </div>
+                    </div>
+                    <div class="text-md-end">
+                        <a t-attf-href="/my/rmc/subcontractor/day-report/{{ day_report.id }}/pdf" class="btn btn-primary">
+                            Download PDF
+                        </a>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" t-if="day_report.generated_automatically">
+                    This report was generated automatically from plant activity for the selected day.
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <p class="text-muted text-uppercase small mb-1">Total Jobs</p>
+                                <h3 class="fw-bold" t-esc="day_report.total_jobs"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <p class="text-muted text-uppercase small mb-1">Completed</p>
+                                <h3 class="fw-bold" t-esc="day_report.completed_jobs"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <p class="text-muted text-uppercase small mb-1">Pending</p>
+                                <h3 class="fw-bold" t-esc="day_report.pending_jobs"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <p class="text-muted text-uppercase small mb-1">Quantity (M³)</p>
+                                <h3 class="fw-bold" t-esc="'%.2f' % (day_report.total_quantity or 0.0)"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Dockets</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Docket</th>
+                                        <th>Workorder</th>
+                                        <th class="text-end">Quantity (M³)</th>
+                                        <th>Operator Status</th>
+                                        <th>Docket State</th>
+                                        <th class="text-end">Completed On</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="dockets" t-as="docket">
+                                        <td>
+                                            <a t-attf-href="/my/rmc/subcontractor/docket/{{ docket.id }}" class="text-decoration-none">
+                                                <t t-esc="docket.name or docket.docket_number or '-'"/>
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <t t-if="docket.workorder_id">
+                                                <a t-attf-href="/my/rmc/subcontractor/workorder/{{ docket.workorder_id.id }}" class="text-decoration-none">
+                                                    <t t-esc="docket.workorder_id.name"/>
+                                                </a>
+                                            </t>
+                                            <span t-else="" class="text-muted">-</span>
+                                        </td>
+                                        <td class="text-end" t-esc="'%.2f' % (docket.quantity_produced or 0.0)"/>
+                                        <td>
+                                            <span class="badge bg-secondary" t-esc="docket_portal_state_labels.get(docket.operator_portal_status, docket.operator_portal_status)"/>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark" t-esc="docket_state_labels.get(docket.state, docket.state)"/>
+                                        </td>
+                                        <td class="text-end" t-esc="docket.operator_completion_time or '-'"/>
+                                    </tr>
+                                    <tr t-if="not dockets">
+                                        <td colspan="6" class="text-center text-muted">No dockets recorded for this day.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm" t-if="day_report.remarks">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Remarks</h4>
+                        <p class="mb-0" t-esc="day_report.remarks"/>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_subcontractor_dashboard">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item active">Subcontractor Portal</li>
+            </t>
+            <div class="o_portal_wrap">
+                <h2 class="mb-3">Subcontractor Portal</h2>
+                <div class="row g-3 mb-4">
+                    <t t-set="metric_cards" t-value="[
+                        ('plants', 'Plants'),
+                        ('operators', 'Operators'),
+                        ('fleet', 'Fleet Vehicles'),
+                        ('pumps', 'Pumps'),
+                        ('jobs_today', 'Jobs Today'),
+                        ('active_workorders', 'Active Workorders'),
+                        ('open_tickets', 'Open Tickets'),
+                    ]"/>
+                    <div class="col-6 col-md-3 col-xl-2" t-foreach="metric_cards" t-as="metric_card">
+                        <t t-set="metric" t-value="metric_card[0]"/>
+                        <t t-set="metric_label" t-value="metric_card[1]"/>
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <p class="text-muted text-uppercase small mb-1" t-esc="metric_label"/>
+                                <h3 class="fw-bold" t-esc="totals[metric]"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Fleet Snapshot</h4>
+                                <p class="mb-1"><strong>Utilization Today:</strong> <span t-esc="fleet_utilization"/>%</p>
+                                <p class="mb-1"><strong>Fleet Vehicles:</strong> <span t-esc="totals['fleet']"/></p>
+                                <p class="mb-1"><strong>Pumps:</strong> <span t-esc="totals['pumps']"/></p>
+                                <p class="mb-1"><strong>Documents Due:</strong> <span t-esc="documents_due"/></p>
+                                <p class="mb-0"><strong>Fuel Drawn Today:</strong> <span t-esc="fuel_litres"/> L</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Profile</h4>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Name:</strong> <span t-esc="subcontractor.name"/></p>
+                                        <p class="mb-1"><strong>Code:</strong> <span t-esc="subcontractor.subcontractor_code"/></p>
+                                        <p class="mb-1"><strong>GST/CIN:</strong> <span t-esc="subcontractor.partner_id.vat or '-'"/></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Contact:</strong> <span t-esc="subcontractor.contact_person or subcontractor.partner_id.name"/></p>
+                                        <p class="mb-1"><strong>Email:</strong> <span t-esc="subcontractor.contact_email or subcontractor.partner_id.email or '-'"/></p>
+                                        <p class="mb-1"><strong>Phone:</strong> <span t-esc="subcontractor.contact_mobile or subcontractor.partner_id.phone or '-'"/></p>
+                                    </div>
+                                </div>
+                                <p class="mb-0 text-muted" t-if="subcontractor.notes"><small t-esc="subcontractor.notes"/></p>
+                            </div>
+                        </div>
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Plants &amp; Operators</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Plant</th>
+                                                <th>Email</th>
+                                                <th>Operator User</th>
+                                                <th>Status</th>
+                                                <th class="text-end">Reports</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="plants" t-as="plant">
+                                                <td>
+                                                    <a t-attf-href="/my/rmc/subcontractor/plant/{{ plant.id }}" t-esc="plant.plant_code or plant.location"/>
+                                                </td>
+                                                <td t-esc="plant.operator_portal_email or '-'"/>
+                                                <td t-esc="plant.operator_user_id.name or '-'"/>
+                                                <td>
+                                                    <span t-if="plant.operator_portal_enabled" class="badge bg-success">Enabled</span>
+                                                    <span t-else="" class="badge bg-secondary">Disabled</span>
+                                                </td>
+                                                <td class="text-end" t-esc="len(plant.day_report_ids)"/>
+                                            </tr>
+                                            <tr t-if="not plants">
+                                                <td colspan="5" class="text-center text-muted">No plants configured.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Fleet &amp; Driver Performance</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Vehicle</th>
+                                        <th>Type</th>
+                                        <th>Plant</th>
+                                        <th>Driver</th>
+                                        <th class="text-center">Jobs Completed</th>
+                                        <th class="text-center">Jobs Today</th>
+                                        <th class="text-center">Efficiency</th>
+                                        <th class="text-center">Fuel (L)</th>
+                                        <th class="text-center">Docs Due</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="transports" t-as="transport">
+                                        <td t-esc="transport.transport_code"/>
+                                        <td t-esc="dict(transport._fields['vehicle_type'].selection).get(transport.vehicle_type, 'Other')"/>
+                                        <td t-esc="transport.plant_id.plant_code or '-'"/>
+                                        <td t-esc="transport.driver_name or '-'"/>
+                                        <td class="text-center" t-esc="transport.jobs_completed"/>
+                                        <td class="text-center" t-esc="transport.jobs_today"/>
+                                        <td class="text-center" t-esc="'%.2f' % transport.efficiency_score if transport.efficiency_score else '0.00'"/>
+                                        <td class="text-center" t-esc="transport.fuel_consumed_litres"/>
+                                        <td class="text-center">
+                                            <span t-if="transport.documents_due_count" class="badge bg-warning text-dark" t-esc="transport.documents_due_count"/>
+                                            <span t-else="" class="text-muted">0</span>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not transports">
+                                        <td colspan="8" class="text-center text-muted">No active fleet linked.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Pump Fleet</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Pump</th>
+                                        <th>Plant</th>
+                                        <th class="text-center">Capacity (M³/hr)</th>
+                                        <th>Operator</th>
+                                        <th>Contact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="pumps" t-as="pump">
+                                        <td t-esc="pump.pump_code"/>
+                                        <td t-esc="pump.plant_id.plant_code or '-'"/>
+                                        <td class="text-center" t-esc="pump.pump_capacity or 0.0"/>
+                                        <td t-esc="pump.operator_name or '-'"/>
+                                        <td>
+                                            <div><span t-esc="pump.operator_mobile or '-'"/></div>
+                                            <div><small class="text-muted" t-esc="pump.operator_email or ''"/></div>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not pumps">
+                                        <td colspan="5" class="text-center text-muted">No pumps registered.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Active Workorders</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Workorder</th>
+                                                <th>Sale Order</th>
+                                                <th class="text-end">Ordered (M³)</th>
+                                                <th class="text-end">Delivered</th>
+                                                <th class="text-end">Remaining</th>
+                                                <th>Status</th>
+                                                <th>Delivery</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                    <tr t-foreach="workorders_active" t-as="wo">
+                                                <td>
+                                                    <a t-attf-href="/my/rmc/subcontractor/workorder/{{ wo.id }}" class="text-decoration-none fw-semibold">
+                                                        <t t-esc="wo.name"/>
+                                                    </a>
+                                                </td>
+                                                <td><t t-esc="wo.sale_order_id.name or '-'"/></td>
+                                                <td class="text-end"><t t-esc="'%.2f' % (wo.quantity_ordered or 0.0)"/></td>
+                                                <td class="text-end"><t t-esc="'%.2f' % (wo.quantity_delivered or 0.0)"/></td>
+                                                <td class="text-end"><t t-esc="'%.2f' % (wo.quantity_remaining or 0.0)"/></td>
+                                                <td><t t-esc="dict(wo._fields['state'].selection).get(wo.state, wo.state)"/></td>
+                                                <td><t t-esc="wo.delivery_date or '-'"/></td>
+                                            </tr>
+                                            <tr t-if="not workorders_active">
+                                                <td colspan="7" class="text-center text-muted">No active workorders.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Open Tickets</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Ticket</th>
+                                                <th>Workorder</th>
+                                                <th class="text-end">Quantity (M³)</th>
+                                                <th>Status</th>
+                                                <th>Delivery Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                    <tr t-foreach="tickets_open" t-as="wo_ticket">
+                                                <td>
+                                                    <a t-attf-href="/my/rmc/subcontractor/ticket/{{ wo_ticket.id }}" class="text-decoration-none">
+                                                        <t t-esc="wo_ticket.name"/>
+                                                    </a>
+                                                </td>
+                                                <td><t t-esc="wo_ticket.workorder_id.name or '-'"/></td>
+                                                <td class="text-end"><t t-esc="'%.2f' % (wo_ticket.quantity or 0.0)"/></td>
+                                                <td><t t-esc="dict(wo_ticket._fields['state'].selection).get(wo_ticket.state, wo_ticket.state)"/></td>
+                                                <td><t t-esc="wo_ticket.delivery_date or '-'"/></td>
+                                            </tr>
+                                            <tr t-if="not tickets_open">
+                                                <td colspan="5" class="text-center text-muted">No open tickets.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Fleet Documents</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Vehicle</th>
+                                        <th>Document</th>
+                                        <th>Type</th>
+                                        <th>Expiry</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="transports.mapped('document_ids')" t-as="document">
+                                        <td t-esc="document.transport_id.transport_code"/>
+                                        <td t-esc="document.name"/>
+                                        <td t-esc="dict(document._fields['document_type'].selection).get(document.document_type)"/>
+                                        <td t-esc="document.expiry_date or '-'"/>
+                                        <td class="text-center">
+                                            <span t-if="document.is_expired" class="badge bg-danger">Expired</span>
+                                            <span t-elif="document.days_to_expiry is not False and document.days_to_expiry &lt;= document.reminder_days" class="badge bg-warning text-dark">
+                                                Due Soon (
+                                                <t t-esc="document.days_to_expiry"/>
+                                                d )
+                                            </span>
+                                            <span t-else="" class="badge bg-success">Valid</span>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not transports.mapped('document_ids')">
+                                        <td colspan="5" class="text-center text-muted">No documents uploaded.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_subcontractor_plant">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/subcontractor">Subcontractor Portal</a></li>
+                <li class="breadcrumb-item active" t-esc="plant.plant_code or plant.location"/>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3 mb-3">
+                    <div>
+                        <h2 class="mb-0">Plant <span t-esc="plant.plant_code or plant.location"/></h2>
+                        <p class="text-muted mb-0" t-esc="plant.address or ''"/>
+                    </div>
+                    <div class="ms-lg-auto text-lg-end">
+                        <p class="mb-1"><strong>Operator:</strong> <span t-esc="plant.operator_user_id.name or 'Not Assigned'"/></p>
+                        <p class="mb-1"><strong>Email:</strong> <span t-esc="plant.operator_portal_email or '-'"/></p>
+                        <p class="mb-1"><strong>Portal Status:</strong> <span t-esc="'Enabled' if plant.operator_portal_enabled else 'Disabled'"/></p>
+                        <p class="mb-0"><strong>Last Login:</strong> <span t-esc="plant.operator_portal_last_login or '-'"/></p>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Transport Fleet</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Vehicle</th>
+                                                <th>Driver</th>
+                                                <th class="text-center">Jobs Completed</th>
+                                                <th class="text-center">Today</th>
+                                                <th class="text-center">Efficiency</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="transports" t-as="transport">
+                                                <td t-esc="transport.transport_code"/>
+                                                <td t-esc="transport.driver_name or '-'"/>
+                                                <td class="text-center" t-esc="transport.jobs_completed"/>
+                                                <td class="text-center" t-esc="transport.jobs_today"/>
+                                                <td class="text-center" t-esc="'%.2f' % transport.efficiency_score if transport.efficiency_score else '0.00'"/>
+                                            </tr>
+                                            <tr t-if="not transports">
+                                                <td colspan="5" class="text-center text-muted">No transports linked.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Recent Day Reports</h4>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item" t-foreach="day_reports" t-as="report">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <a t-attf-href="/my/rmc/subcontractor/day-report/{{ report.id }}" class="text-decoration-none fw-semibold">
+                                                    <span t-esc="report.report_date"/>
+                                                </a>
+                                                <div class="text-muted small">
+                                                    <span t-esc="report.operator_user_id.name"/>
+                                                    <span t-if="report.generated_automatically" class="badge bg-info ms-1">Auto</span>
+                                                </div>
+                                                <p class="mb-0 mt-2 text-muted" t-if="report.remarks" t-esc="report.remarks"/>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="badge bg-primary" t-esc="'%s/%s' % (report.completed_jobs, report.total_jobs)"/>
+                                                <div class="text-muted small">Quantity <span t-esc="report.total_quantity"/></div>
+                                                <div class="mt-2">
+                                                    <a t-attf-href="/my/rmc/subcontractor/day-report/{{ report.id }}/pdf" class="btn btn-sm btn-outline-secondary">PDF</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item text-muted text-center" t-if="not day_reports">No reports submitted.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Plant Pumps</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Pump</th>
+                                                <th class="text-center">Capacity (M³/hr)</th>
+                                                <th>Operator</th>
+                                                <th>Contact</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="pumps" t-as="pump">
+                                                <td t-esc="pump.pump_code"/>
+                                                <td class="text-center" t-esc="pump.pump_capacity or 0.0"/>
+                                                <td t-esc="pump.operator_name or '-'"/>
+                                                <td>
+                                                    <div><span t-esc="pump.operator_mobile or '-'"/></div>
+                                                    <div><small class="text-muted" t-esc="pump.operator_email or ''"/></div>
+                                                </td>
+                                            </tr>
+                                            <tr t-if="not pumps">
+                                                <td colspan="4" class="text-center text-muted">No pumps linked to this plant.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Recent Dockets</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Docket</th>
+                                        <th>Date</th>
+                                        <th>Quantity</th>
+                                        <th>Produced</th>
+                                        <th>Status</th>
+                                        <th>Operator Status</th>
+                                        <th>Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="state_labels" t-value="docket_state_labels or {}"/>
+                                    <t t-set="portal_labels" t-value="docket_portal_state_labels or {}"/>
+                                    <tr t-foreach="dockets" t-as="docket">
+                                        <td>
+                                            <a t-attf-href="/my/rmc/subcontractor/docket/{{ docket.id }}" class="text-decoration-none fw-semibold">
+                                                <t t-esc="docket.name or docket.docket_number"/>
+                                            </a>
+                                        </td>
+                                        <td t-esc="docket.docket_date"/>
+                                        <td t-esc="docket.quantity_ordered"/>
+                                        <td t-esc="docket.quantity_produced"/>
+                                        <td t-esc="state_labels.get(docket.state, docket.state)"/>
+                                        <td t-esc="portal_labels.get(docket.operator_portal_status, docket.operator_portal_status)"/>
+                                        <td>
+                                            <t t-if="docket.invoice_id">
+                                                <a class="text-decoration-none" t-att-href="docket.invoice_id.get_portal_url()" target="_blank">
+                                                    <span t-esc="docket.invoice_id.name"/>
+                                                </a>
+                                            </t>
+                                            <span t-else="">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not dockets">
+                                        <td colspan="7" class="text-center text-muted">No docket history.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_operator_dashboard">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item active">Operator Portal</li>
+            </t>
+            <div class="o_portal_wrap">
+                <h2 class="mb-3">Operator Portal</h2>
+                <div class="alert alert-success" role="alert" t-if="submitted">
+                    Day report submitted successfully.
+                </div>
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <h4 class="h6 text-uppercase text-muted mb-1">Plant</h4>
+                                <h3 class="mb-0" t-esc="plant.plant_code or plant.location"/>
+                            </div>
+                            <div>
+                                <p class="mb-0"><strong>Dockets Today:</strong> <span t-esc="operator_totals['total_jobs']"/></p>
+                                <p class="mb-0"><strong>Submitted Reports:</strong> <span t-esc="operator_totals['reports_today_count']"/></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Today's Dockets</h4>
+                        <p class="text-muted" t-if="not dockets">No dockets assigned for today.</p>
+                        <div t-if="dockets">
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-lg-4" t-foreach="dockets" t-as="docket">
+                                    <t t-set="state_colors" t-value="{'draft': 'bg-secondary', 'in_production': 'bg-primary', 'ready': 'bg-info text-dark', 'dispatched': 'bg-warning text-dark', 'delivered': 'bg-success', 'cancel': 'bg-danger'}"/>
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-body d-flex flex-column gap-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <div class="fw-semibold text-uppercase" t-esc="docket.name or docket.docket_number"/>
+                                                    <div class="text-muted small">
+                                                        <span>Scheduled:</span>
+                                                        <span t-esc="docket.docket_date or '-'"/>
+                                                    </div>
+                                                </div>
+                                                <span t-attf-class="badge text-capitalize #{state_colors.get(docket.state or '', 'bg-secondary')}">
+                                                    <t t-esc="dict(docket._fields['state'].selection).get(docket.state, docket.state)"/>
+                                                </span>
+                                            </div>
+                                            <form method="post" t-attf-action="/my/rmc/operator/docket/{{ docket.id }}/update" class="d-flex flex-column gap-3">
+                                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                                <input type="hidden" name="operator_portal_status" t-att-value="docket.operator_portal_status or 'pending'"/>
+                                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                                    <span class="text-muted small">Docket Number</span>
+                                                    <input type="text" name="docket_number" class="form-control form-control-sm text-end" style="max-width: 140px;" t-att-value="docket.docket_number or ''" t-att-readonly="'readonly' if docket.docket_number else None" placeholder="Enter"/>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                                    <span class="text-muted small">Quantity Produced (M³)</span>
+                                                    <input type="number" step="0.01" name="quantity_produced" class="form-control form-control-sm text-end" style="max-width: 140px;" t-att-value="docket.quantity_produced or ''" placeholder="0.00"/>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                                    <span class="text-muted small">Transport</span>
+                                                    <span class="fw-semibold text-end" t-esc="docket.subcontractor_transport_id.transport_code if docket.subcontractor_transport_id else '-'"/>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <t t-if="docket.subcontractor_transport_id">
+                                                        <a class="btn btn-outline-warning btn-sm" t-att-href="'/my/rmc/operator/docket/%s/create-truck-loading' % docket.id">Create Truck Loading</a>
+                                                    </t>
+                                                    <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                                </div>
+                                            </form>
+                                            <div class="d-flex justify-content-between align-items-center text-muted small">
+                                                <span>Invoice:</span>
+                                                <span>
+                                                    <t t-if="docket.invoice_id">
+                                                        <a class="text-decoration-none" t-att-href="docket.invoice_id.get_portal_url()" target="_blank">
+                                                            <t t-esc="docket.invoice_id.name"/>
+                                                        </a>
+                                                    </t>
+                                                    <span t-else="">-</span>
+                                                </span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center text-muted small">
+                                                <span>Plant: <t t-esc="(docket.subcontractor_plant_id.plant_code or docket.subcontractor_plant_id.display_name) if docket.subcontractor_plant_id else (docket.subcontractor_transport_id.plant_id.plant_code if docket.subcontractor_transport_id and docket.subcontractor_transport_id.plant_id else '-')"/></span>
+                                                <a class="btn btn-outline-primary btn-sm" t-att-href="'/my/rmc/operator/docket/%s' % docket.id">View details</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Day End Report</h4>
+                        <form method="post" action="/my/rmc/operator/day-report/submit" class="row g-3">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <t t-foreach="dockets" t-as="docket">
+                                <input type="hidden" name="docket_ids" t-att-value="docket.id"/>
+                            </t>
+                            <div class="col-12">
+                                <label class="form-label">Summary</label>
+                                <textarea class="form-control" name="remarks" rows="3" placeholder="Total pours, site issues..."><t t-esc="day_report.remarks if day_report else ''"/></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Jobs</label>
+                                <input type="text" class="form-control" readonly="1" t-att-value="day_report.total_jobs if day_report else operator_totals['total_jobs']"/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Completed</label>
+                                <input type="text" class="form-control" readonly="1" t-att-value="day_report.completed_jobs if day_report else operator_totals['completed_jobs']"/>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Total Quantity</label>
+                                <input type="text" class="form-control" readonly="1" t-att-value="day_report.total_quantity if day_report else operator_totals['total_quantity']"/>
+                            </div>
+                        <div class="col-12 d-flex align-items-center gap-2">
+                            <button type="submit" class="btn btn-success" t-att-disabled="'disabled' if operator_totals['total_jobs'] == 0 else None">Submit Report</button>
+                        </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_operator_docket_form">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/operator">Operator Portal</a></li>
+                <li class="breadcrumb-item active" t-esc="docket.name or docket.docket_number"/>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h2 class="mb-1" t-esc="docket.name or docket.docket_number"/>
+                        <span t-attf-class="badge text-capitalize #{'bg-success' if docket.operator_portal_status == 'completed' else ('bg-info text-dark' if docket.operator_portal_status == 'in_progress' else 'bg-secondary')}">
+                            <t t-esc="docket.operator_portal_status or 'pending'"/>
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-secondary" href="/my/rmc/operator">Back to dockets</a>
+                    </div>
+                </div>
+
+                <div class="alert alert-success" role="alert" t-if="loading_created">
+                    Truck loading created successfully.
+                </div>
+
+                <form method="post" t-attf-action="/my/rmc/operator/docket/{{ docket.id }}/update" class="card border-0 shadow-sm mb-4">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="from_detail" value="1"/>
+                    <div class="card-body row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Docket Number</label>
+                            <input type="text" name="docket_number" class="form-control" t-att-value="docket.docket_number or ''"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Quantity Produced (M³)</label>
+                            <input type="number" step="0.01" name="quantity_produced" class="form-control" t-att-value="docket.quantity_produced or ''"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Current Capacity (M³/batch)</label>
+                            <input type="number" step="0.01" name="current_capacity" class="form-control" t-att-value="docket.current_capacity or ''"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select name="operator_portal_status" class="form-select">
+                                <option value="pending" t-att-selected="'pending' == docket.operator_portal_status">Pending</option>
+                                <option value="in_progress" t-att-selected="'in_progress' == docket.operator_portal_status">In Progress</option>
+                                <option value="completed" t-att-selected="'completed' == docket.operator_portal_status">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            <textarea name="operator_notes" class="form-control" rows="3"><t t-esc="docket.operator_notes or ''"/></textarea>
+                        </div>
+                        <div class="col-12 d-flex align-items-center gap-2 flex-wrap">
+                            <t t-if="docket.subcontractor_transport_id">
+                                <a class="btn btn-outline-warning" t-att-href="'/my/rmc/operator/docket/%s/create-truck-loading' % docket.id">Create Truck Loading</a>
+                            </t>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 pb-0">
+                                <h4 class="card-title h6 text-uppercase mb-0">General Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">Docket Reference</dt>
+                                    <dd class="col-sm-7" t-esc="docket.name"/>
+                                    <dt class="col-sm-5">Docket Number</dt>
+                                    <dd class="col-sm-7" t-esc="docket.docket_number or '-'"/>
+                                    <dt class="col-sm-5">Docket Date</dt>
+                                    <dd class="col-sm-7" t-esc="docket.docket_date or '-'"/>
+                                    <dt class="col-sm-5">Sale Order</dt>
+                                    <dd class="col-sm-7" t-esc="docket.sale_order_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Workorder</dt>
+                                    <dd class="col-sm-7" t-esc="docket.workorder_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Ticket</dt>
+                                    <dd class="col-sm-7" t-esc="docket.helpdesk_ticket_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Subcontractor</dt>
+                                    <dd class="col-sm-7" t-esc="docket.subcontractor_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Transport</dt>
+                                    <dd class="col-sm-7" t-esc="docket.subcontractor_transport_id.transport_code if docket.subcontractor_transport_id else '-'"/>
+                                    <dt class="col-sm-5">Plant</dt>
+                                    <dd class="col-sm-7" t-esc="(docket.subcontractor_plant_id.display_name) if docket.subcontractor_plant_id else (docket.subcontractor_transport_id.plant_id.display_name if docket.subcontractor_transport_id and docket.subcontractor_transport_id.plant_id else '-')"/>
+                                    <dt class="col-sm-5">Customer Invoice</dt>
+                                    <dd class="col-sm-7">
+                                        <t t-if="docket.invoice_id">
+                                            <a class="text-decoration-none" t-att-href="docket.invoice_id.get_portal_url()" target="_blank">
+                                                <t t-esc="docket.invoice_id.name"/>
+                                            </a>
+                                        </t>
+                                        <span t-else="">-</span>
+                                    </dd>
+                                    <dt class="col-sm-5">Recipe</dt>
+                                    <dd class="col-sm-7" t-esc="docket.recipe_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Concrete Grade</dt>
+                                    <dd class="col-sm-7" t-esc="docket.concrete_grade or '-'"/>
+                                    <dt class="col-sm-5">Current Capacity (M³/batch)</dt>
+                                    <dd class="col-sm-7" t-esc="docket.current_capacity or 0.0"/>
+                                    <dt class="col-sm-5">Current Plant Check</dt>
+                                    <dd class="col-sm-7" t-esc="docket.current_plant_check_id.display_name or '-'"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 pb-0">
+                                <h4 class="card-title h6 text-uppercase mb-0">Production Details</h4>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-6">Quantity Ordered (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.quantity_ordered or 0.0"/>
+                                    <dt class="col-sm-6">Ticket Quantity (M3)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.quantity_ticket or 0.0"/>
+                                    <dt class="col-sm-6">Quantity Produced (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.quantity_produced or 0.0"/>
+                                    <dt class="col-sm-6">Cumulative Quantity (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.cumulative_quantity or 0.0"/>
+                                    <dt class="col-sm-6">Pour Structure</dt>
+                                    <dd class="col-sm-6" t-esc="dict(docket._fields['pour_structure'].selection).get(docket.pour_structure, '-')"/>
+                                    <dt class="col-sm-6">Batching Time</dt>
+                                    <dd class="col-sm-6" t-esc="docket.batching_time or '-'"/>
+                                    <dt class="col-sm-6">Actual Water Ratio</dt>
+                                    <dd class="col-sm-6" t-esc="docket.water_ratio_actual or 0.0"/>
+                                    <dt class="col-sm-6">Actual Slump/Flow (mm)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.slump_flow_actual or 0.0"/>
+                                    <dt class="col-sm-6">Notes</dt>
+                                    <dd class="col-sm-6" t-esc="docket.notes or '-'"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-transparent border-0 pb-0">
+                        <ul class="nav nav-tabs" t-attf-id="docketTabs{{ docket.id }}" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" t-attf-id="tab-lines-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#docket-lines-{{ docket.id }}" type="button" role="tab">Docket Lines</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="tab-batches-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#docket-batches-{{ docket.id }}" type="button" role="tab">Batches</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="tab-workorder-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#docket-workorder-{{ docket.id }}" type="button" role="tab">Workorder Tickets</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="tab-loading-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#docket-loading-{{ docket.id }}" type="button" role="tab">Truck Loadings</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="tab-plant-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#docket-plant-{{ docket.id }}" type="button" role="tab">Plant Checks</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="tab-content border-top pt-3 px-3 pb-3">
+                        <div class="tab-pane fade show active" t-attf-id="docket-lines-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="tab-lines-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Material</th>
+                                            <th>Code</th>
+                                            <th class="text-end">Design Qty</th>
+                                            <th class="text-end">Correction</th>
+                                            <th class="text-end">Corrected</th>
+                                            <th class="text-end">Required</th>
+                                            <th class="text-end">Batched</th>
+                                            <th class="text-end">Variance</th>
+                                            <th class="text-end">Variance %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.docket_line_ids" t-as="line">
+                                            <td t-esc="line.material_name or '-'"/>
+                                            <td t-esc="line.material_code or '-'"/>
+                                            <td class="text-end" t-esc="line.design_qty or 0.0"/>
+                                            <td class="text-end" t-esc="line.Correction or 0.0"/>
+                                            <td class="text-end" t-esc="line.Corrected or 0.0"/>
+                                            <td class="text-end" t-esc="line.Required or 0.0"/>
+                                            <td class="text-end" t-esc="line.Batched or 0.0"/>
+                                            <td class="text-end" t-esc="line.variance or 0.0"/>
+                                            <td class="text-end" t-esc="line.variance_percentage or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.docket_line_ids">
+                                            <td colspan="9" class="text-center text-muted">No docket lines available.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="docket-batches-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="tab-batches-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Batch ID</th>
+                                            <th>Batch Code</th>
+                                            <th class="text-end">CA10MM</th>
+                                            <th class="text-end">CA20MM</th>
+                                            <th class="text-end">FACS</th>
+                                            <th class="text-end">CEMOPC</th>
+                                            <th class="text-end">FLYASHIR</th>
+                                            <th class="text-end">ADMPLAST</th>
+                                            <th class="text-end">WATERR</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.docket_batch_ids" t-as="batch">
+                                            <td t-esc="batch.batch_id or '-'"/>
+                                            <td t-esc="batch.batch_code or '-'"/>
+                                            <td class="text-end" t-esc="batch.ten_mm or 0.0"/>
+                                            <td class="text-end" t-esc="batch.twenty_mm or 0.0"/>
+                                            <td class="text-end" t-esc="batch.facs or 0.0"/>
+                                            <td class="text-end" t-esc="batch.water_batch or 0.0"/>
+                                            <td class="text-end" t-esc="batch.flyash or 0.0"/>
+                                            <td class="text-end" t-esc="batch.adm_plast or 0.0"/>
+                                            <td class="text-end" t-esc="batch.WATERR or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.docket_batch_ids">
+                                            <td colspan="9" class="text-center text-muted">No batches recorded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="docket-workorder-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="tab-workorder-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket</th>
+                                            <th class="text-end">Quantity (M³)</th>
+                                            <th>Status</th>
+                                            <th>Delivery Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.workorder_ticket_ids" t-as="wo_ticket">
+                                            <td>
+                                                <a t-attf-href="/my/rmc/subcontractor/ticket/{{ wo_ticket.id }}" class="text-decoration-none">
+                                                    <t t-esc="wo_ticket.name or '-'"/>
+                                                </a>
+                                            </td>
+                                            <td class="text-end" t-esc="wo_ticket.quantity or 0.0"/>
+                                            <td t-esc="wo_ticket.state or '-'"/>
+                                            <td t-esc="wo_ticket.delivery_date or '-'"/>
+                                        </tr>
+                                        <tr t-if="not docket.workorder_ticket_ids">
+                                            <td colspan="4" class="text-center text-muted">No workorder tickets linked.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="docket-loading-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="tab-loading-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference</th>
+                                            <th>Status</th>
+                                            <th>Loading Date</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                            <th class="text-end">Quantity (M³)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.truck_loading_ids" t-as="loading">
+                                            <td t-esc="loading.name or '-'"/>
+                                            <td t-esc="loading.loading_status or '-'"/>
+                                            <td t-esc="loading.loading_date or '-'"/>
+                                            <td t-esc="loading.loading_start_time or '-'"/>
+                                            <td t-esc="loading.loading_end_time or '-'"/>
+                                            <td class="text-end" t-esc="loading.total_quantity or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.truck_loading_ids">
+                                            <td colspan="6" class="text-center text-muted">No truck loadings recorded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="docket-plant-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="tab-plant-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference</th>
+                                            <th>Status</th>
+                                            <th>Check Date</th>
+                                            <th>Completed</th>
+                                            <th class="text-end">Net Weight (KG)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.plant_check_ids" t-as="check">
+                                            <td t-esc="check.name or '-'"/>
+                                            <td t-esc="check.check_status or '-'"/>
+                                            <td t-esc="check.check_date or '-'"/>
+                                            <td t-esc="check.completed_date or '-'"/>
+                                            <td class="text-end" t-esc="check.net_weight or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.plant_check_ids">
+                                            <td colspan="5" class="text-center text-muted">No plant checks linked.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_operator_truck_loading_form">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/operator">Operator Portal</a></li>
+                <li class="breadcrumb-item"><a t-att-href="'/my/rmc/operator/docket/%s' % docket.id" t-esc="docket.name or docket.docket_number"/></li>
+                <li class="breadcrumb-item active">New Truck Loading</li>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                        <div>
+                            <h2 class="mb-1">Create Truck Loading</h2>
+                            <p class="mb-0 text-muted">Docket <span class="fw-semibold" t-esc="docket.name or docket.docket_number"/></p>
+                        </div>
+                        <div class="text-md-end">
+                            <p class="mb-1"><strong>Plant:</strong> <span t-esc="plant.plant_code or plant.location or '-'"/></p>
+                            <p class="mb-0"><strong>Transport:</strong> <span t-esc="docket.subcontractor_transport_id.transport_code if docket.subcontractor_transport_id else '-'"/></p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" class="card border-0 shadow-sm">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <div class="card-body row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Transport</label>
+                            <select name="subcontractor_transport_id" class="form-select">
+                                <option value="">Unassigned</option>
+                                <option t-foreach="transports" t-as="transport" t-att-value="transport.id" t-att-selected="transport.id == default_transport_id">
+                                    <t t-esc="'%s - %s' % (transport.transport_code or transport.display_name, transport.driver_name or 'Driver')"/>
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Loading Status</label>
+                            <select name="loading_status" class="form-select">
+                                <option value="scheduled">Scheduled</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Loading Date</label>
+                            <input type="datetime-local" name="loading_date" class="form-control" t-att-value="default_loading_date"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Time</label>
+                            <input type="datetime-local" name="loading_start_time" class="form-control"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">End Time</label>
+                            <input type="datetime-local" name="loading_end_time" class="form-control"/>
+                        </div>
+                        <div class="col-12 d-flex align-items-center gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-primary">Save Loading</button>
+                            <a class="btn btn-outline-secondary" t-att-href="'/my/rmc/operator/docket/%s' % docket.id">Cancel</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_subcontractor_workorder">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/subcontractor">Subcontractor Portal</a></li>
+                <li class="breadcrumb-item active" t-esc="workorder.name"/>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <h2 class="mb-1" t-esc="workorder.name"/>
+                        <p class="text-muted mb-0">Sale Order: <span t-esc="workorder.sale_order_id.name or '-'"/></p>
+                    </div>
+                    <div class="text-md-end">
+                        <span class="badge bg-secondary text-uppercase" t-esc="dict(workorder._fields['state'].selection).get(workorder.state, workorder.state)"/>
+                        <div class="text-muted small">Created: <span t-esc="workorder.date_order"/></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Quantities</h4>
+                                <p class="mb-1"><strong>Ordered:</strong> <span t-esc="'%.2f' % (workorder.quantity_ordered or 0.0)"/> M³</p>
+                                <p class="mb-1"><strong>Delivered:</strong> <span t-esc="'%.2f' % (workorder.quantity_delivered or 0.0)"/> M³</p>
+                                <p class="mb-0"><strong>Remaining:</strong> <span t-esc="'%.2f' % (workorder.quantity_remaining or 0.0)"/> M³</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Scheduling</h4>
+                                <p class="mb-1"><strong>Delivery Date:</strong> <span t-esc="workorder.delivery_date or '-'"/></p>
+                                <p class="mb-1"><strong>Location:</strong> <span t-esc="workorder.delivery_location or '-'"/></p>
+                                <p class="mb-0"><strong>Site Type:</strong> <span t-esc="dict(workorder._fields['site_type'].selection).get(workorder.site_type, '-')"/></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Pump &amp; Plant</h4>
+                                <p class="mb-1"><strong>Plant:</strong> <span t-esc="workorder.subcontractor_plant_id.display_name or '-'"/></p>
+                                <p class="mb-1"><strong>Pump Required:</strong> <span t-esc="'Yes' if workorder.pump_required else 'No'"/></p>
+                                <p class="mb-0"><strong>Pump Provider:</strong> <span t-esc="workorder.pump_provider_id.name or '-'"/></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4 class="card-title h6 text-uppercase mb-0">Workorder Tickets</h4>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ticket</th>
+                                        <th class="text-end">Quantity (M³)</th>
+                                        <th>Status</th>
+                                        <th>Delivery</th>
+                                        <th>Helpdesk</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="wo_tickets" t-as="wo_ticket">
+                                        <td>
+                                            <a t-attf-href="/my/rmc/subcontractor/ticket/{{ wo_ticket.id }}" class="text-decoration-none">
+                                                <t t-esc="wo_ticket.name"/>
+                                            </a>
+                                        </td>
+                                        <td class="text-end"><t t-esc="'%.2f' % (wo_ticket.quantity or 0.0)"/></td>
+                                        <td><t t-esc="dict(wo_ticket._fields['state'].selection).get(wo_ticket.state, wo_ticket.state)"/></td>
+                                        <td><t t-esc="wo_ticket.delivery_date or '-'"/></td>
+                                        <td>
+                                            <t t-if="wo_ticket.helpdesk_ticket_id">
+                                                <a t-att-href="wo_ticket.helpdesk_ticket_id.get_portal_url()" class="text-decoration-none" target="_blank">
+                                                    <t t-esc="wo_ticket.helpdesk_ticket_id.name"/>
+                                                </a>
+                                            </t>
+                                            <span t-else="" class="text-muted">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not wo_tickets">
+                                        <td colspan="5" class="text-center text-muted">No tickets generated.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Linked Dockets</h4>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Docket</th>
+                                        <th>Date</th>
+                                        <th class="text-end">Ordered</th>
+                                        <th class="text-end">Produced</th>
+                                        <th>Status</th>
+                                        <th>Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="dockets" t-as="docket">
+                                        <td>
+                                            <a t-attf-href="/my/rmc/subcontractor/docket/{{ docket.id }}" class="text-decoration-none">
+                                                <t t-esc="docket.name or docket.docket_number"/>
+                                            </a>
+                                        </td>
+                                        <td><t t-esc="docket.docket_date or '-'"/></td>
+                                        <td class="text-end"><t t-esc="'%.2f' % (docket.quantity_ordered or 0.0)"/></td>
+                                        <td class="text-end"><t t-esc="'%.2f' % (docket.quantity_produced or 0.0)"/></td>
+                                        <td><t t-esc="dict(docket._fields['state'].selection).get(docket.state, docket.state)"/></td>
+                                        <td>
+                                            <t t-if="docket.invoice_id">
+                                                <a class="text-decoration-none" t-att-href="docket.invoice_id.get_portal_url()" target="_blank">
+                                                    <t t-esc="docket.invoice_id.name"/>
+                                                </a>
+                                            </t>
+                                            <span t-else="" class="text-muted">-</span>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not dockets">
+                                        <td colspan="6" class="text-center text-muted">No dockets linked.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_subcontractor_ticket">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/subcontractor">Subcontractor Portal</a></li>
+                <li class="breadcrumb-item"><a t-attf-href="/my/rmc/subcontractor/workorder/{{ workorder.id }}">Workorder <t t-esc="workorder.name"/></a></li>
+                <li class="breadcrumb-item active" t-esc="wo_ticket.name"/>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <h2 class="mb-1" t-esc="wo_ticket.name"/>
+                        <p class="text-muted mb-0">Quantity: <span t-esc="'%.2f' % (wo_ticket.quantity or 0.0)"/> M³</p>
+                    </div>
+                    <div class="text-md-end">
+                        <span class="badge bg-secondary text-uppercase" t-esc="dict(wo_ticket._fields['state'].selection).get(wo_ticket.state, wo_ticket.state)"/>
+                        <div class="text-muted small">Delivery: <span t-esc="wo_ticket.delivery_date or '-'"/></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Assignment</h4>
+                                <p class="mb-1"><strong>Workorder:</strong>
+                                    <a t-attf-href="/my/rmc/subcontractor/workorder/{{ workorder.id }}" class="text-decoration-none">
+                                        <t t-esc="workorder.name"/>
+                                    </a>
+                                </p>
+                                <p class="mb-1"><strong>Helpdesk Ticket:</strong>
+                                    <t t-if="helpdesk_ticket">
+                                        <a t-att-href="helpdesk_ticket.get_portal_url()" class="text-decoration-none" target="_blank">
+                                            <t t-esc="helpdesk_ticket.name"/>
+                                        </a>
+                                    </t>
+                                    <span t-else="" class="text-muted">-</span>
+                                </p>
+                                <p class="mb-0"><strong>Notes:</strong> <span t-esc="wo_ticket.notes or '-'"/></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title h6 text-uppercase">Pump Information</h4>
+                                <p class="mb-1"><strong>Pump Ticket:</strong> <span t-esc="'Yes' if wo_ticket.is_pump else 'No'"/></p>
+                                <p class="mb-0"><strong>Pump:</strong> <span t-esc="wo_ticket.pump_id.display_name or '-'"/></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title h6 text-uppercase">Delivery Details</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Delivery Location:</strong> <span t-esc="wo_ticket.delivery_location or '-'"/></p>
+                                <p class="mb-1"><strong>Coordinates:</strong> <span t-esc="wo_ticket.delivery_coordinates or '-'"/></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Created On:</strong> <span t-esc="wo_ticket.create_date"/></p>
+                                <p class="mb-0"><strong>Last Updated:</strong> <span t-esc="wo_ticket.write_date"/></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_subcontractor_docket">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs">
+                <li class="breadcrumb-item"><a href="/my">My Account</a></li>
+                <li class="breadcrumb-item"><a href="/my/rmc/subcontractor">Subcontractor Portal</a></li>
+                <li t-if="docket.workorder_id" class="breadcrumb-item">
+                    <a t-attf-href="/my/rmc/subcontractor/workorder/{{ docket.workorder_id.id }}">Workorder <t t-esc="docket.workorder_id.name"/></a>
+                </li>
+                <li class="breadcrumb-item active" t-esc="docket.name or docket.docket_number"/>
+            </t>
+            <div class="o_portal_wrap">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h2 class="mb-1" t-esc="docket.name or docket.docket_number"/>
+                        <div class="text-muted small">Scheduled: <span t-esc="docket.docket_date or '-'"/></div>
+                    </div>
+                    <div class="text-md-end">
+                        <span class="badge text-uppercase bg-secondary">
+                            <t t-esc="state_labels.get(docket.state, docket.state)"/>
+                        </span>
+                        <div class="text-muted small">Operator Status: <span t-esc="portal_status_labels.get(docket.operator_portal_status, docket.operator_portal_status)"/></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 pb-0">
+                                <h4 class="card-title h6 text-uppercase mb-0">General Information</h4>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">Docket Reference</dt>
+                                    <dd class="col-sm-7" t-esc="docket.name"/>
+                                    <dt class="col-sm-5">Docket Number</dt>
+                                    <dd class="col-sm-7" t-esc="docket.docket_number or '-'"/>
+                                    <dt class="col-sm-5">Docket Date</dt>
+                                    <dd class="col-sm-7" t-esc="docket.docket_date or '-'"/>
+                                    <dt class="col-sm-5">Sale Order</dt>
+                                    <dd class="col-sm-7" t-esc="docket.sale_order_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Workorder</dt>
+                                    <dd class="col-sm-7">
+                                        <t t-if="docket.workorder_id">
+                                            <a t-attf-href="/my/rmc/subcontractor/workorder/{{ docket.workorder_id.id }}" class="text-decoration-none">
+                                                <t t-esc="docket.workorder_id.display_name"/>
+                                            </a>
+                                        </t>
+                                        <span t-else="" class="text-muted">-</span>
+                                    </dd>
+                                    <dt class="col-sm-5">Helpdesk Ticket</dt>
+                                    <dd class="col-sm-7">
+                                        <t t-if="docket.helpdesk_ticket_id">
+                                            <a t-att-href="docket.helpdesk_ticket_id.get_portal_url()" class="text-decoration-none" target="_blank">
+                                                <t t-esc="docket.helpdesk_ticket_id.display_name"/>
+                                            </a>
+                                        </t>
+                                        <span t-else="" class="text-muted">-</span>
+                                    </dd>
+                                    <dt class="col-sm-5">Subcontractor</dt>
+                                    <dd class="col-sm-7" t-esc="docket.subcontractor_id.display_name or '-'"/>
+                                    <dt class="col-sm-5">Transport</dt>
+                                    <dd class="col-sm-7" t-esc="docket.subcontractor_transport_id.transport_code if docket.subcontractor_transport_id else '-'"/>
+                                    <dt class="col-sm-5">Plant</dt>
+                                    <dd class="col-sm-7" t-esc="(docket.subcontractor_plant_id.display_name) if docket.subcontractor_plant_id else (docket.subcontractor_transport_id.plant_id.display_name if docket.subcontractor_transport_id and docket.subcontractor_transport_id.plant_id else '-')"/>
+                                    <dt class="col-sm-5">Concrete Grade</dt>
+                                    <dd class="col-sm-7" t-esc="docket.concrete_grade or '-'"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 pb-0">
+                                <h4 class="card-title h6 text-uppercase mb-0">Production Details</h4>
+                            </div>
+                            <div class="card-body">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-6">Quantity Ordered (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="'%.2f' % (docket.quantity_ordered or 0.0)"/>
+                                    <dt class="col-sm-6">Ticket Quantity (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="'%.2f' % (docket.quantity_ticket or 0.0)"/>
+                                    <dt class="col-sm-6">Quantity Produced (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="'%.2f' % (docket.quantity_produced or 0.0)"/>
+                                    <dt class="col-sm-6">Cumulative Quantity (M³)</dt>
+                                    <dd class="col-sm-6" t-esc="'%.2f' % (docket.cumulative_quantity or 0.0)"/>
+                                    <dt class="col-sm-6">Pour Structure</dt>
+                                    <dd class="col-sm-6" t-esc="dict(docket._fields['pour_structure'].selection).get(docket.pour_structure, '-')"/>
+                                    <dt class="col-sm-6">Batching Time</dt>
+                                    <dd class="col-sm-6" t-esc="docket.batching_time or '-'"/>
+                                    <dt class="col-sm-6">Actual Water Ratio</dt>
+                                    <dd class="col-sm-6" t-esc="docket.water_ratio_actual or 0.0"/>
+                                    <dt class="col-sm-6">Actual Slump/Flow (mm)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.slump_flow_actual or 0.0"/>
+                                    <dt class="col-sm-6">Current Capacity (M³/batch)</dt>
+                                    <dd class="col-sm-6" t-esc="docket.current_capacity or 0.0"/>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-transparent border-0 pb-0">
+                        <ul class="nav nav-tabs" t-attf-id="docketTabsSub{{ docket.id }}" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" t-attf-id="sub-tab-lines-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#sub-docket-lines-{{ docket.id }}" type="button" role="tab">Docket Lines</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="sub-tab-batches-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#sub-docket-batches-{{ docket.id }}" type="button" role="tab">Batches</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="sub-tab-workorder-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#sub-docket-workorder-{{ docket.id }}" type="button" role="tab">Workorder Tickets</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="sub-tab-loading-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#sub-docket-loading-{{ docket.id }}" type="button" role="tab">Truck Loadings</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" t-attf-id="sub-tab-plant-{{ docket.id }}" data-bs-toggle="tab" t-attf-data-bs-target="#sub-docket-plant-{{ docket.id }}" type="button" role="tab">Plant Checks</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="tab-content border-top pt-3 px-3 pb-3">
+                        <div class="tab-pane fade show active" t-attf-id="sub-docket-lines-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="sub-tab-lines-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Material</th>
+                                            <th>Code</th>
+                                            <th class="text-end">Design Qty</th>
+                                            <th class="text-end">Correction</th>
+                                            <th class="text-end">Corrected</th>
+                                            <th class="text-end">Required</th>
+                                            <th class="text-end">Batched</th>
+                                            <th class="text-end">Variance</th>
+                                            <th class="text-end">Variance %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.docket_line_ids" t-as="line">
+                                            <td t-esc="line.material_name or '-'"/>
+                                            <td t-esc="line.material_code or '-'"/>
+                                            <td class="text-end" t-esc="line.design_qty or 0.0"/>
+                                            <td class="text-end" t-esc="line.Correction or 0.0"/>
+                                            <td class="text-end" t-esc="line.Corrected or 0.0"/>
+                                            <td class="text-end" t-esc="line.Required or 0.0"/>
+                                            <td class="text-end" t-esc="line.Batched or 0.0"/>
+                                            <td class="text-end" t-esc="line.variance or 0.0"/>
+                                            <td class="text-end" t-esc="line.variance_percentage or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.docket_line_ids">
+                                            <td colspan="9" class="text-center text-muted">No docket lines available.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="sub-docket-batches-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="sub-tab-batches-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Batch ID</th>
+                                            <th>Batch Code</th>
+                                            <th class="text-end">CA10MM</th>
+                                            <th class="text-end">CA20MM</th>
+                                            <th class="text-end">FACS</th>
+                                            <th class="text-end">CEMOPC</th>
+                                            <th class="text-end">FLYASHIR</th>
+                                            <th class="text-end">ADMPLAST</th>
+                                            <th class="text-end">WATERR</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.docket_batch_ids" t-as="batch">
+                                            <td t-esc="batch.batch_id or '-'"/>
+                                            <td t-esc="batch.batch_code or '-'"/>
+                                            <td class="text-end" t-esc="batch.ten_mm or 0.0"/>
+                                            <td class="text-end" t-esc="batch.twenty_mm or 0.0"/>
+                                            <td class="text-end" t-esc="batch.facs or 0.0"/>
+                                            <td class="text-end" t-esc="batch.water_batch or 0.0"/>
+                                            <td class="text-end" t-esc="batch.flyash or 0.0"/>
+                                            <td class="text-end" t-esc="batch.adm_plast or 0.0"/>
+                                            <td class="text-end" t-esc="batch.WATERR or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.docket_batch_ids">
+                                            <td colspan="9" class="text-center text-muted">No batches recorded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="sub-docket-workorder-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="sub-tab-workorder-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket</th>
+                                            <th class="text-end">Quantity (M³)</th>
+                                            <th>Status</th>
+                                            <th>Delivery Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.workorder_ticket_ids" t-as="wo_ticket">
+                                            <td>
+                                                <a t-attf-href="/my/rmc/subcontractor/ticket/{{ wo_ticket.id }}" class="text-decoration-none">
+                                                    <t t-esc="wo_ticket.name or '-'"/>
+                                                </a>
+                                            </td>
+                                            <td class="text-end" t-esc="'%.2f' % (wo_ticket.quantity or 0.0)"/>
+                                            <td t-esc="dict(wo_ticket._fields['state'].selection).get(wo_ticket.state, wo_ticket.state)"/>
+                                            <td t-esc="wo_ticket.delivery_date or '-'"/>
+                                        </tr>
+                                        <tr t-if="not docket.workorder_ticket_ids">
+                                            <td colspan="4" class="text-center text-muted">No workorder tickets linked.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="sub-docket-loading-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="sub-tab-loading-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference</th>
+                                            <th>Status</th>
+                                            <th>Loading Date</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                            <th class="text-end">Quantity (M³)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.truck_loading_ids" t-as="loading">
+                                            <td t-esc="loading.name or '-'"/>
+                                            <td t-esc="loading.loading_status or '-'"/>
+                                            <td t-esc="loading.loading_date or '-'"/>
+                                            <td t-esc="loading.loading_start_time or '-'"/>
+                                            <td t-esc="loading.loading_end_time or '-'"/>
+                                            <td class="text-end" t-esc="loading.total_quantity or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.truck_loading_ids">
+                                            <td colspan="6" class="text-center text-muted">No truck loadings recorded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" t-attf-id="sub-docket-plant-{{ docket.id }}" role="tabpanel" t-attf-aria-labelledby="sub-tab-plant-{{ docket.id }}">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference</th>
+                                            <th>Status</th>
+                                            <th>Check Date</th>
+                                            <th>Completed</th>
+                                            <th class="text-end">Net Weight (KG)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="docket.plant_check_ids" t-as="check">
+                                            <td t-esc="check.name or '-'"/>
+                                            <td t-esc="check.check_status or '-'"/>
+                                            <td t-esc="check.check_date or '-'"/>
+                                            <td t-esc="check.completed_date or '-'"/>
+                                            <td class="text-end" t-esc="check.net_weight or 0.0"/>
+                                        </tr>
+                                        <tr t-if="not docket.plant_check_ids">
+                                            <td colspan="5" class="text-center text-muted">No plant checks linked.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

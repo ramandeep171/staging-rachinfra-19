@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add Cube Tests under the Quality app as well -->
+    <menuitem id="rmc_menu_quality_cube_test_root"
+              name="Cube Tests"
+              parent="quality_control.menu_quality_root"
+              sequence="950"/>
+
+    <menuitem id="rmc_menu_quality_cube_tests"
+              parent="rmc_menu_quality_cube_test_root"
+              action="action_quality_cube_tests"/>
+</odoo>

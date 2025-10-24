@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+  <record id="view_rmc_docket_form_batches" model="ir.ui.view">
+    <field name="name">rmc.docket.form.batches</field>
+    <field name="model">rmc.docket</field>
+    <field name="type">form</field>
+    <field name="inherit_id" ref="rmc_management_system.view_rmc_docket_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <!-- <button name="action_generate_batches" type="object" string="Generate Batches" class="btn-primary"/> -->
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_rmc_docket_batch_tree_custom" model="ir.ui.view">
+    <field name="name">rmc.docket.batch.tree.custom</field>
+    <field name="model">rmc.docket.batch</field>
+    <field name="type">list</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="docket_id"/>
+        <field name="batch_code"/>
+        <field name="quantity_ordered"/>
+      </list>
+    </field>
+  </record>
+  </data>
+
+</odoo>

@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_rmc_consolidated_report_list" model="ir.ui.view">
+        <field name="name">rmc.consolidated.report.list</field>
+        <field name="model">rmc.consolidated.report</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="date"/>
+                <field name="customer_id"/>
+                <field name="quantity_delivered"/>
+                <field name="customer_provides_cement"/>
+                <field name="plant_weight"/>
+                <field name="customer_weight"/>
+                <field name="weight_variance"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_consolidated_report_form" model="ir.ui.view">
+        <field name="name">rmc.consolidated.report.form</field>
+        <field name="model">rmc.consolidated.report</field>
+        <field name="arch" type="xml">
+            <form string="Consolidated Report" create="0" edit="0" delete="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="customer_id"/>
+                        </group>
+                        <group>
+                            <field name="concrete_grade"/>
+                            <field name="customer_provides_cement"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="quantity_delivered"/>
+                        </group>
+                        <group>
+                            <field name="plant_weight"/>
+                            <field name="customer_weight"/>
+                            <field name="weight_variance"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_rmc_consolidated_report_pivot" model="ir.ui.view">
+        <field name="name">rmc.consolidated.report.pivot</field>
+        <field name="model">rmc.consolidated.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Consolidated Pivot" disable_linking="0">
+                <field name="date" type="row"/>
+                <field name="customer_id" type="col"/>
+                <field name="quantity_delivered" type="measure"/>
+                <field name="plant_weight" type="measure"/>
+                <field name="customer_weight" type="measure"/>
+                <field name="weight_variance" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_rmc_consolidated_report_graph" model="ir.ui.view">
+        <field name="name">rmc.consolidated.report.graph</field>
+        <field name="model">rmc.consolidated.report</field>
+        <field name="arch" type="xml">
+            <graph string="Consolidated Graph" type="bar">
+                <field name="date" type="row"/>
+                <field name="quantity_delivered" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_rmc_consolidated_report_kanban" model="ir.ui.view">
+        <field name="name">rmc.consolidated.report.kanban</field>
+        <field name="model">rmc.consolidated.report</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" create="0" delete="0" default_group_by="customer_id">
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top o_flex">
+                                <strong><field name="customer_id"/></strong>
+                                <span t-esc="record.date.value" class="ms-auto"/>
+                            </div>
+                            <div class="o_kanban_body">
+                                <div>Qty Delivered: <field name="quantity_delivered"/></div>
+                                <div>Plant: <field name="plant_weight"/> | Cust: <field name="customer_weight"/></div>
+                                <div>Variance: <field name="weight_variance"/></div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_rmc_consolidated_report_calendar" model="ir.ui.view">
+        <field name="name">rmc.consolidated.report.calendar</field>
+        <field name="model">rmc.consolidated.report</field>
+        <field name="arch" type="xml">
+            <calendar string="Consolidated Calendar" date_start="date" color="customer_id">
+                <field name="customer_id"/>
+                <field name="quantity_delivered"/>
+            </calendar>
+        </field>
+    </record>
+    <record id="action_rmc_consolidated_report" model="ir.actions.act_window">
+        <field name="name">RMC Consolidated Report</field>
+        <field name="res_model">rmc.consolidated.report</field>
+        <field name="view_mode">list,form,pivot,graph,kanban,calendar</field>
+    </record>
+    
+    <!-- Docket-wise Report -->
+    <record id="view_rmc_docket_report_list" model="ir.ui.view">
+        <field name="name">rmc.docket.report.list</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <list string="Docket-wise Report">
+                <field name="docket_date"/>
+                <field name="docket_number"/>
+                <field name="sale_order_id"/>
+                <field name="customer_id"/>
+                <field name="workorder_id"/>
+                <field name="helpdesk_ticket_id"/>
+                <field name="subcontractor_id"/>
+                <field name="product_id"/>
+                <field name="quantity_ordered" sum="1"/>
+                <field name="quantity_produced" sum="1"/>
+                <field name="state"/>
+                <field name="truck_loading_count"/>
+                <field name="plant_check_count"/>
+                <field name="batch_count"/>
+                <field name="log_count"/>
+                <field name="invoice_id"/>
+                <field name="vendor_bill_count"/>
+                <field name="cube_test_count"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_docket_report_form" model="ir.ui.view">
+        <field name="name">rmc.docket.report.form</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <form string="Docket Report" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_open_docket" type="object" string="Open Docket" class="btn-primary"/>
+                    <button name="action_open_workorder" type="object" string="Open Workorder" class="btn-secondary" modifiers="{&quot;invisible&quot;: [[&quot;workorder_id&quot;, &quot;=&quot;, false]]}"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="docket_number"/>
+                            <field name="docket_date"/>
+                            <field name="state"/>
+                        </group>
+                        <group>
+                            <field name="sale_order_id"/>
+                            <field name="customer_id"/>
+                            <field name="product_id"/>
+                        </group>
+                    </group>
+                    <group string="Counts">
+                        <group>
+                            <field name="truck_loading_count"/>
+                            <field name="plant_check_count"/>
+                        </group>
+                        <group>
+                            <field name="batch_count"/>
+                            <field name="log_count"/>
+                        </group>
+                    </group>
+                    <group string="Related">
+                        <button name="action_open_truck_loadings" string="Truck Loadings" type="object" class="oe_link"/>
+                        <button name="action_open_plant_checks" string="Plant Checks" type="object" class="oe_link"/>
+                        <button name="action_open_batches" string="Batches" type="object" class="oe_link"/>
+                        <button name="action_open_logs" string="Logs" type="object" class="oe_link"/>
+                        <button name="action_open_invoice" string="Customer Invoice" type="object" class="oe_link" modifiers="{&quot;invisible&quot;: [[&quot;invoice_id&quot;, &quot;=&quot;, false]]}"/>
+                        <button name="action_open_cube_tests" string="Cube Tests" type="object" class="oe_link"/>
+                        <button name="action_open_vendor_bills" string="Vendor Bills" type="object" class="oe_link"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_rmc_docket_report_search" model="ir.ui.view">
+        <field name="name">rmc.docket.report.search</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="docket_number"/>
+                <field name="customer_id"/>
+                <field name="workorder_id"/>
+                <field name="state"/>
+                <separator/>
+                <filter string="Date" name="group_docket_date" context="{'group_by':'docket_date'}"/>
+                <filter string="Customer" name="group_customer_id" context="{'group_by':'customer_id'}"/>
+                <filter string="State" name="group_state" context="{'group_by':'state'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="view_rmc_docket_report_pivot" model="ir.ui.view">
+        <field name="name">rmc.docket.report.pivot</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Docket Pivot" disable_linking="0">
+                <field name="docket_date" type="row"/>
+                <field name="customer_id" type="col"/>
+                <field name="quantity_produced" type="measure"/>
+                <field name="truck_loading_count" type="measure"/>
+                <field name="batch_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_rmc_docket_report_graph" model="ir.ui.view">
+        <field name="name">rmc.docket.report.graph</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <graph string="Docket Graph" type="bar">
+                <field name="docket_date" type="row" interval="day"/>
+                <field name="quantity_produced" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_rmc_docket_report_kanban" model="ir.ui.view">
+        <field name="name">rmc.docket.report.kanban</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" create="0" delete="0" default_group_by="customer_id">
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top o_flex">
+                                <strong><field name="docket_number"/></strong>
+                                <span t-esc="record.docket_date.value" class="ms-auto"/>
+                            </div>
+                            <div>
+                                <span><field name="customer_id"/></span>
+                                <span class="ms-2">Qty: <field name="quantity_produced"/></span>
+                            </div>
+                            <div class="o_kanban_footer">
+                                <span>TL: <field name="truck_loading_count"/></span>
+                                <span class="ms-2">Batches: <field name="batch_count"/></span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_rmc_docket_report_calendar" model="ir.ui.view">
+        <field name="name">rmc.docket.report.calendar</field>
+        <field name="model">rmc.docket.report</field>
+        <field name="arch" type="xml">
+            <calendar string="Docket Calendar" date_start="docket_date" color="customer_id">
+                <field name="docket_number"/>
+                <field name="quantity_produced"/>
+            </calendar>
+        </field>
+    </record>
+    <record id="action_rmc_docket_report" model="ir.actions.act_window">
+        <field name="name">RMC Docket-wise Report</field>
+        <field name="res_model">rmc.docket.report</field>
+        <field name="view_mode">list,form,pivot,graph,kanban,calendar</field>
+        <field name="search_view_id" ref="view_rmc_docket_report_search"/>
+    </record>
+
+    <!-- Workorder-wise Report -->
+    <record id="view_rmc_workorder_report_list" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.list</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <list string="Workorder-wise Report">
+                <field name="date_order"/>
+                <field name="name"/>
+                <field name="sale_order_id"/>
+                <field name="partner_id"/>
+                <field name="quantity_ordered" sum="1"/>
+                <field name="quantity_delivered" sum="1"/>
+                <field name="quantity_remaining" sum="1"/>
+                <field name="docket_count"/>
+                <field name="ticket_count"/>
+                <field name="truck_loading_count"/>
+                <field name="batch_count"/>
+                <field name="po_count"/>
+                <field name="vendor_bill_count"/>
+                <field name="invoice_count"/>
+                <field name="cube_test_count"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_workorder_report_form" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.form</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <form string="Workorder Report" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_open_workorder" type="object" string="Open Workorder" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_order"/>
+                            <field name="partner_id"/>
+                        </group>
+                        <group>
+                            <field name="sale_order_id"/>
+                            <field name="quantity_ordered"/>
+                            <field name="quantity_delivered"/>
+                            <field name="quantity_remaining"/>
+                        </group>
+                    </group>
+                    <group string="Counts">
+                        <group>
+                            <field name="docket_count"/>
+                            <field name="ticket_count"/>
+                            <field name="po_count"/>
+                        </group>
+                        <group>
+                            <field name="truck_loading_count"/>
+                            <field name="batch_count"/>
+                            <field name="invoice_count"/>
+                            <field name="vendor_bill_count"/>
+                        </group>
+                    </group>
+                    <group string="Related">
+                        <button name="action_open_dockets" string="Dockets" type="object" class="oe_link"/>
+                        <button name="action_open_tickets" string="Tickets" type="object" class="oe_link"/>
+                        <button name="action_open_truck_loadings" string="Truck Loadings" type="object" class="oe_link"/>
+                        <button name="action_open_batches" string="Batches" type="object" class="oe_link"/>
+                        <button name="action_open_purchase_orders" string="Purchase Orders" type="object" class="oe_link"/>
+                        <button name="action_open_vendor_bills" string="Vendor Bills" type="object" class="oe_link"/>
+                        <button name="action_open_invoices" string="Invoices" type="object" class="oe_link"/>
+                        <button name="action_open_cube_tests" string="Cube Tests" type="object" class="oe_link"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Sale Order-wise Report -->
+    <record id="view_rmc_saleorder_report_list" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.list</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <list string="Sale Order-wise Report">
+                <field name="date_order"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="amount_total" sum="1"/>
+                <field name="workorder_count"/>
+                <field name="docket_count"/>
+                <field name="cube_test_count"/>
+                <field name="trial_mix_count"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_saleorder_report_form" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.form</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <form string="Sale Order Report" create="0" edit="0" delete="0">
+                <header>
+                    <button name="action_open_sale_order" type="object" string="Open Sale Order" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="date_order"/>
+                            <field name="partner_id"/>
+                            <field name="amount_total"/>
+                        </group>
+                    </group>
+                    <group string="Counts">
+                        <group>
+                            <field name="workorder_count"/>
+                            <field name="docket_count"/>
+                        </group>
+                        <group>
+                            <field name="cube_test_count"/>
+                            <field name="trial_mix_count"/>
+                        </group>
+                    </group>
+                    <group string="Related">
+                        <button name="action_open_workorders" string="Workorders" type="object" class="oe_link"/>
+                        <button name="action_open_dockets" string="Dockets" type="object" class="oe_link"/>
+                        <button name="action_open_cube_tests" string="Cube Tests" type="object" class="oe_link"/>
+                        <button name="action_open_trial_mixes" string="Trial Mixes" type="object" class="oe_link"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_rmc_saleorder_report_search" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.search</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <separator/>
+                <filter string="Date" name="group_date_order" context="{'group_by':'date_order'}"/>
+                <filter string="Customer" name="group_partner" context="{'group_by':'partner_id'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="view_rmc_saleorder_report_pivot" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.pivot</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Sale Order Pivot" disable_linking="0">
+                <field name="date_order" type="row"/>
+                <field name="partner_id" type="col"/>
+                <field name="amount_total" type="measure"/>
+                <field name="workorder_count" type="measure"/>
+                <field name="docket_count" type="measure"/>
+                <field name="cube_test_count" type="measure"/>
+                <field name="trial_mix_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_rmc_saleorder_report_graph" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.graph</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <graph string="Sale Order Graph" type="bar">
+                <field name="date_order" type="row"/>
+                <field name="workorder_count" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_rmc_saleorder_report_kanban" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.kanban</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" create="0" delete="0" default_group_by="partner_id">
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top o_flex">
+                                <strong><field name="name"/></strong>
+                                <span t-esc="record.date_order.value" class="ms-auto"/>
+                            </div>
+                            <div>
+                                <span><field name="partner_id"/></span>
+                                <span class="ms-2">WO: <field name="workorder_count"/></span>
+                                <span class="ms-2">Dock: <field name="docket_count"/></span>
+                            </div>
+                            <div class="o_kanban_footer">
+                                <span>Cube: <field name="cube_test_count"/></span>
+                                <span class="ms-2">Trial Mix: <field name="trial_mix_count"/></span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_rmc_saleorder_report_calendar" model="ir.ui.view">
+        <field name="name">rmc.saleorder.report.calendar</field>
+        <field name="model">rmc.saleorder.report</field>
+        <field name="arch" type="xml">
+            <calendar string="Sale Order Calendar" date_start="date_order" color="partner_id">
+                <field name="name"/>
+                <field name="workorder_count"/>
+            </calendar>
+        </field>
+    </record>
+    <record id="action_rmc_saleorder_report" model="ir.actions.act_window">
+        <field name="name">RMC Sale Order-wise Report</field>
+        <field name="res_model">rmc.saleorder.report</field>
+        <field name="view_mode">list,form,pivot,graph,kanban,calendar</field>
+        <field name="search_view_id" ref="view_rmc_saleorder_report_search"/>
+    </record>
+    <record id="view_rmc_workorder_report_search" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.search</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <separator/>
+                <filter string="Order Date" name="group_date_order" context="{'group_by':'date_order'}"/>
+                <filter string="Customer" name="group_partner" context="{'group_by':'partner_id'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="view_rmc_workorder_report_pivot" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.pivot</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Workorder Pivot" disable_linking="0">
+                <field name="date_order" type="row"/>
+                <field name="partner_id" type="col"/>
+                <field name="quantity_ordered" type="measure"/>
+                <field name="quantity_delivered" type="measure"/>
+                <field name="quantity_remaining" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_rmc_workorder_report_graph" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.graph</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <graph string="Workorder Graph" type="line">
+                <field name="date_order" type="row" interval="day"/>
+                <field name="quantity_delivered" type="measure"/>
+            </graph>
+        </field>
+    </record>
+    <record id="view_rmc_workorder_report_kanban" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.kanban</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column" create="0" delete="0" default_group_by="partner_id">
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top o_flex">
+                                <strong><field name="name"/></strong>
+                                <span t-esc="record.date_order.value" class="ms-auto"/>
+                            </div>
+                            <div>
+                                <span><field name="partner_id"/></span>
+                                <span class="ms-2">Deliv: <field name="quantity_delivered"/></span>
+                            </div>
+                            <div class="o_kanban_footer">
+                                <span>Dock: <field name="docket_count"/></span>
+                                <span class="ms-2">Inv: <field name="invoice_count"/></span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_rmc_workorder_report_calendar" model="ir.ui.view">
+        <field name="name">rmc.workorder.report.calendar</field>
+        <field name="model">rmc.workorder.report</field>
+        <field name="arch" type="xml">
+            <calendar string="Workorder Calendar" date_start="date_order" color="partner_id">
+                <field name="name"/>
+                <field name="quantity_delivered"/>
+            </calendar>
+        </field>
+    </record>
+    <record id="action_rmc_workorder_report" model="ir.actions.act_window">
+        <field name="name">RMC Workorder-wise Report</field>
+        <field name="res_model">rmc.workorder.report</field>
+        <field name="view_mode">list,form,pivot,graph,kanban,calendar</field>
+        <field name="search_view_id" ref="view_rmc_workorder_report_search"/>
+    </record>
+    </data>
+
+</odoo>

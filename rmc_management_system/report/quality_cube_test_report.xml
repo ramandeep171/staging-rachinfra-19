@@ -1,0 +1,29 @@
+<odoo>
+  <report 
+    id="report_quality_cube_test"
+    string="Cube Test Report"
+    model="quality.cube.test"
+    report_type="qweb-pdf"
+    name="rmc_management_system.report_quality_cube_test_template"
+    file="rmc_management_system.report_quality_cube_test_template"
+  />
+
+  <template id="report_quality_cube_test_template">
+    <t t-call="web.external_layout">
+      <t t-foreach="docs" t-as="doc">
+        <div class="page">
+          <h2>Cube Test Report</h2>
+          <p><strong>Reference:</strong> <t t-esc="doc.name"/></p>
+          <p><strong>Sale Order:</strong> <t t-esc="doc.sale_order_id.name"/></p>
+          <p><strong>Condition:</strong> <t t-esc="doc.test_condition"/></p>
+          <p><strong>Test Date:</strong> <t t-esc="doc.test_date"/></p>
+          <p><strong>Day Type:</strong> <t t-esc="doc.day_type"/></p>
+          <p><strong>Strength Result (MPa):</strong> <t t-esc="doc.strength_result"/></p>
+          <p><strong>Design Strength (MPa):</strong> <t t-esc="doc.design_strength"/></p>
+          <p><strong>Status:</strong> <t t-esc="doc.status"/></p>
+          <p><strong>Outcome:</strong> <t t-esc="doc.pass_fail"/></p>
+        </div>
+      </t>
+    </t>
+  </template>
+</odoo>

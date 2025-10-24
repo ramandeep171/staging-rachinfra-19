@@ -1,0 +1,222 @@
+<odoo>
+    <data>
+    <record id="view_dropshipping_workorder_list" model="ir.ui.view">
+        <field name="name">dropshipping.workorder.list</field>
+        <field name="model">dropshipping.workorder</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date_order"/>
+                <field name="sale_order_id"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="quantity_ordered"/>
+                <field name="quantity_delivered"/>
+                <field name="quantity_remaining"/>
+                <field name="total_qty"/>
+                <field name="site_type"/>
+                <field name="cement_balance"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_dropshipping_workorder_form" model="ir.ui.view">
+        <field name="name">dropshipping.workorder.form</field>
+        <field name="model">dropshipping.workorder</field>
+        <field name="arch" type="xml">
+            <form string="Dropshipping RMC Workorder">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,assigned_to_subcontractor,pending_acceptance,accepted,in_progress,completed"/>
+
+                    <!-- State Transition Buttons -->
+                    <button name="action_send_for_acceptance" string="Send for Acceptance" type="object"
+                            class="btn-primary" invisible="state != 'assigned_to_subcontractor'"/>
+
+                    <button name="action_accept_wo" string="Accept Work Order" type="object"
+                            class="btn-success" invisible="state != 'pending_acceptance'"/>
+
+                    <button name="action_reject_wo" string="Reject Work Order" type="object"
+                            class="btn-danger" invisible="state != 'pending_acceptance'"/>
+
+                    <button name="action_start_progress" string="Start Work" type="object"
+                            class="btn-primary" invisible="state != 'accepted'"/>
+
+                    <!-- Other Action Buttons -->
+                    <button name="action_simulate_breakdown" string="Simulate Breakdown" type="object" class="btn-warning"/>
+                    <button name="action_divert_create_po" string="Divert and Create PO" type="object" class="btn-primary" invisible="state != 'breakdown'"/>
+                    <button name="action_print_completion_summary" string="Print Completion Summary" type="object" class="btn-secondary"/>
+                    <!-- <button name="action_regenerate_tickets" string="Regenerate Tickets" type="object" class="btn-warning"/> -->
+                    <!-- <button name="action_shift_to_customer_warehouse" string="Shift to Customer Warehouse" type="object" class="btn-primary"/> -->
+                    <!-- <button name="action_update_balance" string="Update Balance" type="object" class="btn-warning"/> -->
+                    <!-- <button name="action_test_move" string="Test Move" type="object" class="btn-info"/> -->
+                    <!-- <button name="action_resync_state" string="Resync State" type="object" class="btn-secondary"/> -->
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="True"/>
+                        </h1>
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" type="object" name="action_open_dockets" icon="fa-list">
+                            <field name="docket_count" widget="statinfo" string="Dockets"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_tickets" icon="fa-ticket">
+                            <field name="ticket_count_btn" widget="statinfo" string="Tickets"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_truck_loadings" icon="fa-truck">
+                            <field name="truck_loading_count" widget="statinfo" string="Truck Loadings"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_batches" icon="fa-th-large">
+                            <field name="batch_count_btn" widget="statinfo" string="Batches"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_purchase_orders" icon="fa-shopping-cart">
+                            <field name="po_count" widget="statinfo" string="Purchase Orders"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_vendor_bills" icon="fa-file-text-o">
+                            <field name="vendor_bill_count" widget="statinfo" string="Vendor Bills"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_invoices" icon="fa-file-pdf-o">
+                            <field name="invoice_count" widget="statinfo" string="Invoices"/>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_open_delivery_variances" icon="fa-exclamation-triangle">
+                            <field name="delivery_variance_count" widget="statinfo" string="Delivery Variances"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date_order"/>
+                            <field name="sale_order_id"/>
+                            <field name="partner_id"/>
+                            <field name="allowed_subcontractor_partner_ids" invisible="1"/>
+                            <field name="rmc_subcontractor_id" invisible="1"/>
+                            <field name="subcontractor_id" domain="[('id', 'in', allowed_subcontractor_partner_ids)]"/>
+                            <field name="subcontractor_plant_id" domain="[('subcontractor_id','=', rmc_subcontractor_id)]" modifiers="{'invisible': [('subcontractor_id','=', False)]}"/>
+                        </group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="recipe_id"/>
+                            <field name="quantity_ordered"/>
+                            <field name="quantity_delivered"/>
+                            <field name="quantity_remaining"/>
+                            <field name="so_delivered_to_date" readonly="1"/>
+                            <field name="date_completed" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="total_qty"/>
+                            <field name="site_type"/>
+                            <field name="cement_balance" readonly="True"/>
+                            <field name="unit_price"/>
+                        </group>
+                        <group>
+                            <field name="total_amount"/>
+                            <field name="delivery_date"/>
+                            <field name="delivery_location"/>
+
+                            <field name="pump_required"/>
+                            <field name="pump_provider_id" invisible="pump_required == False"/>
+                            <field name="pump_id" invisible="pump_required == False"/>
+                        </group>
+                    
+                    </group>
+                    <group>
+                        <group>
+                            <field name="delivery_coordinates"/>
+                            <field name="helpdesk_ticket_id" domain="[('is_in_progress_stage','=',True), ('sale_order_id','=', sale_order_id)]"/>
+                              <field name="notes"/>
+                        </group>
+                       
+                    </group>
+                    <notebook>
+                        <page string="Workorder Lines">
+                            <field name="workorder_line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="quantity_ordered"/>
+                                    <field name="quantity_delivered"/>
+                                    <field name="unit_price"/>
+                                    <field name="total_amount"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Ingredient Balances">
+                            <field name="ingredient_balance_ids">
+                                <list editable="bottom">
+                                    <field name="material_type"/>
+                                    <field name="balance_qty"/>
+                                    <field name="uom_id"/>
+                                    <field name="last_updated"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Tickets">
+                            <group>
+
+                                <group string="Helpdesk Tickets ">
+                                    <field name="helpdesk_ticket_ids" readonly="1">
+                                        <list>
+                                            <field name="name"/>
+                                            <field name="rmc_quantity"/>
+                                            <field name="stage_id"/>
+                                            <field name="rmc_status"/>
+                                        </list>
+                                    </field>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Warehouse Shifts">
+                            <field name="warehouse_shift_ids">
+                                <list>
+                                    <field name="product_id"/>
+                                    <field name="quantity_shifted"/>
+                                    <field name="from_location_id"/>
+                                    <field name="to_location_id"/>
+                                    <field name="shift_date"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Reporting">
+                            <group>
+                                <group>
+                                    <field name="completion_template_id"/>
+                                    <field name="cube7_template_id"/>
+                                    <field name="cube28_template_id"/>
+                                </group>
+                                <group>
+                                    <field name="report_cc_emails"/>
+                                    <field name="report_bcc_emails"/>
+                                    <field name="wo_report_root_message_id" readonly="1"/>
+                                    <field name="cube7_last_sent" readonly="1"/>
+                                    <field name="cube28_last_sent" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Add other view records for lines, balances, tickets, shifts as needed -->
+
+    <record id="action_dropshipping_workorder" model="ir.actions.act_window">
+        <field name="name">Dropshipping RMC Workorders</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">dropshipping.workorder</field>
+        <field name="view_mode">list,form</field>
+        <field name="help">Manage dropshipping RMC workorders</field>
+    </record>
+
+    <record id="action_rmc_material_balance" model="ir.actions.act_window">
+        <field name="name">RMC Material Balances</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">rmc.material.balance</field>
+        <field name="view_mode">list,form</field>
+        <field name="help">Manage RMC material balances</field>
+    </record>
+    </data>
+</odoo>

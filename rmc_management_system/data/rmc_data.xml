@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="seq_rmc_batch" model="ir.sequence">
+            <field name="name">RMC Batch</field>
+            <field name="code">rmc.batch</field>
+            <field name="prefix">BATCH/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_rmc_weighbridge" model="ir.sequence">
+        <field name="name">RMC Weighbridge</field>
+        <field name="code">rmc.weighbridge</field>
+        <field name="prefix">WB/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_rmc_quality_check" model="ir.sequence">
+        <field name="name">RMC Quality Check</field>
+        <field name="code">rmc.quality.check</field>
+        <field name="prefix">QC/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_dropshipping_workorder" model="ir.sequence">
+<field name="name">Dropshipping Workorder</field>
+<field name="code">dropshipping.workorder</field>
+<field name="prefix">WO/</field>
+<field name="padding">5</field>
+<field name="company_id" eval="False"/>
+</record>
+    <record id="seq_rmc_docket" model="ir.sequence">
+        <field name="name">RMC Docket</field>
+        <field name="code">rmc.docket</field>
+        <field name="prefix">DOCK/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+    <record id="seq_rmc_delivery_variance" model="ir.sequence">
+        <field name="name">RMC Delivery Variance</field>
+        <field name="code">rmc.delivery_variance</field>
+        <field name="prefix">DV/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="seq_rmc_subcontractor" model="ir.sequence">
+        <field name="name">RMC Subcontractor</field>
+        <field name="code">rmc.subcontractor</field>
+        <field name="prefix">SUB/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <!-- Default RMC Warehouse -->
+    <record id="warehouse_rmc" model="stock.warehouse">
+        <field name="name">RMC Warehouse</field>
+        <field name="code">RMC</field>
+        <field name="partner_id" ref="base.main_partner"/>
+    </record>
+
+    <!-- Default Stock Location for RMC Warehouse -->
+    <record id="location_rmc_stock" model="stock.location">
+        <field name="name">RMC Stock</field>
+        <field name="usage">internal</field>
+        <field name="location_id" eval="False"/>
+        <field name="warehouse_id" ref="warehouse_rmc"/>
+    </record>
+    </data>
+</odoo>

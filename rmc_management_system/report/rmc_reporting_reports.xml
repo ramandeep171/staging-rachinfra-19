@@ -1,0 +1,342 @@
+<odoo>
+  <!-- Workorder Completion Report Action -->
+  <report id="report_workorder_completion"
+          string="Workorder Completion Summary"
+          model="dropshipping.workorder"
+          report_type="qweb-pdf"
+          name="rmc_management_system.report_workorder_completion_tmpl"
+    file="rmc_management_system.report_workorder_completion_tmpl"
+    print_report_name="'Workorder_' + (object.name or '') + '_Summary'"/>
+
+  <template id="report_workorder_completion_tmpl">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="wo">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <h2>Workorder Completion Summary</h2>
+            <p>
+              <strong>Customer:</strong> <span t-esc="wo.partner_id.name"/>
+              &#160;|&#160; <strong>Sale Order:</strong> <span t-esc="wo.sale_order_id.name"/>
+              &#160;|&#160; <strong>Workorder:</strong> <span t-esc="wo.name"/>
+            </p>
+            <p>
+              <strong>Order Date:</strong> <span t-esc="wo.date_order"/>
+              &#160;|&#160; <strong>Completed On:</strong> <span t-esc="wo.date_completed"/>
+              &#160;|&#160; <strong>Location:</strong> <span t-esc="wo.delivery_location or ''"/>
+            </p>
+            <p>
+              <strong>Product:</strong> <span t-esc="wo.product_id.display_name"/>
+              &#160;|&#160; <strong>Recipe:</strong> <span t-esc="wo.recipe_id.display_name or ''"/>
+            </p>
+            <h3>Quantities</h3>
+            <ul>
+              <li>Ordered: <span t-esc="wo.quantity_ordered"/> m3</li>
+              <li>Delivered: <span t-esc="wo.quantity_delivered"/> m3</li>
+              <li>Remaining: <span t-esc="wo.quantity_remaining"/> m3</li>
+            </ul>
+            <h3>Operational</h3>
+            <p>Dockets:</p>
+            <table class="table table-sm">
+              <thead><tr><th>Docket</th><th>Date</th><th>Qty Produced</th><th>Status</th></tr></thead>
+              <tbody>
+                <t t-set="dockets" t-value="env['rmc.docket'].sudo().search([('workorder_id','=',wo.id)])"/>
+                <t t-foreach="dockets" t-as="d">
+                  <tr>
+                    <td t-esc="d.docket_number"/>
+                    <td t-esc="d.docket_date"/>
+                    <td t-esc="d.quantity_produced"/>
+                    <td t-esc="d.state"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+            <p>Truck Loadings, Plant Checks, Delivery Variances:</p>
+            <ul>
+              <li>Truck Loadings: <t t-esc="env['rmc.truck_loading'].sudo().search_count([('docket_id.workorder_id','=',wo.id)])"/></li>
+              <li>Plant Checks: <t t-esc="env['rmc.plant_check'].sudo().search_count([('docket_id.workorder_id','=',wo.id)])"/></li>
+              <li>Delivery Variances (approved/reconciled): <t t-esc="env['rmc.delivery_variance'].sudo().search_count([('truck_loading_id.docket_id.workorder_id','=',wo.id), ('reconciliation_status','in',['approved','reconciled'])])"/></li>
+            </ul>
+            <h3>Financial Glance</h3>
+            <ul>
+              <li>Customer Invoices: <t t-esc="env['account.move'].sudo().search_count([('move_type','=','out_invoice'),('docket_id.workorder_id','=',wo.id)])"/></li>
+              <li>Vendor Bills: <t t-esc="env['account.move'].sudo().search_count([('move_type','=','in_invoice'),('invoice_origin','ilike',wo.name or '')])"/></li>
+            </ul>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+
+  <!-- Sale Order Summary Report Action -->
+  <report id="report_sale_order_summary"
+          string="Sale Order Summary"
+          model="sale.order"
+          report_type="qweb-pdf"
+          name="rmc_management_system.report_sale_order_summary_tmpl"
+    file="rmc_management_system.report_sale_order_summary_tmpl"
+    print_report_name="'SO_' + (object.name or '') + '_Summary'"/>
+
+  <template id="report_sale_order_summary_tmpl">
+    <t t-call="web.html_container">
+      <t t-set="docid" t-value="(data or {}).get('docid')"/>
+      <t t-set="docid_int" t-value="(docid and int(docid)) or False"/>
+  <t t-set="ctx" t-value="env.context or {}"/>
+  <t t-set="window_days" t-value="ctx.get('window_days') or (data or {}).get('window_days') or 30"/>
+      <t t-set="so_list" t-value="docs and docs.sudo().exists() or False"/>
+      <t t-if="so_list">
+        <t t-foreach="so_list" t-as="so">
+          <t t-call="web.external_layout">
+            <div class="page">
+              <h2>Sale Order Summary (Last <t t-esc="window_days"/> days)</h2>
+              <p>
+                <strong>Customer:</strong> <span t-esc="so.partner_id.name"/>
+                &#160;|&#160; <strong>Sale Order:</strong> <span t-esc="so.name"/>
+                &#160;|&#160; <strong>Confirmed:</strong>
+                <span t-esc="(so._fields.get('confirmation_date') and so.confirmation_date) or so.date_order"/>
+              </p>
+              <t t-set="date_from" t-value="ctx.get('date_from') or (data or {}).get('date_from')"/>
+              <t t-set="dockets" t-value="env['rmc.docket'].sudo().search([('sale_order_id','=',so.id), ('docket_date','>=', date_from)])"/>
+              <t t-set="tl_count" t-value="env['rmc.truck_loading'].sudo().search_count([('docket_id.sale_order_id','=',so.id), ('docket_id.docket_date','>=', date_from)])"/>
+              <t t-set="dv_approved" t-value="env['rmc.delivery_variance'].sudo().search_count([('truck_loading_id.docket_id.sale_order_id','=',so.id), ('truck_loading_id.docket_id.docket_date','>=', date_from), ('reconciliation_status','in',['approved','reconciled'])])"/>
+              <t t-set="delivered" t-value="sum([d.quantity_produced or 0.0 for d in dockets])"/>
+              <!-- Added overall counts against SO -->
+              <t t-set="wo_count" t-value="env['dropshipping.workorder'].sudo().search_count([('sale_order_id','=',so.id)])"/>
+              <t t-set="docket_total" t-value="env['rmc.docket'].sudo().search_count([('sale_order_id','=',so.id)])"/>
+              <p>
+                <strong>Delivered Volume:</strong> <t t-esc="delivered"/> m3
+                &#160;|&#160; <strong>Dockets (last <t t-esc="window_days"/> days):</strong> <t t-esc="len(dockets)"/>
+                &#160;|&#160; <strong>Truck Loadings:</strong> <t t-esc="tl_count"/>
+                &#160;|&#160; <strong>DV (approved/reconciled):</strong> <t t-esc="dv_approved"/>
+                &#160;|&#160; <strong>Workorders (total):</strong> <t t-esc="wo_count"/>
+                &#160;|&#160; <strong>Dockets (total):</strong> <t t-esc="docket_total"/>
+              </p>
+              <h3>Docket Details</h3>
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Docket</th>
+                    <th>Date</th>
+                    <th>Qty Produced</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <t t-foreach="dockets" t-as="d">
+                    <tr>
+                      <td t-esc="d.docket_number or ''"/>
+                      <td t-esc="d.docket_date or ''"/>
+                      <td t-esc="d.quantity_produced or 0.0"/>
+                      <td t-esc="d.state or ''"/>
+                    </tr>
+                  </t>
+                </tbody>
+              </table>
+            </div>
+          </t>
+        </t>
+      </t>
+      <t t-elif="docid_int">
+        <t t-set="so" t-value="env['sale.order'].sudo().browse(docid_int)"/>
+        <t t-if="so and so.exists()">
+          <t t-call="web.external_layout">
+          <div class="page">
+            <h2>Sale Order Summary (Last <t t-esc="window_days"/> days)</h2>
+            <h3>Order Info</h3>
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th style="width: 180px;">Sale Order</th>
+                  <td><span t-esc="so.name"/></td>
+                </tr>
+                <tr>
+                  <th>Customer</th>
+                  <td><span t-esc="so.partner_id.display_name"/> (<span t-esc="so.partner_id.email or ''"/>)</td>
+                </tr>
+                <tr>
+                  <th>Invoice Address</th>
+                  <td><span t-esc="so.partner_invoice_id.display_name or ''"/></td>
+                </tr>
+                <tr>
+                  <th>Delivery Address</th>
+                  <td><span t-esc="so.partner_shipping_id.display_name or ''"/></td>
+                </tr>
+                <tr>
+                  <th>Salesperson</th>
+                  <td><span t-esc="so.user_id.name or ''"/></td>
+                </tr>
+                <tr>
+                  <th>Company</th>
+                  <td><span t-esc="so.company_id.display_name or ''"/></td>
+                </tr>
+              </tbody>
+            </table>
+            <h3>Dates</h3>
+            <p>
+              <strong>Order Date:</strong> <span t-esc="so.date_order"/>
+              &#160;|&#160; <strong>Confirmed:</strong> <span t-esc="(so._fields.get('confirmation_date') and so.confirmation_date) or so.date_order"/>
+              &#160;|&#160; <strong>Validity:</strong> <span t-esc="so.validity_date or ''"/>
+            </p>
+            <t t-set="date_from" t-value="(data or {}).get('date_from')"/>
+            <t t-set="dockets" t-value="env['rmc.docket'].sudo().search([('sale_order_id','=',so.id), ('docket_date','>=', date_from)])"/>
+            <t t-set="tl_count" t-value="env['rmc.truck_loading'].sudo().search_count([('docket_id.sale_order_id','=',so.id), ('docket_id.docket_date','>=', date_from)])"/>
+            <t t-set="dv_approved" t-value="env['rmc.delivery_variance'].sudo().search_count([('truck_loading_id.docket_id.sale_order_id','=',so.id), ('truck_loading_id.docket_id.docket_date','>=', date_from), ('reconciliation_status','in',['approved','reconciled'])])"/>
+            <t t-set="delivered" t-value="sum([d.quantity_produced or 0.0 for d in dockets])"/>
+            <!-- Added overall counts against SO -->
+            <t t-set="wo_count" t-value="env['dropshipping.workorder'].sudo().search_count([('sale_order_id','=',so.id)])"/>
+            <t t-set="docket_total" t-value="env['rmc.docket'].sudo().search_count([('sale_order_id','=',so.id)])"/>
+            <p>
+              <strong>Delivered Volume:</strong> <t t-esc="delivered"/> m3
+              &#160;|&#160; <strong>Dockets (last <t t-esc="window_days"/> days):</strong> <t t-esc="len(dockets)"/>
+              &#160;|&#160; <strong>Truck Loadings:</strong> <t t-esc="tl_count"/>
+              &#160;|&#160; <strong>DV (approved/reconciled):</strong> <t t-esc="dv_approved"/>
+              &#160;|&#160; <strong>Workorders (total):</strong> <t t-esc="wo_count"/>
+              &#160;|&#160; <strong>Dockets (total):</strong> <t t-esc="docket_total"/>
+            </p>
+            <h3>Order Lines</h3>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Description</th>
+                  <th class="text-right">Qty</th>
+                  <th>UoM</th>
+                  <th class="text-right">Unit Price</th>
+                  <th>Taxes</th>
+                  <th class="text-right">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <t t-foreach="so.order_line" t-as="l">
+                  <tr>
+                    <td t-esc="l.product_id.display_name or ''"/>
+                    <td t-esc="l.name or ''"/>
+                    <td class="text-right" t-esc="l.product_uom_qty"/>
+                    <td t-esc="l.product_uom.name or ''"/>
+                    <td class="text-right" t-esc="l.price_unit"/>
+                    <td t-esc="', '.join([t.name for t in l.tax_id]) if l.tax_id else ''"/>
+                    <td class="text-right" t-esc="l.price_subtotal"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+            <div class="row">
+              <div class="col-6">
+                <p><strong>Payment Terms:</strong> <span t-esc="so.payment_term_id.name or ''"/></p>
+                <p><strong>Currency:</strong> <span t-esc="so.currency_id.name or ''"/></p>
+              </div>
+              <div class="col-6">
+                <table class="table table-sm">
+                  <tbody>
+                    <tr>
+                      <th>Untaxed Amount</th>
+                      <td class="text-right" t-esc="so.amount_untaxed"/>
+                    </tr>
+                    <tr>
+                      <th>Taxes</th>
+                      <td class="text-right" t-esc="so.amount_tax"/>
+                    </tr>
+                    <tr>
+                      <th>Total</th>
+                      <td class="text-right" t-esc="so.amount_total"/>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          </t>
+        </t>
+        <t t-else="">
+        <div class="page"><p>Record not found.</p></div>
+        </t>
+      </t>
+      <t t-else="">
+        <div class="page"><p>Record not found.</p></div>
+      </t>
+    </t>
+  </template>
+
+  <report id="action_report_operator_day_report"
+          string="Operator Day Report"
+          model="rmc.operator.day.report"
+          report_type="qweb-pdf"
+          name="rmc_management_system.report_operator_day_report"
+          file="rmc_management_system.report_operator_day_report"
+          print_report_name="'DayReport_%s_%s' % (object.plant_id.plant_code or object.plant_id.name or 'Plant', object.report_date or '')"/>
+
+  <template id="report_operator_day_report">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="doc">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <h2>Operator Day Report</h2>
+            <p>
+              <strong>Plant:</strong> <span t-esc="doc.plant_id.display_name"/>
+              &#160;|&#160; <strong>Date:</strong> <span t-esc="doc.report_date"/>
+              &#160;|&#160; <strong>Operator:</strong> <span t-esc="doc.operator_user_id.name"/>
+            </p>
+            <p t-if="doc.generated_automatically" class="text-muted">
+              This report was generated automatically from plant activity.
+            </p>
+
+            <h3>Summary</h3>
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <th style="width: 200px;">Total Jobs</th>
+                  <td t-esc="doc.total_jobs"/>
+                </tr>
+                <tr>
+                  <th>Completed Jobs</th>
+                  <td t-esc="doc.completed_jobs"/>
+                </tr>
+                <tr>
+                  <th>Pending Jobs</th>
+                  <td t-esc="doc.pending_jobs"/>
+                </tr>
+                <tr>
+                  <th>Total Quantity (M³)</th>
+                  <td t-esc="'%.2f' % (doc.total_quantity or 0.0)"/>
+                </tr>
+              </tbody>
+            </table>
+
+            <t t-if="doc.remarks">
+              <h3>Remarks</h3>
+              <p t-esc="doc.remarks"/>
+            </t>
+
+            <h3>Dockets</h3>
+            <t t-set="docket_state_labels" t-value="dict(env['rmc.docket']._fields['state'].selection)"/>
+            <t t-set="portal_status_labels" t-value="dict(env['rmc.docket']._fields['operator_portal_status'].selection)"/>
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th style="width: 18%;">Docket</th>
+                  <th style="width: 20%;">Workorder</th>
+                  <th style="width: 14%;" class="text-end">Quantity (M³)</th>
+                  <th style="width: 18%;">Operator Status</th>
+                  <th style="width: 18%;">Docket State</th>
+                  <th style="width: 12%;" class="text-end">Completed On</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-foreach="doc.docket_ids" t-as="docket">
+                  <td t-esc="docket.name or docket.docket_number or '-'"/>
+                  <td t-esc="docket.workorder_id.name or '-'"/>
+                  <td class="text-end" t-esc="'%.2f' % (docket.quantity_produced or 0.0)"/>
+                  <td t-esc="portal_status_labels.get(docket.operator_portal_status, docket.operator_portal_status)"/>
+                  <td t-esc="docket_state_labels.get(docket.state, docket.state)"/>
+                  <td class="text-end" t-esc="docket.operator_completion_time or '-'"/>
+                </tr>
+                <tr t-if="not doc.docket_ids">
+                  <td colspan="6" class="text-center text-muted">No dockets recorded for this day.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+</odoo>

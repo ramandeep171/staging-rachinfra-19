@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Minimal, validated view definitions for subcontractor fleet integration -->
+    <record id="view_rmc_subcontractor_tree_fleet" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.list.fleet</field>
+        <field name="model">rmc.subcontractor</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rmc_subcontractor_form_fleet" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.form.fleet</field>
+        <field name="model">rmc.subcontractor</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

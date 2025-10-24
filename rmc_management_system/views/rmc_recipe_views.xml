@@ -1,0 +1,61 @@
+<odoo>
+	<data>
+<record id="view_rmc_recipe_list" model="ir.ui.view">
+<field name="name">rmc.recipe.list</field>
+<field name="model">rmc.recipe</field>
+<field name="arch" type="xml">
+<list>
+<field name="name"/>
+<field name="concrete_grade"/>
+<field name="cement_type"/>
+<field name="min_cement_content"/>
+<field name="active"/>
+</list>
+</field>
+</record>
+<record id="view_rmc_recipe_form" model="ir.ui.view">
+<field name="name">rmc.recipe.form</field>
+<field name="model">rmc.recipe</field>
+<field name="arch" type="xml">
+<form>
+<sheet>
+<group>
+<field name="name"/>
+<field name="concrete_grade"/>
+<field name="cement_type"/>
+<field name="min_cement_content"/>
+<field name="max_aggregate_size"/>
+<field name="max_water_ratio"/>
+<field name="slump_flow_min"/>
+<field name="slump_flow_max"/>
+<field name="chemical_admix_standard"/>
+<field name="mineral_admix_standard"/>
+<field name="slump_standard"/>
+<field name="active"/>
+</group>
+<notebook>
+<page string="Recipe Lines">
+<field name="recipe_line_ids">
+<list editable="bottom">
+<field name="material_name"/>
+<field name="material_code"/>
+<field name="design_qty"/>
+<field name="tolerance_percentage"/>
+</list>
+</field>
+</page>
+<page string="Notes">
+<field name="notes"/>
+</page>
+</notebook>
+</sheet>
+</form>
+</field>
+</record>
+<record id="action_rmc_recipe" model="ir.actions.act_window">
+	<field name="name">RMC Recipes</field>
+	<field name="res_model">rmc.recipe</field>
+	<field name="view_mode">list,form</field>
+</record>
+	</data>
+</odoo>

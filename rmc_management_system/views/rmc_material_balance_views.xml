@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- RMC Material Balance List View -->
+    <record id="view_rmc_material_balance_list" model="ir.ui.view">
+        <field name="name">rmc.material.balance.list</field>
+        <field name="model">rmc.material.balance</field>
+    <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+                <field name="material_type"/>
+                <field name="balance_qty"/>
+                <field name="workorder_id"/>
+                <field name="sale_order_id"/>
+                <field name="last_updated"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- RMC Material Balance Form View -->
+    <record id="view_rmc_material_balance_form" model="ir.ui.view">
+        <field name="name">rmc.material.balance.form</field>
+        <field name="model">rmc.material.balance</field>
+    <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_recalculate_balance" string="Recalculate Balance" type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="material_type"/>
+                        <field name="balance_qty"/>
+                        <field name="workorder_id"/>
+                        <field name="sale_order_id"/>
+                        <field name="last_updated"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for RMC Material Balance -->
+    <record id="action_rmc_material_balance" model="ir.actions.act_window">
+        <field name="name">RMC Material Balances</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">rmc.material.balance</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_rmc_material_balance_list"/>
+    </record>
+</odoo>

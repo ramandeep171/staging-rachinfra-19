@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="seq_rmc_delivery_track" model="ir.sequence">
+    <field name="name">RMC Delivery Track</field>
+    <field name="code">rmc.delivery_track</field>
+    <field name="prefix">DT/</field>
+    <field name="padding">4</field>
+  </record>
+</odoo>

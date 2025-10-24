@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="rmc_recipe_demo1" model="rmc.recipe">
+        <field name="name">Standard M20 Recipe</field>
+        <field name="concrete_grade">m20</field>
+        <field name="cement_type">opc</field>
+        <field name="min_cement_content">300.0</field>
+        <field name="max_aggregate_size">20.0</field>
+        <field name="max_water_ratio">0.5</field>
+        <field name="slump_flow_min">100.0</field>
+        <field name="slump_flow_max">150.0</field>
+    </record>
+    <record id="rmc_recipe_line_demo1" model="rmc.recipe.line">
+        <field name="recipe_id" ref="rmc_recipe_demo1"/>
+        <field name="material_name">Cement</field>
+        <field name="design_qty">300.0</field>
+    </record>
+    <record id="rmc_subcontractor_demo1" model="rmc.subcontractor">
+        <field name="name">Demo Subcontractor</field>
+        <field name="partner_id" ref="base.res_partner_12"/> <!-- Demo partner -->
+        <field name="plant_code">PL001</field>
+        <field name="plant_coordinates">28.7041,77.1025</field> <!-- Example Delhi coords -->
+    </record>
+    <!-- demo_subcontractor kept within demo data -->
+    </data>
+</odoo>

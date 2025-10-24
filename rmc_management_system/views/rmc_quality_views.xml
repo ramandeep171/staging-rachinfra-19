@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+    <record id="view_rmc_quality_check_list" model="ir.ui.view">
+        <field name="name">rmc.quality.check.list</field>
+        <field name="model">rmc.quality.check</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="check_date"/>
+                <field name="batch_id"/>
+                <field name="sale_order_id"/>
+                <field name="check_type"/>
+                <field name="overall_result"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rmc_quality_check_form" model="ir.ui.view">
+        <field name="name">rmc.quality.check.form</field>
+        <field name="model">rmc.quality.check</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="check_date"/>
+                        <field name="batch_id"/>
+                        <field name="sale_order_id"/>
+                        <field name="check_type"/>
+                        <field name="check_location"/>
+                        <field name="checker_name"/>
+                        <field name="slump_flow_actual"/>
+                        <field name="slump_flow_target"/>
+                        <field name="temperature"/>
+                        <field name="visual_inspection"/>
+                        <field name="sample_collected"/>
+                        <field name="sample_id"/>
+                        <field name="compression_strength_7day"/>
+                        <field name="compression_strength_28day"/>
+                        <field name="overall_result"/>
+                        <field name="quality_certificate"/>
+                        <field name="test_photos"/>
+                        <field name="notes"/>
+                        <field name="corrective_actions"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_rmc_quality_check" model="ir.actions.act_window">
+        <field name="name">RMC Quality Checks</field>
+        <field name="res_model">rmc.quality.check</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    </data>
+</odoo>

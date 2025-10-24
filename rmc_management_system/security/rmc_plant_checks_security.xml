@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Plant Check Security -->
+        <record id="rmc_plant_check_rule_user" model="ir.rule">
+            <field name="name">RMC Plant Check User Rule</field>
+            <field name="model_id" ref="model_rmc_plant_check"/>
+            <field name="domain_force">[('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="rmc_plant_check_rule_manager" model="ir.rule">
+            <field name="name">RMC Plant Check Manager Rule</field>
+            <field name="model_id" ref="model_rmc_plant_check"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        </record>
+
+        <!-- Truck Loading Security -->
+        <record id="rmc_truck_loading_rule_user" model="ir.rule">
+            <field name="name">RMC Truck Loading User Rule</field>
+            <field name="model_id" ref="model_rmc_truck_loading"/>
+            <field name="domain_force">[('create_uid', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <record id="rmc_truck_loading_rule_manager" model="ir.rule">
+            <field name="name">RMC Truck Loading Manager Rule</field>
+            <field name="model_id" ref="model_rmc_truck_loading"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        </record>
+
+        <!-- Access Rights -->
+        <record id="access_rmc_plant_check_user" model="ir.model.access">
+            <field name="name">RMC Plant Check User Access</field>
+            <field name="model_id" ref="model_rmc_plant_check"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="access_rmc_plant_check_manager" model="ir.model.access">
+            <field name="name">RMC Plant Check Manager Access</field>
+            <field name="model_id" ref="model_rmc_plant_check"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+
+        <record id="access_rmc_truck_loading_user" model="ir.model.access">
+            <field name="name">RMC Truck Loading User Access</field>
+            <field name="model_id" ref="model_rmc_truck_loading"/>
+            <field name="group_id" ref="base.group_user"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="access_rmc_truck_loading_manager" model="ir.model.access">
+            <field name="name">RMC Truck Loading Manager Access</field>
+            <field name="model_id" ref="model_rmc_truck_loading"/>
+            <field name="group_id" ref="base.group_system"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+    </data>
+</odoo>

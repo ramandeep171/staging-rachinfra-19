@@ -1,0 +1,27 @@
+<odoo>
+  <template id="report_universal_guide_tmpl">
+    <t t-call="web.external_layout">
+      <div class="page">
+        <h2>RMC Customer Guide</h2>
+        <p>This guide explains how to read your Sale Order summaries and where to find more details on the portal.</p>
+        <h3>What’s in the summary?</h3>
+        <ul>
+          <li>Delivered Volume and number of dockets in the selected period.</li>
+          <li>Truck Loadings count and Delivery Variances (approved/reconciled).</li>
+          <li>Docket details table with date, quantity and status.</li>
+        </ul>
+        <h3>Access on Portal</h3>
+        <p>Use the links in the email to view the report online. You can download the PDF anytime from the portal.</p>
+        <p>For questions, reply to the email or contact your account manager.</p>
+      </div>
+    </t>
+  </template>
+
+  <report id="report_universal_guide"
+          string="RMC Customer Guide"
+          model="sale.order"
+          report_type="qweb-pdf"
+          name="rmc_management_system.report_universal_guide_tmpl"
+          file="rmc_management_system.report_universal_guide_tmpl"
+          print_report_name="'RMC_Customer_Guide'"/>
+</odoo>

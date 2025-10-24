@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Subcontractor portal rules -->
+        <record id="rule_rmc_subcontractor_portal_self" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Own Subcontractor</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">[("partner_id", "=", user.partner_id.id)]</field>
+        </record>
+        <record id="rule_rmc_subcontractor_plant_sub_portal" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Plants</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor_plant"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">[("subcontractor_id.partner_id", "=", user.partner_id.id)]</field>
+        </record>
+        <record id="rule_rmc_subcontractor_transport_sub_portal" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Transports</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor_transport"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">[("subcontractor_id.partner_id", "=", user.partner_id.id)]</field>
+        </record>
+        <record id="rule_rmc_transport_fuel_log_sub_portal" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Fuel Logs</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_transport_fuel_log"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">[("transport_id.subcontractor_id.partner_id", "=", user.partner_id.id)]</field>
+        </record>
+        <record id="rule_rmc_transport_document_sub_portal" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Documents</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_transport_document"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">[("transport_id.subcontractor_id.partner_id", "=", user.partner_id.id)]</field>
+        </record>
+        <record id="rule_rmc_docket_sub_portal" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Dockets</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_docket"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">['|', ("subcontractor_id.partner_id", "=", user.partner_id.id), ("subcontractor_transport_id.subcontractor_id.partner_id", "=", user.partner_id.id)]</field>
+        </record>
+        <record id="rule_rmc_operator_day_report_sub_portal" model="ir.rule">
+            <field name="name">RMC Subcontractor Portal Day Reports</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_operator_day_report"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_subcontractor_portal'))]"/>
+            <field name="domain_force">[("plant_id.subcontractor_id.partner_id", "=", user.partner_id.id)]</field>
+        </record>
+
+        <!-- Operator portal rules -->
+        <record id="rule_rmc_subcontractor_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Subcontractor</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("plant_ids.operator_user_id", "=", user.id)]</field>
+        </record>
+        <record id="rule_rmc_subcontractor_plant_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Plants</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor_plant"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("operator_user_id", "=", user.id)]</field>
+        </record>
+        <record id="rule_rmc_subcontractor_transport_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Transports</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_subcontractor_transport"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("plant_id.operator_user_id", "=", user.id)]</field>
+        </record>
+        <record id="rule_rmc_transport_fuel_log_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Fuel Logs</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_transport_fuel_log"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("transport_id.plant_id.operator_user_id", "=", user.id)]</field>
+        </record>
+        <record id="rule_rmc_transport_document_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Documents</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_transport_document"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("transport_id.plant_id.operator_user_id", "=", user.id)]</field>
+        </record>
+        <record id="rule_rmc_docket_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Dockets</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_docket"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("operator_user_id", "=", user.id)]</field>
+        </record>
+        <record id="rule_rmc_operator_day_report_operator_portal" model="ir.rule">
+            <field name="name">RMC Operator Portal Day Reports</field>
+            <field name="model_id" ref="rmc_management_system.model_rmc_operator_day_report"/>
+            <field name="groups" eval="[(4, ref('rmc_management_system.group_rmc_operator_portal'))]"/>
+            <field name="domain_force">[("operator_user_id", "=", user.id)]</field>
+        </record>
+    </data>
+</odoo>

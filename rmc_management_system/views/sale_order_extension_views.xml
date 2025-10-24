@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend Sale Order Form View -->
+    <record id="view_sale_order_form_inherit_rmc" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.rmc</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+        <button name="action_create_rmc_workorder" 
+            type="object" 
+            string="Create RMC Workorder" 
+           invisible="is_rmc_order == 'False'"
+            class="btn-primary"/>
+                <button name="action_view_workorders" 
+                        type="object" 
+                        string="View Workorders" 
+            modifiers="{&quot;invisible&quot;: [[&quot;workorder_count&quot;, &quot;=&quot;, 0]]}"
+                        class="btn-secondary"/>
+            </xpath>
+            
+            <xpath expr="//sheet/group/group[1]" position="after">
+                <group>
+                    <field name="is_rmc_order" readonly="True"/>
+                    <field name="workorder_count" readonly="True"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Sale Order Tree View -->
+    <record id="view_sale_order_tree_inherit_rmc" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.rmc</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total']" position="after">
+                <field name="is_rmc_order"/>
+                <field name="workorder_count"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

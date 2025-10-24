@@ -1,0 +1,49 @@
+<odoo>
+  <!-- Cron: Cube Follow-ups (daily) -->
+  <record id="ir_cron_rmc_cube_followups" model="ir.cron">
+    <field name="name">RMC: Cube Follow-ups</field>
+    <field name="model_id" ref="model_rmc_reporting_cron"/>
+    <field name="state">code</field>
+    <field name="code">model.run_cube_followups()</field>
+    <field name="interval_number" eval="1"/>
+    <field name="interval_type">days</field>
+    <field name="active" eval="True"/>
+  </record>
+
+  <!-- Cron: Sale Order Periodic (daily) -->
+  <record id="ir_cron_rmc_so_periodic" model="ir.cron">
+    <field name="name">RMC: Sale Order Periodic Summaries</field>
+    <field name="model_id" ref="model_rmc_reporting_cron"/>
+    <field name="state">code</field>
+    <field name="code">model.run_sale_order_periodic()</field>
+    <field name="interval_number" eval="1"/>
+    <field name="interval_type">days</field>
+    <field name="active" eval="True"/>
+  </record>
+
+  <!-- Scheduled Action: Send Sale Order Summary -->
+  <record id="ir_cron_send_sale_order_summary" model="ir.cron">
+    <field name="name">RMC: Send Sale Order Summary</field>
+    <field name="model_id" ref="model_sale_order"/>
+    <field name="state">code</field>
+    <field name="code">env['sale.order'].browse(YOUR_SO_ID)._send_sale_order_summary(7, 'rmc_management_system.mail_tmpl_so_summary_7')</field>
+    <field name="interval_number" eval="1"/>
+    <field name="interval_type">days</field>
+    <field name="active" eval="True"/>
+  </record>
+
+  <template id="rmc_management_system.report_sale_order_summary_tmpl">
+    <t t-foreach="docs.sudo()" t-as="so">
+      <t t-call="web.external_layout">
+        <div class="page">
+          <h2>Sale Order Summary</h2>
+          <p><strong>SO:</strong> <span t-esc="so.name"/></p>
+          <p><strong>Customer:</strong> <span t-esc="so.partner_id.name"/></p>
+          <p><strong>Confirmed:</strong>
+            <span t-esc="(so._fields.get('confirmation_date') and so.confirmation_date) or so.date_order"/>
+          </p>
+        </div>
+      </t>
+    </t>
+  </template>
+</odoo>

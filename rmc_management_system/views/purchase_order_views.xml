@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Removed the incorrect xpath as the warning is handled in Python code -->
+</odoo>

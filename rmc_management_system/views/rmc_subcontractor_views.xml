@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Subcontractor Views -->
+    <record id="view_rmc_subcontractor_list" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.list</field>
+        <field name="model">rmc.subcontractor</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+                <!-- <field name="subcontractor_code"/> -->
+                <field name="has_plant"/>
+                <field name="has_transport"/>
+                <field name="has_pump"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Keep only one definition of actions for transports and pumps scoped to subcontractor records -->
+    <record id="action_rmc_subcontractor_transports" model="ir.actions.act_window">
+        <field name="name">Transports</field>
+        <field name="res_model">rmc.subcontractor.transport</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_subcontractor_id': active_id}</field>
+        <field name="domain">[('subcontractor_id','=',active_id)]</field>
+    </record>
+
+    <record id="action_rmc_subcontractor_pumps" model="ir.actions.act_window">
+        <field name="name">Pumps</field>
+        <field name="res_model">rmc.subcontractor.pump</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_subcontractor_id': active_id}</field>
+        <field name="domain">[('subcontractor_id','=',active_id)]</field>
+    </record>
+
+    <record id="view_rmc_subcontractor_form" model="ir.ui.view">
+        <field name="name">rmc.subcontractor.form</field>
+        <field name="model">rmc.subcontractor</field>
+    <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="partner_id" class="oe_edit_only"/>
+                        <h1><field name="partner_id" placeholder="Subcontractor Name"/></h1>
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button type="action" name="%(action_rmc_subcontractor_transports)d" class="oe_stat_button" icon="fa-truck">
+                            <span>Transports</span>
+                        </button>
+                        <button type="action" name="%(action_rmc_subcontractor_pumps)d" class="oe_stat_button" icon="fa-wrench">
+                            <span>Pumps</span>
+                        </button>
+                    </div>
+                    <group>
+                        <group string="Basic Information">
+                            <!-- <field name="subcontractor_code"/> -->
+                            <field name="partner_id"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Services">
+                            <field name="has_plant"/>
+                            <field name="has_transport"/>
+                            <field name="has_pump"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Plants">
+                            <group modifiers="{&quot;invisible&quot;: [[&quot;has_plant&quot;, &quot;=&quot;, false]]}">
+                                <field name="plant_ids"/>
+                                <!-- Tabs generated per plant -->
+                                <field name="plant_tabs_html" widget="html" options="{'sanitize': False}"/>
+                            </group>
+                        </page>
+                        <page string="Transports">
+                            <group modifiers="{&quot;invisible&quot;: [[&quot;has_transport&quot;, &quot;=&quot;, false]]}">
+                                <field name="transport_tabs_html" widget="html" options="{'sanitize': False}"/>
+                                <field name="transport_ids"/>
+                            </group>
+                        </page>
+                        <page string="Pumps">
+                            <group modifiers="{&quot;invisible&quot;: [[&quot;has_pump&quot;, &quot;=&quot;, false]]}">
+                                <field name="pump_tabs_html" widget="html" options="{'sanitize': False}"/>
+                                <field name="pump_ids"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_rmc_subcontractor" model="ir.actions.act_window">
+        <field name="name">Subcontractors</field>
+        <field name="res_model">rmc.subcontractor</field>
+        <field name="view_mode">list,form</field>
+        <field name="help">Manage RMC Subcontractors</field>
+    </record>
+
+    <!-- Main menu is defined in rmc_menus.xml; avoid duplicate menu ids here -->
+</odoo>

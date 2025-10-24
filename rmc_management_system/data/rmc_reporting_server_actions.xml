@@ -1,0 +1,31 @@
+<odoo>
+  <!-- Server Action: Send SO Summary 7 days -->
+  <record id="ir_actions_server_send_so_summary_7" model="ir.actions.server">
+    <field name="name">Send SO Summary – 7 days</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="state">code</field>
+  <field name="code">action = records.action_send_summary_7() or {'type': 'ir.actions.client', 'tag': 'reload'}</field>
+    <field name="binding_model_id" ref="sale.model_sale_order"/>
+    <field name="binding_type">action</field>
+  </record>
+
+  <!-- Server Action: Send SO Summary 15 days -->
+  <record id="ir_actions_server_send_so_summary_15" model="ir.actions.server">
+    <field name="name">Send SO Summary – 15 days</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="state">code</field>
+  <field name="code">action = records.action_send_summary_15() or {'type': 'ir.actions.client', 'tag': 'reload'}</field>
+    <field name="binding_model_id" ref="sale.model_sale_order"/>
+    <field name="binding_type">action</field>
+  </record>
+
+  <!-- Server Action: Send SO Summary 30 days -->
+  <record id="ir_actions_server_send_so_summary_30" model="ir.actions.server">
+    <field name="name">Send SO Summary – 30 days</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="state">code</field>
+  <field name="code">action = records.action_send_summary_30() or {'type': 'ir.actions.client', 'tag': 'reload'}</field>
+    <field name="binding_model_id" ref="sale.model_sale_order"/>
+    <field name="binding_type">action</field>
+  </record>
+</odoo>

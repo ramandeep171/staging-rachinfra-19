@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <record id="view_rmc_delivery_track_tree" model="ir.ui.view">
+    <field name="name">rmc.delivery.track.tree</field>
+    <field name="model">rmc.delivery_track</field>
+    <field name="arch" type="xml">
+      <list string="Delivery Tracks">
+        <field name="name"/>
+        <field name="helpdesk_ticket_id"/>
+        <field name="workorder_id"/>
+        <field name="truck_loading_id"/>
+        <field name="divert_status"/>
+        <field name="new_site_id"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_rmc_delivery_track_form" model="ir.ui.view">
+    <field name="name">rmc.delivery.track.form</field>
+    <field name="model">rmc.delivery_track</field>
+    <field name="arch" type="xml">
+      <form string="Delivery Track">
+        <sheet>
+          <group>
+            <field name="name" readonly="1"/>
+            <field name="helpdesk_ticket_id"/>
+            <field name="workorder_id"/>
+            <field name="workorder_ticket_id"/>
+            <field name="batch_id"/>
+            <field name="truck_loading_id"/>
+            <field name="live_location"/>
+            <field name="divert_status"/>
+            <field name="new_site_id"/>
+          </group>
+        </sheet>
+        <footer>
+          <button string="List Available Workorders" type="object" name="action_list_available_workorders"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_rmc_delivery_track" model="ir.actions.act_window">
+    <field name="name">Delivery Tracks</field>
+    <field name="res_model">rmc.delivery_track</field>
+    <field name="view_mode">list,form</field>
+    <field name="help">Delivery tracking records for RMC deliveries.</field>
+  </record>
+
+  <record id="view_rmc_divert_wizard_form" model="ir.ui.view">
+    <field name="name">rmc.divert.wizard.form</field>
+    <field name="model">rmc.divert.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Divert Ticket">
+        <group>
+          <group string="Source">
+            <field name="ticket_id" readonly="1"/>
+            <field name="truck_loading_id" domain="[('docket_id', 'in', ticket_docket_ids)]"/>
+            <field name="docket_id" readonly="1"/>
+            <field name="original_subcontractor_id" readonly="1"/>
+            <field name="plant_breakdown_mode"/>
+          </group>
+          <group string="Target">
+            <field name="target_workorder_id"/>
+            <field name="new_site_id"/>
+            <field name="new_subcontractor_id" invisible="not plant_breakdown_mode"/>
+          </group>
+          <separator string="Quantity"/>
+          <group>
+            <field name="loaded_at_original" invisible="not plant_breakdown_mode"/>
+            <field name="remaining_to_complete" invisible="not plant_breakdown_mode"/>
+            <field name="divert_qty" readonly="plant_breakdown_mode"/>
+            <field name="max_divert_qty" readonly="1"/>
+          </group>
+          <field name="rmc_summary" readonly="1"/>
+          <separator string="Ticket Stats"/>
+          <group>
+            <field name="ticket_ordered_qty" readonly="1"/>
+            <field name="ticket_delivered_qty" readonly="1"/>
+            <field name="ticket_remaining_qty" readonly="1"/>
+          </group>
+          <separator string="Docket Stats"/>
+          <group>
+            <field name="docket_ordered_qty" readonly="1"/>
+            <field name="docket_delivered_qty" readonly="1"/>
+            <field name="docket_remaining_qty" readonly="1"/>
+          </group>
+          <separator string="Billing Options" invisible="not plant_breakdown_mode"/>
+          <group invisible="not plant_breakdown_mode">
+            <field name="create_draft"/>
+          </group>
+        </group>
+        <footer>
+          <button string="Divert" type="object" name="action_divert" class="btn-primary"/>
+          <button string="Cancel" class="btn-secondary" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_rmc_divert_wizard" model="ir.actions.act_window">
+    <field name="name">Divert Ticket</field>
+    <field name="res_model">rmc.divert.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+  </record>
+
+  <!-- Plant Breakdown Wizard View -->
+  <record id="view_rmc_breakdown_wizard_form" model="ir.ui.view">
+    <field name="name">rmc.breakdown.wizard.form</field>
+    <field name="model">rmc.breakdown.wizard</field>
+    <field name="arch" type="xml">
+      <form string="Plant Breakdown (Half Load)">
+        <group>
+          <field name="truck_loading_id"/>
+          <field name="docket_id" readonly="1"/>
+          <field name="original_subcontractor_id" readonly="1"/>
+          <field name="new_subcontractor_id"/>
+          <field name="new_site_id"/>
+        </group>
+        <separator string="Quantities"/>
+        <group>
+          <field name="loaded_at_original"/>
+          <field name="remaining_to_complete"/>
+          <field name="create_draft"/>
+        </group>
+        <footer>
+          <button string="Confirm" name="action_confirm" type="object" class="btn-primary"/>
+          <button string="Cancel" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_rmc_breakdown_wizard" model="ir.actions.act_window">
+    <field name="name">Plant Breakdown (Half Load)</field>
+    <field name="res_model">rmc.breakdown.wizard</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+    <field name="view_id" ref="view_rmc_breakdown_wizard_form"/>
+  </record>
+
+
+</odoo>

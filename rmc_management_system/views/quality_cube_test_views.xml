@@ -1,0 +1,186 @@
+<odoo>
+  <!-- ACTION -->
+  <record id="action_quality_cube_tests" model="ir.actions.act_window">
+    <field name="name">Cube Tests</field>
+    <field name="res_model">quality.cube.test</field>
+    <field name="view_mode">list,form</field>
+    <field name="help" type="html">
+      <p class="o_view_nocontent_smiling_face">
+        Create cube tests and record sample loads, slump retention and curing details.
+      </p>
+    </field>
+  </record>
+
+  <!-- LIST / TREE view -->
+  <record id="view_quality_cube_test_tree" model="ir.ui.view">
+    <field name="name">quality.cube.test.list</field>
+    <field name="model">quality.cube.test</field>
+    <field name="priority" eval="20"/>
+    <field name="arch" type="xml">
+      <list string="Cube Tests" create="true" edit="true">
+        <field name="name"/>
+        <field name="project_id"/>
+        <field name="test_type"/>
+        <field name="casting_date"/>
+        <field name="test_date"/>
+        <field name="average_strength"/>
+        <field name="required_strength"/>
+        <field name="pass_fail"/>
+        <field name="status"/>
+        <field name="user_id"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- FORM view -->
+  <record id="view_quality_cube_test_form" model="ir.ui.view">
+    <field name="name">quality.cube.test.form</field>
+    <field name="model">quality.cube.test</field>
+    <field name="arch" type="xml">
+      <form string="Cube Test" create="true" edit="true">
+        <sheet>
+          <group>
+            <group>
+              <field name="name" readonly="1"/>
+                    <field name="opportunity_id"/>
+              <field name="project_id"/>
+              
+                <field name="partner_id"/>
+                <field name="sale_order_id"/>
+                <field name="docket_id"/>
+                <field name="workorder_id"/>
+              
+            </group>
+            <group>
+              <field name="test_type"/>
+              <field name="casting_date"/>
+              <field name="test_date" readonly="1"/>
+              <field name="cubes_per_test"/>
+              <field name="required_strength"/>
+              <field name="design_strength"/>
+              <field name="status" widget="statusbar" readonly="1"/>
+            </group>
+          </group>
+
+          <!-- Fresh concrete / ambient -->
+          <notebook>
+            <page string="Ambient &amp; Fresh Properties">
+          <group string="Ambient &amp; Fresh Properties" colspan="4">
+            <group>
+              <field name="ambient_temp"/>
+              <field name="ambient_humidity"/>
+              <field name="slump_0hr" string="Slump (0 hr)"/>
+              <field name="slump_1hr" string="Slump (1 hr)"/>
+              <field name="slump_2hr" string="Slump (2 hr)"/>
+              <field name="slump_3hr" string="Slump (3 hr)"/>
+            </group>
+            <group>
+              <field name="compaction_0hr"/>
+              <field name="compaction_1hr"/>
+              <field name="compaction_2hr"/>
+              <field name="compaction_3hr"/>
+              <field name="air_content_0hr"/>
+              <field name="air_content_1hr"/>
+            </group>
+          </group>
+            </page>
+
+          <!-- Samples inline editable -->
+            <page string="Cube Samples">
+          <group string="Cube Samples">
+            <field name="sample_ids" widget="one2many_list" colspan="4">
+              <list editable="bottom">
+                <field name="name"/>
+                <field name="size_mm"/>
+                <field name="casting_date"/>
+                <field name="test_date"/>
+                <field name="load_kN"/>
+                <field name="area_mm2"/>
+                <field name="compressive_strength"/>
+                <field name="mode_of_failure"/>
+                <field name="remarks"/>
+              </list>
+            </field>
+            <button name="create_default_samples" type="object" string="Create Default Samples" class="btn-secondary"/>
+          </group>
+            </page>
+
+          <!-- Curing and observations -->
+            <page string="Curing &amp; Observations">
+          <group string="Curing &amp; Observations">
+            <group>
+              <field name="curing_method"/>
+              <field name="curing_notes"/>
+              <field name="notes"/>
+            </group>
+            <group>
+              <label for="attachment_ids" string="Attachments"/>
+              <field name="attachment_ids" widget="many2many_binary" options="{'no_create': True}"/>
+            </group>
+          </group>
+            </page>
+
+          <!-- Retest block -->
+            <page string="Retests">
+          <group string="Retests">
+            <field name="retest_of_id"/>
+            <field name="retest_ids" widget="one2many_list" readonly="1">
+              <list>
+                <field name="name"/>
+                <field name="test_type"/>
+                <field name="test_date"/>
+                <field name="average_strength"/>
+                <field name="pass_fail"/>
+                <field name="status"/>
+              </list>
+            </field>
+          </group>
+            </page>
+
+          <!-- Summary & result -->
+            <page string="Result Summary">
+          <group string="Result Summary" colspan="2">
+            <group>
+              <field name="average_strength" readonly="1"/>
+              <field name="strength_result" readonly="1"/>
+              <field name="pass_fail" widget="badge" readonly="1"/>
+              <field name="user_id"/>
+              <field name="approved_by_id"/>
+              <field name="approved_date"/>
+            </group>
+          </group>
+            </page>
+          </notebook>
+
+        </sheet>
+
+        <chatter/>
+
+        <footer>
+          <button name="action_mark_completed" type="object" string="Mark Completed" class="btn-primary"
+            modifiers="{'invisible': ['|', ['status','=','completed'], ['status','=','cancel']]}"/>
+          <button name="action_daily_auto_run" type="object" string="Run Auto Check" class="btn-default"
+            modifiers="{'invisible': [['status','=','completed']]}"/>
+          <button string="Generate Worksheet (PDF)" type="object" name="action_generate_pdf" class="btn-secondary"/>
+          <button string="Generate XLSX" type="object" name="action_generate_xlsx" class="btn-secondary"/>
+          <button string="Close" class="btn-secondary" special="cancel"/>
+        </footer>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_quality_cube_tests_act_window" model="ir.actions.act_window">
+    <field name="name">Cube Tests</field>
+    <field name="res_model">quality.cube.test</field>
+    <field name="view_mode">list,form</field>
+    <field name="view_id" ref="view_quality_cube_test_tree"/>
+  </record>
+
+  <!-- OPTIONAL: place under Quality menu (create menu if not present) -->
+  <record id="menu_quality_cube_tests" model="ir.ui.menu">
+    <field name="name">Cube Tests</field>
+    <field name="parent_id" ref="quality_control.menu_quality_root"/>
+    <field name="sequence" eval="20"/>
+    <field name="action" ref="action_quality_cube_tests_act_window"/>
+  </record>
+</odoo>

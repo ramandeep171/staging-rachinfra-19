@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Extend Product Template Form View -->
+    <record id="view_product_template_form_inherit_rmc" model="ir.ui.view">
+        <field name="name">product.template.form.inherit.rmc</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']" position="inside">
+                <group>
+                    <field name="is_rmc_product"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extend Product Template Tree View -->
+    <record id="view_product_template_tree_inherit_rmc" model="ir.ui.view">
+        <field name="name">product.template.tree.inherit.rmc</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_rmc_product"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

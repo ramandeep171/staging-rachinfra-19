@@ -1,0 +1,117 @@
+<odoo>
+  <!-- Workorder Completion Email Template -->
+  <record id="mail_tmpl_wo_completion" model="mail.template">
+    <field name="name">Workorder Completion Summary</field>
+  <field name="model_id" ref="rmc_management_system.model_dropshipping_workorder"/>
+    <field name="subject">Workorder ${ (object.name or ('WO-%s' % object.id)) } - Completion Summary</field>
+    <field name="email_from">${(object.company_id.email_formatted or user.email_formatted) if object.company_id else user.email_formatted}</field>
+    <field name="email_to">${object.partner_id.email or ''}</field>
+    <field name="auto_delete" eval="True"/>
+    <field name="body_html"><![CDATA[
+      <p>Dear ${ (object.partner_id.display_name or object.partner_id.name or 'Customer') },</p>
+      <p>Please find attached the completion summary for Workorder <strong>${ (object.name or ('WO-%s' % object.id)) }</strong> related to Sale Order <strong>${ (object.sale_order_id.name or ('SO-%s' % object.sale_order_id.id) if object.sale_order_id else 'Sale Order') }</strong>.</p>
+      <ul>
+        <li>Ordered: ${object.quantity_ordered} m3</li>
+        <li>Delivered: ${object.quantity_delivered} m3</li>
+        <li>Remaining: ${object.quantity_remaining} m3</li>
+      </ul>
+      <p>Regards,<br/>${ (object.company_id.display_name or object.company_id.name or user.company_id.name or 'Our Team') }</p>
+    ]]></field>
+  </record>
+
+  <!-- Cube 7-Day Email Template -->
+  <record id="mail_tmpl_cube_7" model="mail.template">
+    <field name="name">7-Day Cube Test Report</field>
+  <field name="model_id" ref="rmc_management_system.model_dropshipping_workorder"/>
+    <field name="subject">Workorder ${ (object.name or ('WO-%s' % object.id)) } - 7-Day Cube Test Report</field>
+    <field name="email_from">${(object.company_id.email_formatted or user.email_formatted) if object.company_id else user.email_formatted}</field>
+    <field name="email_to">${object.partner_id.email or ''}</field>
+    <field name="auto_delete" eval="True"/>
+    <field name="body_html"><![CDATA[
+      <p>Dear ${ (object.partner_id.display_name or object.partner_id.name or 'Customer') },</p>
+      <p>Please find attached the <strong>7-Day Cube Test Report</strong> for Workorder <strong>${ (object.name or ('WO-%s' % object.id)) }</strong>.</p>
+      <p>Regards,<br/>${ (object.company_id.display_name or object.company_id.name or user.company_id.name or 'Our Team') }</p>
+    ]]></field>
+  </record>
+
+  <!-- Cube 28-Day Email Template -->
+  <record id="mail_tmpl_cube_28" model="mail.template">
+    <field name="name">28-Day Cube Test Report</field>
+  <field name="model_id" ref="rmc_management_system.model_dropshipping_workorder"/>
+    <field name="subject">Workorder ${ (object.name or ('WO-%s' % object.id)) } - 28-Day Cube Test Report</field>
+    <field name="email_from">${(object.company_id.email_formatted or user.email_formatted) if object.company_id else user.email_formatted}</field>
+    <field name="email_to">${object.partner_id.email or ''}</field>
+    <field name="auto_delete" eval="True"/>
+    <field name="body_html"><![CDATA[
+      <p>Dear ${ (object.partner_id.display_name or object.partner_id.name or 'Customer') },</p>
+      <p>Please find attached the <strong>28-Day Cube Test Report</strong> for Workorder <strong>${ (object.name or ('WO-%s' % object.id)) }</strong>.</p>
+      <p>Regards,<br/>${ (object.company_id.display_name or object.company_id.name or user.company_id.name or 'Our Team') }</p>
+    ]]></field>
+  </record>
+
+  <!-- Sale Order Summary 30-day -->
+  <record id="mail_tmpl_so_summary_30" model="mail.template">
+    <field name="name">Sale Order Summary – Last 30 days</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="subject">${ (object.name or ('SO-%s' % object.id)) } - Summary (Last 30 days)</field>
+    <field name="email_from">${(object.company_id.email_formatted or user.email_formatted) if object.company_id else user.email_formatted}</field>
+    <field name="email_to">${object.partner_id.email or ''}</field>
+    <field name="auto_delete" eval="True"/>
+    <field name="body_html"><![CDATA[
+      <p>Dear ${ (object.partner_id.display_name or object.partner_id.name or 'Customer') },</p>
+      <p>Please find attached the summary for the last <strong>30 days</strong> for Sale Order <strong>${ (object.name or ('SO-%s' % object.id)) }</strong>.</p>
+      <p>
+        You can also view it online:
+        <br/>
+  <a href="${object.get_base_url()}/rmc/report/pdf/rmc_management_system.report_sale_order_summary_tmpl/${object.id}?window_days=30" target="_blank">Open PDF in browser</a>
+        &nbsp;|&nbsp;
+  <a href="${object.get_base_url()}/rmc/report/html/rmc_management_system.report_sale_order_summary_tmpl/${object.id}?window_days=30" target="_blank">Open HTML view</a>
+      </p>
+      <p>Regards,<br/>${ (object.company_id.display_name or object.company_id.name or user.company_id.name or 'Our Team') }</p>
+    ]]></field>
+  </record>
+
+  <!-- Sale Order Summary 7-day -->
+  <record id="mail_tmpl_so_summary_7" model="mail.template">
+    <field name="name">Sale Order Summary – 7 days</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="subject">${ (object.name or ('SO-%s' % object.id)) } - Summary (7 days)</field>
+    <field name="email_from">${(object.company_id.email_formatted or user.email_formatted) if object.company_id else user.email_formatted}</field>
+    <field name="email_to">${object.partner_id.email or ''}</field>
+    <field name="auto_delete" eval="True"/>
+    <field name="body_html"><![CDATA[
+      <p>Dear ${ (object.partner_id.display_name or object.partner_id.name or 'Customer') },</p>
+      <p>Please find attached the <strong>7-day</strong> summary for Sale Order <strong>${ (object.name or ('SO-%s' % object.id)) }</strong>.</p>
+      <p>
+        You can also view it online:
+        <br/>
+  <a href="${object.get_base_url()}/rmc/report/pdf/rmc_management_system.report_sale_order_summary_tmpl/${object.id}?window_days=7" target="_blank">Open PDF in browser</a>
+        &nbsp;|&nbsp;
+  <a href="${object.get_base_url()}/rmc/report/html/rmc_management_system.report_sale_order_summary_tmpl/${object.id}?window_days=7" target="_blank">Open HTML view</a>
+      </p>
+      <p>Regards,<br/>${ (object.company_id.display_name or object.company_id.name or user.company_id.name or 'Our Team') }</p>
+    ]]></field>
+  </record>
+
+  <!-- Sale Order Summary 15-day -->
+  <record id="mail_tmpl_so_summary_15" model="mail.template">
+    <field name="name">Sale Order Summary – 15 days</field>
+    <field name="model_id" ref="sale.model_sale_order"/>
+    <field name="subject">${ (object.name or ('SO-%s' % object.id)) } - Summary (15 days)</field>
+    <field name="email_from">${(object.company_id.email_formatted or user.email_formatted) if object.company_id else user.email_formatted}</field>
+    <field name="email_to">${object.partner_id.email or ''}</field>
+    <field name="auto_delete" eval="True"/>
+    <field name="body_html"><![CDATA[
+      <p>Dear ${ (object.partner_id.display_name or object.partner_id.name or 'Customer') },</p>
+      <p>Please find attached the <strong>15-day</strong> summary for Sale Order <strong>${ (object.name or ('SO-%s' % object.id)) }</strong>.</p>
+      <p>
+        You can also view it online:
+        <br/>
+  <a href="${object.get_base_url()}/rmc/report/pdf/rmc_management_system.report_sale_order_summary_tmpl/${object.id}?window_days=15" target="_blank">Open PDF in browser</a>
+        &nbsp;|&nbsp;
+  <a href="${object.get_base_url()}/rmc/report/html/rmc_management_system.report_sale_order_summary_tmpl/${object.id}?window_days=15" target="_blank">Open HTML view</a>
+      </p>
+      <p>Regards,<br/>${ (object.company_id.display_name or object.company_id.name or user.company_id.name or 'Our Team') }</p>
+    ]]></field>
+  </record>
+</odoo>
