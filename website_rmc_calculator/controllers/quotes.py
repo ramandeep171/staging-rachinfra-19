@@ -311,30 +311,49 @@ class RMCQuoteController(http.Controller):
 
         pricelist = self._get_active_pricelist(partner)
 
-        currency = None
-        try:
-            currency = (pricelist and pricelist.currency_id) or prod.currency_id
-            if not currency and getattr(request, 'website', None):
-                currency = request.website.currency_id
-        except Exception:
-            currency = env.company.currency_id
+        currency = (
+            (pricelist and pricelist.currency_id)
+            or prod.currency_id
+            or (getattr(request, 'website', None) and request.website.currency_id)
+            or env.company.currency_id
+        )
+        date_ctx = fields.Date.context_today(prod)
 
         base_unit_price = prod.list_price
         unit_price = base_unit_price
         price_rule_id = False
+        discount_percent = 0.0
         if pricelist:
             try:
-                price_dict = pricelist._compute_price_rule(
-                    [(prod.id, qty_f, partner.id)],
-                    date=fields.Date.context_today(env.user),
-                    uom=prod.uom_id.id if prod.uom_id else False,
+                unit_price, price_rule_id = pricelist._get_product_price_rule(
+                    prod,
+                    qty_f,
+                    uom=prod.uom_id,
+                    date=date_ctx,
                 )
-                if price_dict and prod.id in price_dict:
-                    unit_price, price_rule_id = price_dict[prod.id]
-            except Exception:
+            except Exception:  # noqa: BLE001
                 unit_price = base_unit_price
+                price_rule_id = False
         if unit_price is None:
             unit_price = base_unit_price
+
+        if pricelist and price_rule_id:
+            rule = request.env['product.pricelist.item'].sudo().browse(price_rule_id)
+            if rule and rule.exists():
+                try:
+                    base_before = rule._compute_price_before_discount(
+                        product=prod,
+                        quantity=qty_f,
+                        uom=prod.uom_id,
+                        date=date_ctx,
+                        currency=currency,
+                    )
+                except Exception:  # noqa: BLE001
+                    base_before = False
+                if base_before:
+                    base_unit_price = base_before
+                if base_unit_price:
+                    discount_percent = max((base_unit_price - unit_price) / base_unit_price * 100.0, 0.0)
 
         base_total = base_unit_price * qty_f
         computed_total = unit_price * qty_f
@@ -353,6 +372,7 @@ class RMCQuoteController(http.Controller):
             'computed_price': computed_total,
             'discount_value': discount_value,
             'discount_rate': discount_value / base_total * 100 if base_total else 0.0,
+            'discount_percent': discount_percent,
             'truck_capacity': truck_cap,
             'truck_count': truck_count,
             'price': unit_price,
