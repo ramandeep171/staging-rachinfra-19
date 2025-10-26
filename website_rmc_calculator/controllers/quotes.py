@@ -175,6 +175,9 @@ class RMCQuoteController(http.Controller):
             visitor = None
 
         city = city or kw.get('city')
+        if order and pricelist and order.pricelist_id.id != pricelist.id:
+            order = None
+
         if not order:
             order_vals = {
                 'partner_id': partner.id,
@@ -192,6 +195,11 @@ class RMCQuoteController(http.Controller):
                     order.visitor_id = visitor.id
                 except Exception:
                     pass
+        elif pricelist and order.pricelist_id.id != pricelist.id:
+            try:
+                order.write({'pricelist_id': pricelist.id})
+            except Exception:
+                _logger.exception('Failed to update order %s pricelist to %s', order.id, pricelist.id)
 
         price_unit = prod.list_price
         try:
@@ -405,6 +413,9 @@ class RMCQuoteController(http.Controller):
             'truck_count': truck_count,
             'price': unit_price,
             'unit_price': unit_price,
+            'pricelist_id': pricelist.id if pricelist else False,
+            'pricelist_name': pricelist.name if pricelist else '',
+            'price_rule_id': price_rule_id,
         }
 
     @http.route(

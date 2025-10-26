@@ -84,6 +84,7 @@
     var totalEl = document.getElementById('estimated_total') || (ctx && ctx.querySelector('#estimated_total'));
     var discountEl = document.getElementById('bulk_discount') || (ctx && ctx.querySelector('#bulk_discount'));
     var truckEl = document.getElementById('truck_count') || (ctx && ctx.querySelector('#truck_count'));
+    var pricelistEl = document.getElementById('rmc_pricelist_info') || (ctx && ctx.querySelector('#rmc_pricelist_info'));
 
     if (!data || !data.success) {
       if (priceEl) priceEl.textContent = 'Unit price: —';
@@ -91,6 +92,7 @@
       if (totalEl) totalEl.textContent = '₹0';
       if (discountEl) discountEl.textContent = '₹0';
       if (truckEl) truckEl.textContent = '0';
+      if (pricelistEl) pricelistEl.textContent = '';
       return;
     }
 
@@ -115,6 +117,11 @@
       discountEl.textContent = prefix + currency + Math.abs(discountValue).toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
     if (truckEl) truckEl.textContent = trucks ? trucks.toString() : '0';
+    if (pricelistEl) {
+      pricelistEl.textContent = data.pricelist_name
+        ? 'Using pricelist: ' + data.pricelist_name
+        : '';
+    }
   }
 
   function getLocationOverrides() {

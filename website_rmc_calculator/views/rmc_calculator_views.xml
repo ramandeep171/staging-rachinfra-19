@@ -73,7 +73,8 @@
                         
                         <div style="margin-top: 30px; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; background: #f5f9fd;" id="rmc-calculator-widget">
                             <div style="text-align: center; font-size: 18px; color: #777;">Estimated Total Cost</div>
-                            <div class="rmc-price-pill" id="variant_price">Unit price: ₹0</div>
+                            <div style="text-align:center; font-size:13px; color:#888; min-height:18px;" id="rmc_pricelist_info"></div>
+                           <div class="rmc-price-pill" id="variant_price">Unit price: ₹0</div>
                             <div style="text-align: center; font-size: 36px; color: #007bff; font-weight: bold;" id="estimated_total">₹0</div>
                             <div class="rmc-price-summary">
                                 <div class="rmc-summary-card">

@@ -28,6 +28,7 @@
                 </div>
                 <div id="variant_details" style="margin-top:6px; font-size:0.95em; color:#333;"></div>
                 <div class="rmc-price-pill" id="variant_price">Unit price: ₹0</div>
+                <div class="text-muted small" id="rmc_pricelist_info" style="margin-top:4px;"></div>
                 <div class="rmc-price-summary">
                   <div class="rmc-summary-card">
                     <div class="rmc-summary-label">Base Total</div>
