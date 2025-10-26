@@ -211,6 +211,8 @@ class RmcLocationController(http.Controller):
 
     def _reverse_geocode_request(self, lat: float, lon: float):
         google_key = self._get_config_parameter(f"{self.GEO_PARAM_PREFIX}google_api_key")
+        if not google_key:
+            google_key = self._get_config_parameter("base_geolocalize.google_map_api_key")
         mapbox_token = self._get_config_parameter(f"{self.GEO_PARAM_PREFIX}mapbox_token")
 
         if google_key:
