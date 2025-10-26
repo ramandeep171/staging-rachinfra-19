@@ -612,6 +612,16 @@
                                                     <label class="form-label fw-bold">Delivery Location</label>
                                                     <input type="text" name="location" placeholder="Enter delivery address" class="form-control"/>
                                                 </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold" for="rmc_city">City</label>
+                                                    <div class="d-flex flex-wrap gap-2">
+                                                        <input id="rmc_city" type="text" placeholder="Detected city" class="form-control flex-grow-1"/>
+                                                        <button type="button" id="rmc_city_gps" class="btn btn-outline-primary">
+                                                            <i class="fa fa-location-arrow"></i> Use GPS
+                                                        </button>
+                                                    </div>
+                                                    <input id="rmc_zip" type="hidden"/>
+                                                </div>
                                             </div>
 
                                             <!-- Price Summary -->

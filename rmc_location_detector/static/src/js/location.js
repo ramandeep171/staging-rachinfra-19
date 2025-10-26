@@ -56,6 +56,7 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
         if (!this.$chip.length) {
             return this._super(...arguments);
         }
+        window.rmcLocationManager = this;
         this._defaultParent = this.$chip[0].parentElement;
         this._defaultNextSibling = this.$chip[0].nextElementSibling;
 
@@ -220,6 +221,16 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
         this.state.method = method || "";
         this.state.pricelistName = pricelistName || "";
         this._renderChip();
+        window.dispatchEvent(
+            new CustomEvent("rmc-location-updated", {
+                detail: {
+                    city: this.state.city,
+                    zip: this.state.zip,
+                    method: this.state.method,
+                    pricelistName: this.state.pricelistName,
+                },
+            })
+        );
     },
 
     _renderChip() {
@@ -347,57 +358,101 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
             });
     },
 
+    detectWithGps(options = {}) {
+        return this._detectGpsLocation({
+            manageUi: false,
+            ...options,
+        });
+    },
+
     _useGps(event) {
-        event.preventDefault();
-        if (!this.enableGps || this.$gpsBtn.prop("disabled")) {
-            return;
+        if (event) {
+            event.preventDefault();
+        }
+        this._detectGpsLocation({ manageUi: true });
+    },
+
+    _detectGpsLocation({ manageUi = false, reloadOnReprice, showBanner, updateForm } = {}) {
+        if (!this.enableGps) {
+            const error = new Error(_t("GPS lookup is disabled."));
+            if (manageUi) {
+                this._showError(error.message);
+            }
+            return Promise.reject(error);
         }
         if (!navigator.geolocation) {
-            this._showError(_t("GPS is not available on this device."));
-            return;
-        }
-        this._setGpsLoading(true);
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const coords = position.coords || {};
-                const params = new URLSearchParams({
-                    lat: coords.latitude,
-                    lon: coords.longitude,
-                });
-                fetchJson(`${ENDPOINTS.reverse}?${params.toString()}`)
-                    .then((response) => {
-                        if (response.error) {
-                            throw new Error(response.error);
-                        }
-                        this._prefillForm(response.city, response.zip);
-                        return this._saveLocation({
-                            city: response.city,
-                            zip: response.zip,
-                            method: "gps",
-                        }, {
-                            autoClose: true,
-                            sourceMethod: "gps",
-                        });
-                    })
-                    .catch((error) => {
-                        this._showError(error.message || _t("We could not determine your position."));
-                    })
-                    .finally(() => this._setGpsLoading(false));
-            },
-            (error) => {
-                const message =
-                    error.code === error.PERMISSION_DENIED
-                        ? _t("GPS permission was denied.")
-                        : _t("We could not determine your position.");
-                this._showError(message);
-                this._setGpsLoading(false);
-            },
-            {
-                enableHighAccuracy: false,
-                timeout: 7000,
-                maximumAge: 60000,
+            const error = new Error(_t("GPS is not available on this device."));
+            if (manageUi) {
+                this._showError(error.message);
             }
-        );
+            return Promise.reject(error);
+        }
+
+        if (manageUi) {
+            this._clearError();
+            this._setGpsLoading(true);
+        }
+
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const coords = position.coords || {};
+                    const params = new URLSearchParams({
+                        lat: coords.latitude,
+                        lon: coords.longitude,
+                    });
+                    fetchJson(`${ENDPOINTS.reverse}?${params.toString()}`)
+                        .then((response) => {
+                            if (response.error) {
+                                throw new Error(response.error);
+                            }
+                            this._prefillForm(response.city, response.zip);
+                            return this._saveLocation(
+                                {
+                                    city: response.city,
+                                    zip: response.zip,
+                                    method: "gps",
+                                },
+                                {
+                                    autoClose: manageUi,
+                                    sourceMethod: "gps",
+                                    reloadOnReprice: reloadOnReprice !== undefined ? reloadOnReprice : manageUi,
+                                    showBanner: showBanner !== undefined ? showBanner : manageUi,
+                                    updateForm: updateForm !== undefined ? updateForm : manageUi,
+                                }
+                            );
+                        })
+                        .then((saveResponse) => resolve(saveResponse))
+                        .catch((error) => {
+                            if (manageUi) {
+                                this._showError(error.message || _t("We could not determine your position."));
+                            }
+                            reject(error);
+                        })
+                        .finally(() => {
+                            if (manageUi) {
+                                this._setGpsLoading(false);
+                            }
+                        });
+                },
+                (error) => {
+                    const message =
+                        error.code === error.PERMISSION_DENIED
+                            ? _t("GPS permission was denied.")
+                            : _t("We could not determine your position.");
+                    if (manageUi) {
+                        this._showError(message);
+                        this._setGpsLoading(false);
+                    }
+                    reject(new Error(message));
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 7000,
+                    maximumAge: 60000,
+                }
+            );
+        });
     },
 
     _setGpsLoading(isLoading) {

@@ -22,6 +22,26 @@
   const TRUCK_CAP_M3 = 7;
   const PRICE_ENDPOINT = '/rmc_calculator/price_breakdown';
   const VARIANTS_ENDPOINT = '/rmc_calculator/variants';
+  const LOCATION_SAVE_ENDPOINT = '/rmc/location/save';
+  const LOCATION_REVERSE_ENDPOINT = '/rmc/location/reverse';
+  const CITY_INPUT_ID = 'rmc_city';
+  const ZIP_INPUT_ID = 'rmc_zip';
+  const CITY_GPS_BUTTON_ID = 'rmc_city_gps';
+  const CITY_COOKIE_KEY = 'ri_loc_city';
+  const ZIP_COOKIE_KEY = 'ri_loc_zip';
+
+  let cityInputRef = null;
+  let zipInputRef = null;
+  let locationListenerBound = false;
+
+  function readCookie(name) {
+    return (document.cookie || '')
+      .split(';')
+      .map(function (item) { return item.trim(); })
+      .filter(function (item) { return item.indexOf(name + '=') === 0; })
+      .map(function (item) { return decodeURIComponent(item.substring(name.length + 1)); })
+      .shift() || '';
+  }
 
   // helper: JSON-RPC call wrapper (returns a Promise resolving to result or rejecting error)
   function jsonRpcCall(url, params, id) {
@@ -95,6 +115,223 @@
       discountEl.textContent = prefix + currency + Math.abs(discountValue).toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
     if (truckEl) truckEl.textContent = trucks ? trucks.toString() : '0';
+  }
+
+  function refreshPriceAfterLocation() {
+    const calcBtnPage = document.getElementById('calculate_quote_btn');
+    const gradeSel = document.getElementById('grade_select');
+    const variantSel = document.getElementById('variant_select');
+    const volumeFieldLocal = document.getElementById(RMC_FIELD_ID);
+    const qty = volumeFieldLocal && volumeFieldLocal.value ? parseFloat(volumeFieldLocal.value) : 0;
+    const hasData = gradeSel && gradeSel.value && qty && qty > 0;
+    if (!hasData || !calcBtnPage || !calcBtnPage._rmcBound) {
+      return;
+    }
+    // avoid alert when grade selected but variant required? reuse existing click handler
+    calcBtnPage._rmcAutoTrigger = true;
+    calcBtnPage.click();
+  }
+
+  function fetchGpsManually() {
+    return new Promise(function (resolve, reject) {
+      if (!navigator.geolocation) {
+        return reject(new Error('GPS is not available on this device.'));
+      }
+      navigator.geolocation.getCurrentPosition(
+        function (position) {
+          var coords = position.coords || {};
+          var params = new URLSearchParams({
+            lat: coords.latitude,
+            lon: coords.longitude,
+          });
+          fetch(LOCATION_REVERSE_ENDPOINT + '?' + params.toString())
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (data && !data.error) {
+                resolve(data);
+              } else {
+                reject(new Error((data && data.error) || 'We could not determine your location.'));
+              }
+            })
+            .catch(function (err) {
+              reject(err instanceof Error ? err : new Error('We could not determine your location.'));
+            });
+        },
+        function (err) {
+          reject(err instanceof Error ? err : new Error('We could not determine your location.'));
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 7000,
+          maximumAge: 60000,
+        }
+      );
+    });
+  }
+
+  function syncLocation(method) {
+    const city = cityInputRef && cityInputRef.value ? cityInputRef.value.trim() : '';
+    const zip = zipInputRef && zipInputRef.value ? zipInputRef.value.trim() : '';
+    if (!city && !zip) {
+      return Promise.resolve();
+    }
+    const payload = {
+      city: city,
+      method: method || 'manual',
+    };
+    if (zip) {
+      payload.zip = zip;
+    }
+    if (window.rmcLocationManager && window.rmcLocationManager._saveLocation) {
+      return window.rmcLocationManager
+        ._saveLocation(payload, {
+          reloadOnReprice: false,
+          showBanner: false,
+          updateForm: false,
+          sourceMethod: payload.method,
+        })
+        .catch(function () {
+          /* ignore */
+        });
+    }
+    return fetch(LOCATION_SAVE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then(function (r) { return r.json(); })
+      .catch(function () {
+        /* ignore */
+      });
+  }
+
+  function setupLocationBinding() {
+    if (setupLocationBinding._bound) {
+      return;
+    }
+    cityInputRef = document.getElementById(CITY_INPUT_ID);
+    zipInputRef = document.getElementById(ZIP_INPUT_ID);
+    const gpsBtn = document.getElementById(CITY_GPS_BUTTON_ID);
+
+    if (cityInputRef && !cityInputRef.value) {
+      var cookieCity = readCookie(CITY_COOKIE_KEY);
+      if (cookieCity) {
+        cityInputRef.value = cookieCity;
+      }
+    }
+    if (zipInputRef && !zipInputRef.value) {
+      var cookieZip = readCookie(ZIP_COOKIE_KEY);
+      if (cookieZip) {
+        zipInputRef.value = cookieZip;
+      }
+    }
+    if (window.rmcLocationManager && window.rmcLocationManager.state) {
+      if (cityInputRef && !cityInputRef.value && window.rmcLocationManager.state.city) {
+        cityInputRef.value = window.rmcLocationManager.state.city;
+      }
+      if (zipInputRef && !zipInputRef.value && window.rmcLocationManager.state.zip) {
+        zipInputRef.value = window.rmcLocationManager.state.zip;
+      }
+    }
+
+    const syncAndRefresh = function (method) {
+      return syncLocation(method).then(function () {
+        refreshPriceAfterLocation();
+      });
+    };
+
+    if (cityInputRef && !cityInputRef._rmcBound) {
+      cityInputRef.addEventListener('change', function () {
+        syncAndRefresh('manual');
+      });
+      cityInputRef._rmcBound = true;
+    }
+
+    if (zipInputRef && !zipInputRef._rmcBound) {
+      zipInputRef.addEventListener('change', function () {
+        syncAndRefresh('manual');
+      });
+      zipInputRef._rmcBound = true;
+    }
+
+    if (gpsBtn && !gpsBtn._rmcBound) {
+      gpsBtn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        gpsBtn.disabled = true;
+
+        var applyResponse = function (response) {
+          if (!response) {
+            return;
+          }
+          if (cityInputRef) {
+            cityInputRef.value = response.city || '';
+          }
+          if (zipInputRef) {
+            zipInputRef.value = response.zip || '';
+          }
+          refreshPriceAfterLocation();
+        };
+
+        var promise;
+        if (window.rmcLocationManager && window.rmcLocationManager.detectWithGps) {
+          promise = window.rmcLocationManager.detectWithGps({
+            reloadOnReprice: false,
+            showBanner: false,
+            updateForm: false,
+          }).then(function (response) {
+            applyResponse(response);
+            return response;
+          });
+        } else {
+          promise = fetchGpsManually().then(function (response) {
+            if (!response || response.error) {
+              throw new Error((response && response.error) || 'We could not determine your location.');
+            }
+            if (cityInputRef) {
+              cityInputRef.value = response.city || '';
+            }
+            if (zipInputRef) {
+              zipInputRef.value = response.zip || '';
+            }
+            return syncAndRefresh('gps').then(function () {
+              applyResponse(response);
+              return response;
+            });
+          });
+        }
+
+        promise.catch(function (error) {
+          var message = (error && error.message) || 'We could not determine your location.';
+          alert(message);
+        }).finally(function () {
+          gpsBtn.disabled = false;
+        });
+      });
+      gpsBtn._rmcBound = true;
+    }
+
+    if (!locationListenerBound) {
+      window.addEventListener('rmc-location-updated', function (ev) {
+        var detail = (ev && ev.detail) || {};
+        if (cityInputRef && detail.city) {
+          cityInputRef.value = detail.city;
+        }
+        if (zipInputRef && detail.zip) {
+          zipInputRef.value = detail.zip;
+        }
+        refreshPriceAfterLocation();
+      });
+      locationListenerBound = true;
+    }
+
+    if (!setupLocationBinding._initialSyncDone && cityInputRef && cityInputRef.value) {
+      setupLocationBinding._initialSyncDone = true;
+      syncAndRefresh('manual');
+    } else {
+      refreshPriceAfterLocation();
+    }
+
+    setupLocationBinding._bound = true;
   }
 
   let cachedTemplates = [];
@@ -448,6 +685,8 @@
     }
     calculatorInitialized = true;
 
+    setupLocationBinding();
+
     refreshAllTemplateSelects()
       .then(function () {
         var gradeSelectAfterRefresh = document.getElementById('grade_select');
@@ -498,6 +737,23 @@
     if (calcBtnPage && !calcBtnPage._rmcBound) {
       calcBtnPage.addEventListener('click', function (ev) {
         ev.preventDefault();
+        const autoTrigger = this._rmcAutoTrigger;
+        this._rmcAutoTrigger = false;
+
+        if (!autoTrigger && window.rmcLocationManager) {
+          const desiredCity = cityInputRef && cityInputRef.value ? cityInputRef.value.trim() : '';
+          const desiredZip = zipInputRef && zipInputRef.value ? zipInputRef.value.trim() : '';
+          const managerCity = (window.rmcLocationManager.state && window.rmcLocationManager.state.city) || '';
+          const managerZip = (window.rmcLocationManager.state && window.rmcLocationManager.state.zip) || '';
+          const needsSync =
+            (desiredCity && desiredCity.toLowerCase() !== managerCity.toLowerCase()) ||
+            (desiredZip && desiredZip !== managerZip);
+          if (needsSync) {
+            syncAndRefresh('manual');
+            return;
+          }
+        }
+
         const gradeSel = document.getElementById('grade_select');
         const variantSel = document.getElementById('variant_select');
         const volumeFieldLocal = document.getElementById('rmc_volume');
@@ -605,12 +861,21 @@
 
         Promise.resolve(resolveVariantPromise)
           .then(function (resolvedVariant) {
+            var locationString = '';
+            if (cityInputRef && cityInputRef.value) {
+              locationString = cityInputRef.value.trim();
+            }
+            if (zipInputRef && zipInputRef.value) {
+              locationString = (locationString ? locationString + ' ' : '') + zipInputRef.value.trim();
+            }
             const payload = {
               product_id: resolvedVariant || null,
               product_tmpl_id: resolvedVariant ? null : tmplId,
               qty: qty,
               volume: qty,
-              location: null,
+              location: locationString || null,
+              city: cityInputRef && cityInputRef.value ? cityInputRef.value.trim() : null,
+              zip: zipInputRef && zipInputRef.value ? zipInputRef.value.trim() : null,
             };
             return jsonRpcCall('/rmc_calculator/request_quote', payload, 1);
           })
@@ -899,7 +1164,13 @@
 
     // create CRM lead (best-effort) before adding to cart
     try {
-      var leadPayload = { product_id: product_id || null, product_tmpl_id: product_tmpl_id || null, qty: qty };
+      var leadPayload = {
+        product_id: product_id || null,
+        product_tmpl_id: product_tmpl_id || null,
+        qty: qty,
+        city: cityInputRef && cityInputRef.value ? cityInputRef.value.trim() : null,
+        zip: zipInputRef && zipInputRef.value ? zipInputRef.value.trim() : null,
+      };
       fetch('/rmc_calculator/create_lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

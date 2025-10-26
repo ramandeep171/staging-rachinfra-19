@@ -1,13 +1,73 @@
 
-from odoo import http, fields
+from odoo import http
 from odoo.http import request
 import logging
 import math
+
+from odoo.addons.website_sale.models.website import (
+    PRICELIST_SELECTED_SESSION_CACHE_KEY,
+    PRICELIST_SESSION_CACHE_KEY,
+)
 
 _logger = logging.getLogger(__name__)
 
 
 class RMCQuoteController(http.Controller):
+    def _get_active_pricelist(self, partner=None):
+        """Return the pricelist currently active for the visitor session."""
+        env = request.env
+        Pricelist = env["product.pricelist"].sudo()
+
+        pricelist = getattr(request, "pricelist", None)
+        if pricelist:
+            pricelist = pricelist.sudo()
+            if pricelist.exists():
+                return pricelist
+
+        session_ids = [
+            request.session.get(PRICELIST_SESSION_CACHE_KEY),
+            request.session.get(PRICELIST_SELECTED_SESSION_CACHE_KEY),
+        ]
+        session_ids = [pid for pid in session_ids if pid]
+        if session_ids:
+            pl_session = Pricelist.browse(session_ids).filtered(lambda pl: pl.active)
+            if pl_session:
+                return pl_session[0]
+
+        website = getattr(request, "website", None)
+        if website:
+            getter_names = (
+                "get_current_pricelist",
+                "_get_current_pricelist",
+                "_get_and_cache_current_pricelist",
+            )
+            for getter in getter_names:
+                if hasattr(website, getter):
+                    try:
+                        pl_candidate = getattr(website, getter)()
+                        if pl_candidate:
+                            pl_candidate = pl_candidate.sudo()
+                            if pl_candidate.exists():
+                                return pl_candidate
+                    except Exception:
+                        continue
+
+        if partner:
+            try:
+                partner_pl = partner.property_product_pricelist.sudo()
+                if partner_pl.exists():
+                    return partner_pl
+            except Exception:
+                pass
+
+        try:
+            company_pl = env.company.sudo().property_product_pricelist
+            if company_pl and company_pl.exists():
+                return company_pl.sudo()
+        except Exception:
+            pass
+        return Pricelist.browse()
+
     @http.route(
         '/rmc_calculator/request_quote',
         type='json',
@@ -16,7 +76,7 @@ class RMCQuoteController(http.Controller):
         methods=['POST'],
         website=True,
     )
-    def request_quote(self, product_id=None, product_tmpl_id=None, qty=0, location=None, delivery_date=None,
+    def request_quote(self, product_id=None, product_tmpl_id=None, qty=0, location=None, city=None, postal_code=None, delivery_date=None,
                       contact_name=None, contact_phone=None, contact_email=None, volume=None, **kw):
         """Create a quotation and CRM lead using website calculator inputs."""
         _logger.info('RMC quote payload: product_id=%s tmpl=%s qty=%s volume=%s contact=%s %s',
@@ -72,18 +132,7 @@ class RMCQuoteController(http.Controller):
         if not partner:
             partner = env.ref('base.public_partner').sudo()
 
-        pricelist = None
-        try:
-            if getattr(request, 'website', None) and hasattr(request.website, 'get_current_pricelist'):
-                pricelist = request.website.get_current_pricelist()
-        except Exception as e:
-            _logger.warning('Failed to get website pricelist: %s', e)
-
-        if not pricelist:
-            try:
-                pricelist = partner.property_product_pricelist
-            except Exception as e:
-                _logger.warning('Failed to get partner pricelist: %s', e)
+        pricelist = self._get_active_pricelist(partner)
 
         # locate existing draft quotation for this visitor/customer to avoid duplicates
         order = None
@@ -107,6 +156,9 @@ class RMCQuoteController(http.Controller):
             visitor = env['website.visitor']._get_visitor_from_request()
         except Exception:
             visitor = None
+
+        city = city or kw.get('city')
+        postal_code = postal_code or kw.get('zip') or kw.get('postal_code')
 
         if not order:
             order_vals = {
@@ -177,6 +229,10 @@ class RMCQuoteController(http.Controller):
             }
             if location:
                 lead_vals['street'] = location
+            if city:
+                lead_vals['city'] = city
+            if postal_code:
+                lead_vals['zip'] = postal_code
             if delivery_date:
                 lead_vals['date_deadline'] = delivery_date
             # Note: website_id field doesn't exist in crm.lead in Odoo 19
@@ -253,18 +309,7 @@ class RMCQuoteController(http.Controller):
 
         partner = env.user.sudo().partner_id if request.session.uid and env.user.partner_id else env.ref('base.public_partner').sudo()
 
-        pricelist = None
-        try:
-            if getattr(request, 'website', None) and hasattr(request.website, 'get_current_pricelist'):
-                pricelist = request.website.get_current_pricelist()
-        except Exception as e:
-            _logger.warning('Failed to get website pricelist in price_breakdown: %s', e)
-
-        if not pricelist:
-            try:
-                pricelist = partner.property_product_pricelist
-            except Exception:
-                pass
+        pricelist = self._get_active_pricelist(partner)
 
         currency = None
         try:
@@ -369,15 +414,29 @@ class RMCQuoteController(http.Controller):
             except Exception:
                 partner = env.ref('base.public_partner').sudo()
 
+        city = kw.get('city') or kw.get('contact_city') or None
+        postal_code = kw.get('zip') or kw.get('postal_code') or None
+
         lead_vals = {
             'name': 'RMC Interest: %s' % (product_id or product_tmpl_id or 'Unknown'),
             'partner_id': partner.id,
             'contact_name': contact_name or partner.name,
             'type': 'opportunity',
-            'description': 'Added to cart / expressed interest via website RMC calculator. Volume: %s m3. Location: %s' % (qty, location),
+            'description': 'Added to cart / expressed interest via website RMC calculator. Volume: %s m3. Location: %s %s %s' % (
+                qty,
+                location or '',
+                city or '',
+                postal_code or '',
+            ),
             'team_id': team.id if team else False,
             'rmc_volume': qty_f,
         }
+        if location:
+            lead_vals['street'] = location
+        if city:
+            lead_vals['city'] = city
+        if postal_code:
+            lead_vals['zip'] = postal_code
         if product and product.exists():
             lead_vals.update({
                 'rmc_grade_tmpl_id': product.product_tmpl_id.id,

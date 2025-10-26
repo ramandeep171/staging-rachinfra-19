@@ -12,6 +12,14 @@
                 <select id="grade_select" name="product_tmpl_id" class="form-control" data-placeholder="Select concrete grade"></select>
                 <label style="margin-top:6px;" for="variant_select">Variant (optional)</label>
                 <select id="variant_select" name="product_id" class="form-control"></select>
+                <div style="margin-top:8px;">
+                  <label for="rmc_city" style="display:block; font-weight:600; margin-bottom:4px;">City</label>
+                  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                    <input id="rmc_city" type="text" placeholder="Detected city" class="form-control" style="flex:1; min-width:160px;" />
+                    <button type="button" id="rmc_city_gps" class="btn btn-outline-primary">Use GPS</button>
+                  </div>
+                  <input id="rmc_zip" type="hidden" />
+                </div>
                 <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
                   <input id="rmc_volume" placeholder="Volume (m³)" class="form-control" style="width:120px;" />
                   <button id="open_dim_popup" class="btn btn-primary" type="button">Calculate</button>

@@ -55,10 +55,22 @@
                                 <input type="text" name="location" placeholder="Enter address" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;" />
                             </div>
                         </div>
+                        <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
+                            <div style="flex: 1; min-width: 250px;">
+                                <label style="font-weight: bold; display: block; margin-bottom: 6px;" for="rmc_city">City</label>
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <input id="rmc_city" type="text" placeholder="Detected city" style="flex: 1; padding: 10px; border-radius: 5px; border: 1px solid #ccc;" />
+                                    <button type="button" id="rmc_city_gps" class="btn btn-outline-primary" style="white-space: nowrap;">Use GPS</button>
+                                </div>
+                                <input id="rmc_zip" type="hidden" />
+                            </div>
+                        </div>
+                        
                         <div style="margin-top: 20px;">
                             <label style="font-weight: bold; display: block; margin-bottom: 6px;">Delivery Date</label>
                             <input type="date" name="delivery_date" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;" />
                         </div>
+                        
                         <div style="margin-top: 30px; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; background: #f5f9fd;" id="rmc-calculator-widget">
                             <div style="text-align: center; font-size: 18px; color: #777;">Estimated Total Cost</div>
                             <div class="rmc-price-pill" id="variant_price">Unit price: ₹0</div>

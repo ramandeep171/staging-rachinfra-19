@@ -726,6 +726,17 @@
                                                     <label class="form-label fw-bold">Delivery Location</label>
                                                     <input type="text" name="location" placeholder="Enter delivery address" class="form-control"/>
                                                 </div>
+                                                <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; align-items: flex-end;">
+                                                    <div style="flex: 1; min-width: 260px;">
+                                                        <label style="font-weight: bold; display: block; margin-bottom: 6px;" for="rmc_city">City</label>
+                                                        <div style="display:flex; gap:12px;">
+                                                            <input id="rmc_city" type="text" placeholder="Detected city" style="flex:1; padding: 10px; border-radius: 5px; border: 1px solid #ccc;" />
+                                                            <button type="button" id="rmc_city_gps" class="btn btn-outline-primary" style="white-space:nowrap;">Use GPS</button>
+                                                        </div>
+                                                        <input id="rmc_zip" type="hidden"/>
+                                                    </div>
+                                                </div>
+                                         
                                             </div>
 
                                             <!-- Price Summary -->
