@@ -1,5 +1,5 @@
 
-from odoo import http
+from odoo import http, fields
 from odoo.http import request
 import logging
 import math
@@ -321,10 +321,19 @@ class RMCQuoteController(http.Controller):
 
         base_unit_price = prod.list_price
         unit_price = base_unit_price
-        try:
-            if pricelist:
-                unit_price = pricelist._get_product_price(prod, qty_f, partner)
-        except Exception:
+        price_rule_id = False
+        if pricelist:
+            try:
+                price_dict = pricelist._compute_price_rule(
+                    [(prod.id, qty_f, partner.id)],
+                    date=fields.Date.context_today(env.user),
+                    uom=prod.uom_id.id if prod.uom_id else False,
+                )
+                if price_dict and prod.id in price_dict:
+                    unit_price, price_rule_id = price_dict[prod.id]
+            except Exception:
+                unit_price = base_unit_price
+        if unit_price is None:
             unit_price = base_unit_price
 
         base_total = base_unit_price * qty_f
