@@ -56,6 +56,8 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
         if (!this.$chip.length) {
             return this._super(...arguments);
         }
+        this._defaultParent = this.$chip[0].parentElement;
+        this._defaultNextSibling = this.$chip[0].nextElementSibling;
 
         this.state = {
             city: "",
@@ -82,7 +84,6 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
         this.$gpsBtn = this.$modal.find(".rmc-location-gps");
         this.$gpsLabel = this.$modal.find(".rmc-location-gps-label");
         this.$saveBtn = this.$modal.find(".rmc-location-save");
-        this.$saveLabel = this.$modal.find(".rmc-location-save-label");
         this.$saveLabel = this.$modal.find(".rmc-location-save-label");
 
         this.modalInstance = null;
@@ -120,6 +121,8 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
                 this._openModal(ev);
             }
         });
+        this._onResize = this._onResize.bind(this);
+        window.addEventListener("resize", this._onResize, { passive: true });
         this.$form.on("submit", this._submitForm.bind(this));
         this.$gpsBtn.on("click", this._useGps.bind(this));
 
@@ -138,6 +141,12 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
         this._watchCheckoutZip();
         window.rmcSyncCheckout = (zip, city = "") => this._syncCheckout(zip, city);
 
+        return this._super(...arguments);
+    },
+
+    destroy() {
+        window.removeEventListener("resize", this._onResize);
+        window.clearTimeout(this._resizeTimer);
         return this._super(...arguments);
     },
 
@@ -172,15 +181,26 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
         if (!chipEl) {
             return;
         }
-        const targets = [
-            document.querySelector("header .navbar-nav.align-items-center"),
-            document.querySelector("header .navbar-nav"),
-            document.querySelector("header nav"),
-        ];
-        for (const target of targets) {
-            if (target && !target.contains(chipEl)) {
-                target.appendChild(chipEl);
-                return;
+        const isDesktop = window.innerWidth >= 992;
+        if (isDesktop) {
+            const targets = [
+                document.querySelector("header .navbar-nav.align-items-center"),
+                document.querySelector("header .navbar-nav"),
+                document.querySelector("header nav"),
+            ];
+            for (const target of targets) {
+                if (target && target !== chipEl.parentElement) {
+                    target.appendChild(chipEl);
+                    return;
+                }
+            }
+        } else if (this._defaultParent) {
+            if (chipEl.parentElement !== this._defaultParent) {
+                if (this._defaultNextSibling && this._defaultNextSibling.parentElement === this._defaultParent) {
+                    this._defaultParent.insertBefore(chipEl, this._defaultNextSibling);
+                } else {
+                    this._defaultParent.appendChild(chipEl);
+                }
             }
         }
     },
@@ -390,6 +410,11 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
             return;
         }
         this.$error.text("").addClass("d-none");
+    },
+
+    _onResize() {
+        window.clearTimeout(this._resizeTimer);
+        this._resizeTimer = window.setTimeout(() => this._placeChip(), 150);
     },
 
     _showModalManually() {

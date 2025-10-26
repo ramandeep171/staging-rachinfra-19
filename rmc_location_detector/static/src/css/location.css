@@ -10,6 +10,7 @@
     z-index: 20;
     font-size: 0.9rem;
     margin-left: 1rem;
+    cursor: pointer;
 }
 
 #rmc_location_chip .rmc-location-icon {
