@@ -130,6 +130,9 @@ class RmcLocationController(http.Controller):
             zip_code = (payload.get("zip") or "").strip()
             method = self._sanitize_method(payload.get("method")) or "manual"
 
+            if city and not zip_code:
+                zip_code = self._geocode_zip_from_city(city)
+
             pricelist = self._resolve_pricelist(city, zip_code)
             repriced = self._apply_pricelist_if_needed(pricelist)
             self._update_visitor(city, zip_code, method)
@@ -211,14 +214,89 @@ class RmcLocationController(http.Controller):
 
     def _reverse_geocode_request(self, lat: float, lon: float):
         google_key = self._get_config_parameter(f"{self.GEO_PARAM_PREFIX}google_api_key")
+        if not google_key:
+            google_key = self._get_config_parameter("base_geolocalize.google_map_api_key")
         mapbox_token = self._get_config_parameter(f"{self.GEO_PARAM_PREFIX}mapbox_token")
 
-        if google_key:
-            return self._call_google_reverse(lat, lon, google_key)
-        if mapbox_token:
-            return self._call_mapbox_reverse(lat, lon, mapbox_token)
+        errors = []
 
-        raise ValueError(_("No geocoding service is configured."))
+        if google_key:
+            try:
+                return self._call_google_reverse(lat, lon, google_key)
+            except Exception as err:  # noqa: BLE001
+                errors.append(str(err))
+                _logger.debug("[rmc_location_detector] Google reverse geocode failed: %s", err)
+        if mapbox_token:
+            try:
+                return self._call_mapbox_reverse(lat, lon, mapbox_token)
+            except Exception as err:  # noqa: BLE001
+                errors.append(str(err))
+                _logger.debug("[rmc_location_detector] Mapbox reverse geocode failed: %s", err)
+
+        try:
+            result = self._call_openstreetmap_reverse(lat, lon)
+            _logger.info("[rmc_location_detector] OSM reverse geocode result=%s", result)
+            return result
+        except Exception as err:  # noqa: BLE001
+            errors.append(str(err))
+            _logger.debug("[rmc_location_detector] OSM reverse geocode failed: %s", err)
+
+        raise ValueError(errors[-1] if errors else _("No geocoding service is configured."))
+
+    def _geocode_zip_from_city(self, city: str):
+        google_key = self._get_config_parameter(f"{self.GEO_PARAM_PREFIX}google_api_key")
+        if not google_key:
+            google_key = self._get_config_parameter("base_geolocalize.google_map_api_key")
+        if not google_key:
+            return ""
+        try:
+            response = requests.get(
+                "https://maps.googleapis.com/maps/api/geocode/json",
+                params={"address": city, "key": google_key},
+                timeout=5,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except Exception as err:  # noqa: BLE001
+            _logger.debug("[rmc_location_detector] Forward geocode failed: %s", err)
+            return ""
+
+        if data.get("status") == "OK":
+            for result in data.get("results", []):
+                for component in result.get("address_components", []):
+                    if "postal_code" in component.get("types", []):
+                        return component.get("long_name", "")
+
+        try:
+            return self._call_openstreetmap_zip_lookup(city)
+        except Exception as err:  # noqa: BLE001
+            _logger.debug("[rmc_location_detector] OSM zip lookup failed: %s", err)
+        return ""
+
+    def _call_openstreetmap_reverse(self, lat: float, lon: float):
+        geo = request.env["base.geocoder"].sudo()
+        result = geo._call_openstreetmap_reverse(lat, lon) or {}
+        address = result.get("address", {})
+        city = address.get("city") or address.get("town") or address.get("village")
+        zip_code = address.get("postcode")
+        if not zip_code and city:
+            zip_code = self._call_openstreetmap_zip_lookup(city)
+        if not (city or zip_code):
+            display = result.get("display_name", "")
+            if display:
+                parts = [part.strip() for part in display.split(",")]
+                if parts:
+                    city = parts[-3] if len(parts) >= 3 else parts[0]
+        return city, zip_code
+
+    def _call_openstreetmap_zip_lookup(self, city: str):
+        geo = request.env["base.geocoder"].sudo()
+        coords = geo._call_openstreetmap(city)
+        if coords:
+            reverse = geo._call_openstreetmap_reverse(coords[0], coords[1]) or {}
+            address = reverse.get("address", {})
+            return address.get("postcode")
+        return ""
 
     def _call_google_reverse(self, lat: float, lon: float, api_key: str):
         params = {"latlng": f"{lat},{lon}", "key": api_key}
