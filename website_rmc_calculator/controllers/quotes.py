@@ -201,26 +201,58 @@ class RMCQuoteController(http.Controller):
             except Exception:
                 _logger.exception('Failed to update order %s pricelist to %s', order.id, pricelist.id)
 
-        price_unit = prod.list_price
-        try:
-            if pricelist:
-                price_unit = pricelist._get_product_price(prod, qty_f, partner)
-        except Exception:
-            price_unit = prod.list_price
+        price_data = self.price_breakdown(
+            product_id=prod.id,
+            qty=qty_f,
+            city_override=city,
+            zip_override=postal_code,
+        )
 
-        add_line = True
+        base_unit_price = prod.list_price
+        net_unit_price = prod.list_price
+        discount_percent = 0.0
+        if price_data and price_data.get('success'):
+            net_unit_price = price_data.get('unit_price', net_unit_price)
+            if qty_f:
+                base_total = price_data.get('base_price')
+                if base_total:
+                    base_unit_price = base_total / qty_f
+            discount_percent = price_data.get('discount_percent', 0.0) or 0.0
+            if not base_unit_price:
+                base_unit_price = price_data.get('price') or prod.list_price
+            if discount_percent <= 0 and base_unit_price:
+                try:
+                    discount_percent = max(
+                        0.0,
+                        min(
+                            100.0,
+                            (base_unit_price - net_unit_price) / base_unit_price * 100.0,
+                        ),
+                    )
+                except Exception:
+                    discount_percent = 0.0
+
+        existing_line = False
         for ln in order.order_line:
-            if ln.product_id.id == prod.id and abs(ln.product_uom_qty - qty_f) < 0.0001:
-                add_line = False
+            if ln.product_id.id == prod.id:
+                existing_line = ln
                 break
 
-        if add_line:
+        if existing_line:
+            update_vals = {
+                'product_uom_qty': qty_f,
+                'price_unit': base_unit_price,
+                'discount': discount_percent,
+            }
+            existing_line.write(update_vals)
+        else:
             line_vals = {
                 'order_id': order.id,
                 'product_id': prod.id,
                 'name': prod.display_name,
                 'product_uom_qty': qty_f,
-                'price_unit': price_unit,
+                'price_unit': base_unit_price,
+                'discount': discount_percent,
             }
             # In Odoo 19, the field is product_uom_id, not product_uom
             if getattr(prod, 'uom_id', False):
@@ -274,12 +306,6 @@ class RMCQuoteController(http.Controller):
             except Exception:
                 _logger.exception('Failed to link order %s to lead %s', order.id, lead.id)
 
-        price_data = self.price_breakdown(
-            product_id=prod.id,
-            qty=qty_f,
-            city_override=city,
-            zip_override=postal_code,
-        )
         report_url = None
         try:
             # leverage the sale portal route so the access token grants safe report access
