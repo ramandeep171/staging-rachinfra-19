@@ -15,6 +15,7 @@
         "data/ir_config_parameter.xml",
         "views/location_settings.xml",
         "views/geo_zone_views.xml",
+        "views/city_alias_views.xml",
         "views/website_templates.xml",
     ],
     "assets": {

@@ -6,6 +6,8 @@
             <list string="Location Zones">
                 <field name="name"/>
                 <field name="zip_prefix"/>
+                <field name="zip_range_start"/>
+                <field name="zip_range_end"/>
                 <field name="city"/>
                 <field name="pricelist_id"/>
                 <field name="website_id"/>
@@ -26,6 +28,8 @@
                     </group>
                     <group>
                         <field name="zip_prefix"/>
+                        <field name="zip_range_start"/>
+                        <field name="zip_range_end"/>
                         <field name="city"/>
                     </group>
                     <group>

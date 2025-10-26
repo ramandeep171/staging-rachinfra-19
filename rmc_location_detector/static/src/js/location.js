@@ -280,14 +280,25 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
             });
     },
 
-    async _saveLocation(payload) {
+    async _saveLocation(payload, options = {}) {
         const response = await fetchJson(ENDPOINTS.save, {
             method: "POST",
             body: JSON.stringify(payload),
         });
-        this._handleServerResponse(response, { reloadOnReprice: true, showBanner: true });
+        const opts = {
+            reloadOnReprice: true,
+            showBanner: true,
+            autoClose: false,
+            sourceMethod: payload.method,
+            updateForm: true,
+            ...options,
+        };
+        this._handleServerResponse(response, opts);
         if (response.error) {
             throw new Error(response.error);
+        }
+        if (opts.autoClose) {
+            window.setTimeout(() => this._closeModal(), 150);
         }
         return response;
     },
@@ -302,12 +313,16 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
             }
             return;
         }
-        this._updateState({
+        const payload = {
             city: response.city,
             zip: response.zip,
             method: response.method || this.state.method,
             pricelistName: response.pricelist_name,
-        });
+        };
+        this._updateState(payload);
+        if (options.updateForm !== false) {
+            this._prefillForm(payload.city, payload.zip);
+        }
         if (response.repriced && options.showBanner !== false) {
             const message = _t("Prices updated for delivery to %(city)s %(zip)s", {
                 city: response.city || "",
@@ -354,10 +369,14 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
                         if (response.error) {
                             throw new Error(response.error);
                         }
+                        this._prefillForm(response.city, response.zip);
                         return this._saveLocation({
                             city: response.city,
                             zip: response.zip,
                             method: "gps",
+                        }, {
+                            autoClose: true,
+                            sourceMethod: "gps",
                         });
                     })
                     .catch((error) => {
@@ -512,5 +531,22 @@ publicWidget.registry.RmcLocationDetector = publicWidget.Widget.extend({
             .removeClass("d-none alert-info alert-warning")
             .addClass(isError ? "alert-warning" : "alert-info")
             .text(message);
+    },
+
+    _prefillForm(city, zip) {
+        if (this.$cityInput && this.$cityInput.length && city) {
+            this.$cityInput.val(city);
+        }
+        if (this.$zipInput && this.$zipInput.length && zip) {
+            this.$zipInput.val(zip);
+        }
+    },
+
+    _closeModal() {
+        if (this.modalInstance) {
+            this.modalInstance.hide();
+        } else if (this.$modal.length) {
+            this._hideModalManually();
+        }
     },
 });

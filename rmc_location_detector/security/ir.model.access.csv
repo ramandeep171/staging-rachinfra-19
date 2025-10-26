@@ -2,3 +2,5 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_rmc_geo_zone_manager,rmc.geo.zone manager access,model_rmc_geo_zone,website.group_website_designer,1,1,1,1
 access_rmc_geo_zone_user,rmc.geo.zone user read access,model_rmc_geo_zone,website.group_website_restricted_editor,1,0,0,0
 access_rmc_geo_zone_public,rmc.geo.zone public read access,model_rmc_geo_zone,base.group_public,1,0,0,0
+access_rmc_geo_city_alias_manager,rmc.geo.city.alias manager,model_rmc_geo_city_alias,website.group_website_designer,1,1,1,1
+access_rmc_geo_city_alias_reader,rmc.geo.city.alias reader,model_rmc_geo_city_alias,website.group_website_restricted_editor,1,0,0,0

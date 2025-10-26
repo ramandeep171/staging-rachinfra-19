@@ -9,6 +9,8 @@ class RmcGeoZone(models.Model):
     name = fields.Char(required=True, translate=True)
     city = fields.Char()
     zip_prefix = fields.Char(help="e.g., 1220 for 1220xx")
+    zip_range_start = fields.Integer(string="ZIP Range From")
+    zip_range_end = fields.Integer(string="ZIP Range To")
     pricelist_id = fields.Many2one(
         "product.pricelist",
         required=True,
@@ -25,8 +27,9 @@ class RmcGeoZone(models.Model):
         (
             "rmc_geo_zone_city_or_zip",
             "CHECK( (city IS NOT NULL AND char_length(trim(city)) > 0)"
-            " OR (zip_prefix IS NOT NULL AND char_length(trim(zip_prefix)) > 0) )",
-            "Please set a City or a ZIP prefix to define the zone.",
+            " OR (zip_prefix IS NOT NULL AND char_length(trim(zip_prefix)) > 0)"
+            " OR (zip_range_start IS NOT NULL AND zip_range_end IS NOT NULL) )",
+            "Please set a City, a ZIP prefix, or a ZIP range to define the zone.",
         )
     ]
 
@@ -58,8 +61,12 @@ class RmcGeoZone(models.Model):
 
         candidates = self.search(domain)
 
+        alias_model = self.env["rmc.geo.city.alias"].sudo()
         normalized_zip = tools.ustr(zip_code or "").strip()
-        normalized_city = tools.ustr(city or "").strip().lower()
+        normalized_city = tools.ustr(city or "").strip()
+        if normalized_city:
+            normalized_city = alias_model.canonicalize(website, normalized_city)
+        normalized_city_lower = normalized_city.lower() if normalized_city else ""
 
         best_zone = False
         best_zip_len = -1
@@ -71,9 +78,20 @@ class RmcGeoZone(models.Model):
                         best_zone = zone
                         best_zip_len = len(prefix)
 
+        if normalized_zip and not best_zone:
+            zip_int = None
+            if normalized_zip.isdigit():
+                zip_int = int(normalized_zip)
+            if zip_int is not None:
+                for zone in candidates:
+                    if zone.zip_range_start and zone.zip_range_end:
+                        if zone.zip_range_start <= zip_int <= zone.zip_range_end:
+                            best_zone = zone
+                            break
+
         if not best_zone and normalized_city:
             for zone in candidates:
-                if zone.city and zone.city.strip().lower() == normalized_city:
+                if zone.city and zone.city.strip().lower() == normalized_city_lower:
                     best_zone = zone
                     break
 
