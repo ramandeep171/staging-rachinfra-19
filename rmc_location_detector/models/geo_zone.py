@@ -37,8 +37,13 @@ class RmcGeoZone(models.Model):
         zone = self._match_zone(website, city, zip_code)
         if zone:
             return zone.pricelist_id
-        if website and website.pricelist_id:
-            return website.pricelist_id
+        if website:
+            try:
+                pricelist = website._get_and_cache_current_pricelist()
+                if pricelist:
+                    return pricelist
+            except Exception:
+                return False
         return False
 
     def _match_zone(self, website, city, zip_code):

@@ -60,6 +60,18 @@ class RmcLocationController(http.Controller):
                 )
         return response
 
+    def _get_payload(self):
+        payload = {}
+        try:
+            if request.httprequest.mimetype == "application/json":
+                payload = request.get_json_data() or {}
+        except Exception as err:
+            _logger.debug("[rmc_location_detector] Failed to parse JSON body: %s", err)
+            payload = {}
+        if not payload:
+            payload = request.get_http_params()
+        return payload
+
     def _sanitize_method(self, method: Optional[str]) -> Optional[str]:
         allowed = {"ip", "gps", "manual"}
         if method and method.lower() in allowed:
@@ -112,7 +124,7 @@ class RmcLocationController(http.Controller):
     @http.route("/rmc/location/save", type="http", auth="public", methods=["POST"], website=True, csrf=False)
     def save_location(self, **kwargs):
         try:
-            payload = request.jsonrequest or {}
+            payload = self._get_payload()
             _logger.info("[rmc_location_detector] save_location payload=%s", payload)
             city = (payload.get("city") or "").strip()
             zip_code = (payload.get("zip") or "").strip()
@@ -182,7 +194,7 @@ class RmcLocationController(http.Controller):
 
     @http.route("/rmc/location/checkout_sync", type="http", auth="public", methods=["POST"], website=True, csrf=False)
     def checkout_sync(self, **kwargs):
-        payload = request.jsonrequest or {}
+        payload = self._get_payload()
         zip_code = (payload.get("zip") or "").strip()
         city = (payload.get("city") or "").strip()
 
