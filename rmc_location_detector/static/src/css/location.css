@@ -1,0 +1,62 @@
+#rmc_location_chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    color: inherit;
+    z-index: 20;
+    font-size: 0.9rem;
+    margin-left: 1rem;
+}
+
+#rmc_location_chip .rmc-location-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+#rmc_location_chip .rmc-location-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+#rmc_location_chip .rmc-location-city {
+    font-weight: 600;
+}
+
+#rmc_location_chip .rmc-location-zip {
+    font-size: 0.8rem;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+#rmc_location_chip .rmc-location-change {
+    font-size: 0.8rem;
+}
+
+#rmc_location_chip .rmc-location-method-hint {
+    font-size: 0.72rem;
+    margin-left: 1.5rem;
+}
+
+.rmc-location-banner {
+    margin-bottom: 1rem;
+}
+
+.rmc-location-modal .modal-dialog {
+    max-width: 420px;
+}
+
+.rmc-location-modal .modal-footer {
+    gap: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+    #rmc_location_chip {
+        width: calc(100% - 2rem);
+        justify-content: space-between;
+        margin: 0.5rem 1rem;
+    }
+}

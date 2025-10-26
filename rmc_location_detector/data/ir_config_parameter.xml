@@ -1,0 +1,26 @@
+<odoo>
+    <record id="param_rmc_location_mapbox_token" model="ir.config_parameter">
+        <field name="key">rmc_location.mapbox_token</field>
+        <field name="value"/>
+    </record>
+
+    <record id="param_rmc_location_google_api_key" model="ir.config_parameter">
+        <field name="key">rmc_location.google_api_key</field>
+        <field name="value"/>
+    </record>
+
+    <record id="param_rmc_location_enable_ip_guess" model="ir.config_parameter">
+        <field name="key">rmc_location.enable_ip_guess</field>
+        <field name="value">1</field>
+    </record>
+
+    <record id="param_rmc_location_enable_gps" model="ir.config_parameter">
+        <field name="key">rmc_location.enable_gps</field>
+        <field name="value">1</field>
+    </record>
+
+    <record id="param_rmc_location_cookie_ttl_days" model="ir.config_parameter">
+        <field name="key">rmc_location.cookie_ttl_days</field>
+        <field name="value">30</field>
+    </record>
+</odoo>

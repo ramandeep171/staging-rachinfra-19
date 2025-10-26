@@ -1,0 +1,46 @@
+<odoo>
+    <record id="res_config_settings_view_form_rmc_location" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.rmc.location</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="website_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <setting id="pricelists_setting" position="after">
+                <setting
+                    id="rmc_location_setting"
+                    string="Website Location Detection"
+                    help="Detect the visitor city and ZIP to adjust website pricing."
+                >
+                    <div class="content-group">
+                        <div class="row">
+                            <label for="rmc_location_enable_ip_guess" class="o_light_label col-lg-4"/>
+                            <field name="rmc_location_enable_ip_guess" class="col-lg-8"/>
+                        </div>
+                        <div class="row mt8">
+                            <label for="rmc_location_enable_gps" class="o_light_label col-lg-4"/>
+                            <field name="rmc_location_enable_gps" class="col-lg-8"/>
+                        </div>
+                        <div class="row mt8">
+                            <label for="rmc_location_cookie_ttl_days" class="o_light_label col-lg-4"/>
+                            <field name="rmc_location_cookie_ttl_days" class="col-lg-8"/>
+                        </div>
+                    </div>
+                    <div class="content-group mt16">
+                        <h4 class="o_form_label">Reverse Geocoding Providers</h4>
+                        <div class="row">
+                            <label for="rmc_location_google_api_key" class="o_light_label col-lg-4"/>
+                            <field name="rmc_location_google_api_key" password="True" class="col-lg-8"/>
+                        </div>
+                        <div class="row mt8">
+                            <label for="rmc_location_mapbox_token" class="o_light_label col-lg-4"/>
+                            <field name="rmc_location_mapbox_token" password="True" class="col-lg-8"/>
+                        </div>
+                        <div class="text-muted mt8">
+                            <p>Provide either a Google Maps API key or a Mapbox access token. GPS lookup uses Google when both are set.</p>
+                            <p>Refer to the provider documentation for quota, billing, and privacy terms.</p>
+                        </div>
+                    </div>
+                </setting>
+            </setting>
+        </field>
+    </record>
+</odoo>
