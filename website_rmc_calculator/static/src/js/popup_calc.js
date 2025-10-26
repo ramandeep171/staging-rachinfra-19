@@ -117,6 +117,19 @@
     if (truckEl) truckEl.textContent = trucks ? trucks.toString() : '0';
   }
 
+  function getLocationOverrides() {
+    const overrides = {};
+    const cityValue = cityInputRef && cityInputRef.value ? cityInputRef.value.toString().trim() : '';
+    const zipValue = zipInputRef && zipInputRef.value ? zipInputRef.value.toString().trim() : '';
+    if (cityValue) {
+      overrides.city_override = cityValue;
+    }
+    if (zipValue) {
+      overrides.zip_override = zipValue;
+    }
+    return overrides;
+  }
+
   function refreshPriceAfterLocation() {
     const calcBtnPage = document.getElementById('calculate_quote_btn');
     const gradeSel = document.getElementById('grade_select');
@@ -578,6 +591,7 @@
     const payload = (variantSel && variantSel.value)
       ? { product_id: variantSel.value, qty: volume }
       : { product_tmpl_id: tmplId, qty: volume };
+    Object.assign(payload, getLocationOverrides());
     jsonRpcCall(PRICE_ENDPOINT, payload, Date.now())
       .then(function (summary) {
         updatePriceSummary(summary, wrapper, volume);
@@ -721,7 +735,9 @@
           showVariantPrice(sel.value, qty);
         } else if (gradeSel && gradeSel.value) {
           var volumeValue = parseFloat(qty || 0) || 0;
-          jsonRpcCall(PRICE_ENDPOINT, { product_tmpl_id: gradeSel.value, qty: qty }, Date.now())
+          const payload = { product_tmpl_id: gradeSel.value, qty: qty };
+          Object.assign(payload, getLocationOverrides());
+          jsonRpcCall(PRICE_ENDPOINT, payload, Date.now())
             .then(function (data) {
               updatePriceSummary(data, null, volumeValue);
             })
@@ -769,6 +785,7 @@
         const payload = variantId
           ? { product_id: variantId, qty: qty }
           : { product_tmpl_id: tmplId, qty: qty };
+        Object.assign(payload, getLocationOverrides());
 
         jsonRpcCall(PRICE_ENDPOINT, payload, Date.now())
           .then(function (data) {
@@ -1048,6 +1065,7 @@
     }
     var payload = { product_id: variantId };
     if (qty) payload.qty = qty;
+    Object.assign(payload, getLocationOverrides());
 
     function getVariantMeta(id) {
       var sel = document.getElementById('variant_select');

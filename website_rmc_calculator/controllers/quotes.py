@@ -68,6 +68,21 @@ class RMCQuoteController(http.Controller):
             pass
         return Pricelist.browse()
 
+    def _get_pricelist_for_location(self, city=None, zip_code=None, partner=None):
+        zone_pricelist = False
+        if city or zip_code:
+            try:
+                zone_pricelist = (
+                    request.env["rmc.geo.zone"]
+                    .sudo()
+                    .match(request.website, city, zip_code)
+                )
+            except Exception:
+                zone_pricelist = False
+        if zone_pricelist:
+            return zone_pricelist
+        return self._get_active_pricelist(partner)
+
     @http.route(
         '/rmc_calculator/request_quote',
         type='json',
@@ -132,7 +147,9 @@ class RMCQuoteController(http.Controller):
         if not partner:
             partner = env.ref('base.public_partner').sudo()
 
-        pricelist = self._get_active_pricelist(partner)
+        postal_code = postal_code or kw.get('zip') or kw.get('postal_code')
+
+        pricelist = self._get_pricelist_for_location(city, postal_code, partner)
 
         # locate existing draft quotation for this visitor/customer to avoid duplicates
         order = None
@@ -158,8 +175,6 @@ class RMCQuoteController(http.Controller):
             visitor = None
 
         city = city or kw.get('city')
-        postal_code = postal_code or kw.get('zip') or kw.get('postal_code')
-
         if not order:
             order_vals = {
                 'partner_id': partner.id,
@@ -251,7 +266,12 @@ class RMCQuoteController(http.Controller):
             except Exception:
                 _logger.exception('Failed to link order %s to lead %s', order.id, lead.id)
 
-        price_data = self.price_breakdown(product_id=prod.id, qty=qty_f)
+        price_data = self.price_breakdown(
+            product_id=prod.id,
+            qty=qty_f,
+            city_override=city,
+            zip_override=postal_code,
+        )
         report_url = None
         try:
             # leverage the sale portal route so the access token grants safe report access
@@ -309,7 +329,10 @@ class RMCQuoteController(http.Controller):
 
         partner = env.user.sudo().partner_id if request.session.uid and env.user.partner_id else env.ref('base.public_partner').sudo()
 
-        pricelist = self._get_active_pricelist(partner)
+        override_city = kw.get('city_override') or kw.get('city')
+        override_zip = kw.get('zip_override') or kw.get('zip')
+
+        pricelist = self._get_pricelist_for_location(override_city, override_zip, partner)
 
         currency = (
             (pricelist and pricelist.currency_id)
@@ -323,6 +346,11 @@ class RMCQuoteController(http.Controller):
         unit_price = base_unit_price
         price_rule_id = False
         discount_percent = 0.0
+        if override_city or override_zip:
+            pricelist_override = self._get_pricelist_for_location(override_city, override_zip, partner)
+            if pricelist_override:
+                pricelist = pricelist_override
+
         if pricelist:
             try:
                 unit_price, price_rule_id = pricelist._get_product_price_rule(
