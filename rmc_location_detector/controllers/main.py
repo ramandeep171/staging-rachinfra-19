@@ -130,6 +130,9 @@ class RmcLocationController(http.Controller):
             zip_code = (payload.get("zip") or "").strip()
             method = self._sanitize_method(payload.get("method")) or "manual"
 
+            if city and not zip_code:
+                zip_code = self._geocode_zip_from_city(city)
+
             pricelist = self._resolve_pricelist(city, zip_code)
             repriced = self._apply_pricelist_if_needed(pricelist)
             self._update_visitor(city, zip_code, method)
@@ -221,6 +224,38 @@ class RmcLocationController(http.Controller):
             return self._call_mapbox_reverse(lat, lon, mapbox_token)
 
         raise ValueError(_("No geocoding service is configured."))
+
+    def _geocode_zip_from_city(self, city: str):
+        google_key = self._get_config_parameter(f"{self.GEO_PARAM_PREFIX}google_api_key")
+        if not google_key:
+            google_key = self._get_config_parameter("base_geolocalize.google_map_api_key")
+        if not google_key:
+            return ""
+        try:
+            response = requests.get(
+                "https://maps.googleapis.com/maps/api/geocode/json",
+                params={"address": city, "key": google_key},
+                timeout=5,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except Exception as err:  # noqa: BLE001
+            _logger.debug("[rmc_location_detector] Forward geocode failed: %s", err)
+            return ""
+
+        if data.get("status") != "OK":
+            _logger.debug(
+                "[rmc_location_detector] Forward geocode returned status %s for city %s",
+                data.get("status"),
+                city,
+            )
+            return ""
+
+        for result in data.get("results", []):
+            for component in result.get("address_components", []):
+                if "postal_code" in component.get("types", []):
+                    return component.get("long_name", "")
+        return ""
 
     def _call_google_reverse(self, lat: float, lon: float, api_key: str):
         params = {"latlng": f"{lat},{lon}", "key": api_key}
