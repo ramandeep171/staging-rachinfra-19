@@ -40,7 +40,7 @@
         "views/rmc_subcontractor_wizard_views.xml",
     ],
     "assets": {
-        "web.assets_frontend": [
+        "website.assets_frontend": [
             "rmc_subcontractor_management/static/src/css/landing_page.css",
             "rmc_subcontractor_management/static/src/js/landing_page.js",
         ],
