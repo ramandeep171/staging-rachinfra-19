@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template
+        id="website_variant_tiles_products_item"
+        inherit_id="website_sale.products_item"
+        name="Website Variant Tiles Product Item"
+    >
+        <xpath expr="//form[1]" position="before">
+            <t t-set="_wvt_variant" t-value="product_variant if product_variant else None"/>
+            <t t-if="_wvt_variant">
+                <t t-set="product_variant" t-value="_wvt_variant"/>
+                <t t-set="product_href" t-value="product_variant.website_url or product_href"/>
+            </t>
+        </xpath>
+
+        <xpath expr="//a[@class='text-decoration-none']" position="attributes">
+            <attribute name="t-att-title">_wvt_variant and _wvt_variant.display_name or product.name</attribute>
+        </xpath>
+
+        <xpath expr="//span[@t-field='product.name']" position="replace">
+            <span t-if="_wvt_variant" t-esc="_wvt_variant.display_name"/>
+            <span t-else="" t-esc="product.display_name"/>
+        </xpath>
+
+        <xpath expr="//t[@t-set='combination_name']" position="attributes">
+            <attribute name="t-if">product_variant and not _wvt_variant</attribute>
+        </xpath>
+    </template>
+    <template
+        id="website_variant_tiles_products_grid"
+        inherit_id="website_sale.products"
+        name="Website Variant Tiles Products Grid"
+    >
+        <xpath expr="//t[@t-call='website_sale.products_item']" position="before">
+            <t t-set="product_variant" t-value="td_product and td_product.get('variant')"/>
+        </xpath>
+    </template>
+</odoo>
