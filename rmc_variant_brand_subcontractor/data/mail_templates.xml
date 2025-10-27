@@ -3,32 +3,57 @@
     <record id="mail_template_brand_rfq" model="mail.template">
         <field name="name">Brand Subcontractor RFQ</field>
         <field name="model_id" ref="purchase.model_purchase_order"/>
-        <field name="subject">RFQ ${object.name or ''}</field>
+        <field name="subject">Request for Quotation ${object.name or ''}</field>
         <field name="email_from">${(object.company_id.email or user.email_formatted) if user else ''}</field>
         <field name="email_to">${object.partner_id.email or ''}</field>
         <field name="auto_delete" eval="True"/>
-        <field name="body_html"><![CDATA[
-<div>
-    <p>Hello ${object.partner_id.name or 'Partner'},</p>
+        <field name="report_template_ids" eval="[(4, ref('purchase.action_report_purchase_order'))]"/>
+        <field name="body_html" type="html">
+<t t-set="token" t-value="object._portal_ensure_token()"/>
+<t t-set="base_url" t-value="object.get_base_url()"/>
+<div style="margin:0;padding:0;font-size:13px;">
     <p>
-        Please review the request for quotation <strong>${object.name}</strong> for
-        ${', '.join(object.order_line.filtered(lambda l: not l.display_type).mapped('product_id.display_name'))}.
+        Dear <t t-out="object.partner_id.name or ''">Brandon Freeman</t>
+        <t t-if="object.partner_id.parent_id">
+            (<t t-out="object.partner_id.parent_id.name or ''">Azure Interior</t>)
+        </t>
+        ,
     </p>
     <p>
-        <a href="${object.env['ir.config_parameter'].sudo().get_param('web.base.url')}/brand/rfq/${object.id}/accept?token=${object._portal_ensure_token()}"
-           style="display:inline-block;padding:10px 16px;margin-right:10px;background-color:#28a745;color:#fff;text-decoration:none;border-radius:4px;">
-            Accept
-        </a>
-        <a href="${object.env['ir.config_parameter'].sudo().get_param('web.base.url')}/brand/rfq/${object.id}/reject?token=${object._portal_ensure_token()}"
-           style="display:inline-block;padding:10px 16px;background-color:#dc3545;color:#fff;text-decoration:none;border-radius:4px;">
-            Reject
-        </a>
+        Here is in attachment a request for quotation
+        <strong t-out="object.name or ''">P00015</strong>
+        <t t-if="object.partner_ref">
+            with reference: <t t-out="object.partner_ref or ''">REF_XXX</t>
+        </t>
+        from <t t-out="object.company_id.name or ''">YourCompany</t>.
     </p>
     <p>
-        Thank you,<br/>
-        ${object.company_id.name}
+        You can respond directly using the buttons below:
+    </p>
+    <p>
+        <a t-att-href="('%s/brand/rfq/%s/accept?token=%s' % (base_url, object.id, token))"
+           style="display:inline-block;padding:10px 18px;margin-right:12px;background-color:#28a745;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">
+            Accept 
+        </a>
+        <a t-att-href="('%s/brand/rfq/%s/reject?token=%s' % (base_url, object.id, token))"
+           style="display:inline-block;padding:10px 18px;background-color:#dc3545;color:#fff;text-decoration:none;border-radius:4px;font-weight:bold;">
+            Reject 
+        </a>
+    </p>
+    
+    <p>
+        If you have any questions, please do not hesitate to contact us.
+    </p>
+    <p>
+        Best regards,<br/>
+        <t t-if="object.user_id">
+            <span t-out="object.user_id.name or ''"/>
+        </t>
+        <t t-if="object.user_id and object.user_id.signature">
+            <div data-o-mail-quote="1">--<br/><t t-out="object.user_id.signature or ''"/></div>
+        </t>
     </p>
 </div>
-        ]]></field>
+        </field>
     </record>
 </odoo>

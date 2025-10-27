@@ -1,29 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <template id="portal_purchase_response" name="Brand RFQ Response">
-        <t t-call="portal.portal_layout">
-            <div class="container py-4">
-                <h1 class="mb-3">
-                    <t t-if="status == 'accepted'">RFQ Accepted</t>
-                    <t t-elif="status == 'reassigned'">RFQ Reassigned</t>
-                    <t t-else="">RFQ Rejected</t>
-                </h1>
-                <p class="lead">
-                    <t t-if="status == 'accepted'">
-                        Thank you! We have recorded your acceptance for
-                        <strong t-esc="order.name"/>.
-                    </t>
-                    <t t-elif="status == 'reassigned'">
-                        Your rejection has been received. We are forwarding this
-                        request to the next available subcontractor.
-                    </t>
-                    <t t-else="">
-                        Your rejection has been received. Our procurement team will review the request.
-                    </t>
-                </p>
-            </div>
-        </t>
-    </template>
+    <template id="portal_purchase_response" name="Brand RFQ Response"/>
 
     <template id="portal_purchase_invalid" name="Brand RFQ Invalid Token">
         <t t-call="portal.portal_layout">
@@ -35,5 +12,44 @@
                 </p>
             </div>
         </t>
+    </template>
+
+    <template id="portal_my_purchase_order_brand_actions" inherit_id="purchase.purchase_order_portal_content" priority="20">
+        <xpath expr="//div[@id='introduction']" position="after">
+            <t t-set="brand_status" t-value="request.params.get('brand_status')"/>
+            <t t-if="brand_status and brand_status != 'accepted'">
+                <div class="alert alert-info mt-3">
+                    <t t-if="brand_status == 'reassigned'">
+                        Thank you for your response.
+                    </t>
+                    <t t-elif="brand_status == 'unavailable'">
+                        Thank you for your response.
+                    </t>
+                    <t t-elif="brand_status == 'rejected'">
+                        Your rejection has been recorded. Our procurement team will review the request.
+                    </t>
+                </div>
+            </t>
+            <t t-set="brand_lines" t-value="order.order_line.filtered(lambda l: not l.display_type and l.product_id and l.product_id.allowed_subcontractor_ids)"/>
+            <t t-if="brand_lines and order.state in ['draft', 'sent'] and order.rmc_brand_response == 'pending'">
+                <t t-set="token" t-value="order._portal_ensure_token()"/>
+                <div class="alert alert-secondary d-flex flex-wrap gap-2 mt-3">
+                    <strong class="me-2 align-self-center">Respond to this RFQ:</strong>
+                    <a t-att-href="'/brand/rfq/%s/accept?token=%s' % (order.id, token)"
+                       class="btn btn-success">
+                        Accept
+                    </a>
+                    <a t-att-href="'/brand/rfq/%s/reject?token=%s' % (order.id, token)"
+                       class="btn btn-danger">
+                        Reject
+                    </a>
+                </div>
+            </t>
+            <t t-if="brand_status == 'accepted'">
+                <div class="alert alert-success mt-3">
+                    Thank you! We have recorded your acceptance for <strong t-esc="order.name"/>.
+                </div>
+            </t>
+        </xpath>
     </template>
 </odoo>

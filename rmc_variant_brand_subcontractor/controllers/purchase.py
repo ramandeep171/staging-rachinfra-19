@@ -29,10 +29,9 @@ class RmcBrandPurchaseController(http.Controller):
                 "rmc_variant_brand_subcontractor.portal_purchase_invalid", {}
             )
         order.action_rmc_brand_accept()
-        return request.render(
-            "rmc_variant_brand_subcontractor.portal_purchase_response",
-            {"order": order, "status": "accepted"},
-        )
+        url = order.get_portal_url()
+        separator = "&" if "?" in url else "?"
+        return request.redirect(f"{url}{separator}brand_status=accepted")
 
     @http.route(
         "/brand/rfq/<int:order_id>/reject",
@@ -49,8 +48,12 @@ class RmcBrandPurchaseController(http.Controller):
                 "rmc_variant_brand_subcontractor.portal_purchase_invalid", {}
             )
         fallback = order.action_rmc_brand_reject()
-        status = "reassigned" if fallback else "rejected"
-        return request.render(
-            "rmc_variant_brand_subcontractor.portal_purchase_response",
-            {"order": order, "status": status},
-        )
+        if fallback:
+            status = "reassigned"
+        elif order.rmc_brand_response == "unavailable":
+            status = "unavailable"
+        else:
+            status = "rejected"
+        url = order.get_portal_url()
+        separator = "&" if "?" in url else "?"
+        return request.redirect(f"{url}{separator}brand_status={status}")

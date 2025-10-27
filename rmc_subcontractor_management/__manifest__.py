@@ -34,7 +34,7 @@
         "views/rmc_subcontractor_menu.xml",
         "views/crm_lead_views.xml",
         "views/rmc_subcontractor_views.xml",
-        "views/rmc_subcntractor_profile_views.xml",
+        "views/rmc_subcontractor_profile_views.xml",
         "views/rmc_subcontractor_assets_templates.xml",
         "views/rmc_subcontractor_portal_templates.xml",
         "views/rmc_subcontractor_wizard_views.xml",
