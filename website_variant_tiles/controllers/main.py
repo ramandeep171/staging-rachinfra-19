@@ -1,5 +1,3 @@
-from itertools import chain
-
 from odoo import http
 from odoo.http import request
 
@@ -37,21 +35,30 @@ class WebsiteVariantTilesController(WebsiteSaleController):
             return response
 
         search_templates = qcontext.get('search_product') or products
-        selected_value_ids = self._wvt_get_selected_value_ids(qcontext)
+        selected_values_by_attribute = self._wvt_get_selected_values_by_attribute(qcontext)
 
         variant_tiles = []
         for template in search_templates:
             variants = template.product_variant_ids
-            if selected_value_ids:
-                variants = variants.filtered(
-                    lambda variant, required_ids=selected_value_ids: required_ids.issubset(
-                        set(
-                            variant.product_template_attribute_value_ids.mapped(
-                                'product_attribute_value_id'
-                            ).ids
+            if selected_values_by_attribute:
+                filtered_variants = template.env['product.product']
+                for variant in variants:
+                    values_by_attribute = {}
+                    for ptav in variant.product_template_attribute_value_ids:
+                        values_by_attribute.setdefault(ptav.attribute_id.id, set()).add(
+                            ptav.product_attribute_value_id.id
                         )
-                    )
-                )
+
+                    matches_all = True
+                    for attribute_id, required_values in selected_values_by_attribute.items():
+                        variant_values = values_by_attribute.get(attribute_id)
+                        if not variant_values or variant_values.isdisjoint(required_values):
+                            matches_all = False
+                            break
+                    if matches_all:
+                        filtered_variants += variant
+
+                variants = filtered_variants
                 if not variants:
                     continue
             if not variants:
@@ -123,12 +130,15 @@ class WebsiteVariantTilesController(WebsiteSaleController):
         qcontext['wvt_variant_map'] = request.wvt_variant_map
         return response
 
-    def _wvt_get_selected_value_ids(self, qcontext):
-        """Return the set of product.attribute.value IDs filtered in the URL."""
+    def _wvt_get_selected_values_by_attribute(self, qcontext):
+        """Return a mapping of attribute_id -> set(product.attribute.value ids) filtered in the URL."""
         attribute_value_dict = qcontext.get('attrib_values') or {}
-        selected_ids = set(chain.from_iterable(attribute_value_dict.values()))
+        selected_by_attribute = {
+            int(attr_id): set(value_ids)
+            for attr_id, value_ids in attribute_value_dict.items()
+        }
 
-        # Legacy ?attrib= attribute parameters use template attribute values (ptav).
+        # Legacy ?attrib= parameters use template attribute values (ptav); map them back to pav.
         ptav_model = request.env['product.template.attribute.value']
         for raw_attrib in request.httprequest.args.getlist('attrib'):
             if not raw_attrib:
@@ -145,10 +155,14 @@ class WebsiteVariantTilesController(WebsiteSaleController):
                     ptav = ptav_model.browse(int(token))
                 except ValueError:
                     continue
-                if ptav.exists():
-                    selected_ids.add(ptav.product_attribute_value_id.id)
+                if not ptav.exists():
+                    continue
+                selected_by_attribute.setdefault(ptav.attribute_id.id, set()).add(
+                    ptav.product_attribute_value_id.id
+                )
 
-        # /shop?attribute_values=... already uses product.attribute.value IDs.
+        # /shop?attribute_values=... uses product.attribute.value IDs.
+        pav_model = request.env['product.attribute.value']
         for raw_value in request.httprequest.args.getlist('attribute_values'):
             if not raw_value:
                 continue
@@ -157,8 +171,11 @@ class WebsiteVariantTilesController(WebsiteSaleController):
                 if not token:
                     continue
                 try:
-                    selected_ids.add(int(token))
+                    pav = pav_model.browse(int(token))
                 except ValueError:
                     continue
+                if not pav.exists():
+                    continue
+                selected_by_attribute.setdefault(pav.attribute_id.id, set()).add(pav.id)
 
-        return {value_id for value_id in selected_ids if value_id}
+        return {attr_id: values for attr_id, values in selected_by_attribute.items() if values}
