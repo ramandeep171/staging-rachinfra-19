@@ -174,7 +174,7 @@ class PurchaseOrder(models.Model):
         )
         new_order._rmc_send_brand_rfq(auto_send=True, force=source != "brand")
         if sale_orders:
-            sale_orders.invalidate_cache(['purchase_order_count'])
+            sale_orders.invalidate_model(['purchase_order_count'])
         return new_order
 
     def _rmc_find_next_partner(self):
