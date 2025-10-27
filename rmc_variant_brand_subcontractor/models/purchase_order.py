@@ -19,6 +19,11 @@ class PurchaseOrder(models.Model):
         default="pending",
         tracking=True,
     )
+    rmc_sale_order_id = fields.Many2one(
+        comodel_name="sale.order",
+        string="Source Sale Order",
+        copy=False,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -30,6 +35,10 @@ class PurchaseOrder(models.Model):
             order._portal_ensure_token()
             if brand_order:
                 order.rmc_brand_response = "pending"
+            if not order.rmc_sale_order_id:
+                sale_orders = order.order_line.mapped("sale_line_id.order_id")
+                if sale_orders:
+                    order.rmc_sale_order_id = sale_orders[:1].id
             order._rmc_send_brand_rfq(auto_send=True, force=not brand_order)
         return orders
 
@@ -121,6 +130,8 @@ class PurchaseOrder(models.Model):
             new_order_vals["group_id"] = self.group_id.id
 
         new_order = self.with_context(rmc_skip_brand_autosend=True).copy(new_order_vals)
+        if sale_orders and hasattr(new_order, "rmc_sale_order_id"):
+            new_order.rmc_sale_order_id = sale_orders[:1].id
         if hasattr(new_order, "_onchange_partner_id"):
             new_order._onchange_partner_id()
         else:

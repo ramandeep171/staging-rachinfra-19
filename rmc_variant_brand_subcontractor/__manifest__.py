@@ -5,9 +5,9 @@
     "version": "1.0.0",
     "license": "LGPL-3",
     "author": "RMC",
-    "website": "https://www.example.com",
+    "website": "https://smarterpeak.com",
     "category": "Inventory",
-    "depends": ["base", "product", "purchase", "mrp", "portal"],
+    "depends": ["base", "product", "purchase", "mrp", "portal", "sale", "sale_purchase"],
     "data": [
         "security/ir.model.access.csv",
         "views/res_config_settings_views.xml",

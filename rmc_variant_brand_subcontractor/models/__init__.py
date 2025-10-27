@@ -7,3 +7,4 @@ from . import res_config_settings
 from . import purchase_line
 from . import purchase_order
 from . import mrp_production
+from . import sale_order
