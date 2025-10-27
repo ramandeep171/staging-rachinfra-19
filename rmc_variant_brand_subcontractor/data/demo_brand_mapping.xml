@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data noupdate="1">
+        <function model="rmc.ptav.subcontractor.map" name="_load_demo_brand_mapping"/>
+    </data>
+</odoo>

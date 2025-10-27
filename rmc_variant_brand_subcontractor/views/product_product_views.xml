@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="product_product_view_form_inherit_brand_subcontractor" model="ir.ui.view">
+        <field name="name">product.product.form.brand.subcontractor</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Subcontractors" groups="product.group_product_variant">
+                    <field name="allowed_subcontractor_ids" widget="many2many_tags" readonly="1"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

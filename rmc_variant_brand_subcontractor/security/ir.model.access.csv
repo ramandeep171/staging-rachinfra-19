@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_rmc_ptav_map_purchase_user,access.rmc.ptav.map.purchase.user,model_rmc_ptav_subcontractor_map,purchase.group_purchase_user,1,0,0,0
+access_rmc_ptav_map_purchase_manager,access.rmc.ptav.map.purchase.manager,model_rmc_ptav_subcontractor_map,purchase.group_purchase_manager,1,1,1,1
+access_rmc_ptav_map_mrp_user,access.rmc.ptav.map.mrp.user,model_rmc_ptav_subcontractor_map,mrp.group_mrp_user,1,0,0,0
+access_rmc_ptav_map_mrp_manager,access.rmc.ptav.map.mrp.manager,model_rmc_ptav_subcontractor_map,mrp.group_mrp_manager,1,1,1,1
+access_rmc_ptav_map_product_manager,access.rmc.ptav.map.product.manager,model_rmc_ptav_subcontractor_map,product.group_product_manager,1,0,0,0
+access_rmc_pav_map_purchase_user,access.rmc.pav.map.purchase.user,model_rmc_pav_subcontractor_map,purchase.group_purchase_user,1,0,0,0
+access_rmc_pav_map_mrp_user,access.rmc.pav.map.mrp.user,model_rmc_pav_subcontractor_map,mrp.group_mrp_user,1,0,0,0
+access_rmc_pav_map_product_manager,access.rmc.pav.map.product.manager,model_rmc_pav_subcontractor_map,product.group_product_manager,1,1,1,1
+access_rmc_pav_map_purchase_manager,access.rmc.pav.map.purchase.manager,model_rmc_pav_subcontractor_map,purchase.group_purchase_manager,1,1,1,1
+access_rmc_pav_map_mrp_manager,access.rmc.pav.map.mrp.manager,model_rmc_pav_subcontractor_map,mrp.group_mrp_manager,1,1,1,1

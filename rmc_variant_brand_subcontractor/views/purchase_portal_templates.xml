@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="portal_purchase_response" name="Brand RFQ Response">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <h1 class="mb-3">
+                    <t t-if="status == 'accepted'">RFQ Accepted</t>
+                    <t t-elif="status == 'reassigned'">RFQ Reassigned</t>
+                    <t t-else="">RFQ Rejected</t>
+                </h1>
+                <p class="lead">
+                    <t t-if="status == 'accepted'">
+                        Thank you! We have recorded your acceptance for
+                        <strong t-esc="order.name"/>.
+                    </t>
+                    <t t-elif="status == 'reassigned'">
+                        Your rejection has been received. We are forwarding this
+                        request to the next available subcontractor.
+                    </t>
+                    <t t-else="">
+                        Your rejection has been received. Our procurement team will review the request.
+                    </t>
+                </p>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_purchase_invalid" name="Brand RFQ Invalid Token">
+        <t t-call="portal.portal_layout">
+            <div class="container py-4">
+                <h1 class="mb-3">Invalid Request</h1>
+                <p class="lead">
+                    We could not validate your access token for this RFQ. Please use the
+                    link provided in the latest email or contact the procurement team.
+                </p>
+            </div>
+        </t>
+    </template>
+</odoo>

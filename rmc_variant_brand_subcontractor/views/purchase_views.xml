@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="purchase_order_line_tree_inherit_brand_subcontractor" model="ir.ui.view">
+        <field name="name">purchase.order.form.brand.subcontractor</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']//list/field[@name='product_uom_id']" position="after">
+                <field name="x_subcontractor_id"
+                       optional="show"
+                       readonly="parent.state not in ('draft', 'sent')"
+                       context="{'default_is_subcontractor': True}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="purchase_order_line_form_inherit_brand_subcontractor" model="ir.ui.view">
+        <field name="name">purchase.order.line.form.brand.subcontractor</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form//field[@name='tax_ids' and @widget='many2many_tax_tags']" position="after">
+                <field name="x_subcontractor_id"
+                       invisible="display_type"
+                       readonly="state in ('purchase', 'to approve', 'done', 'cancel')"
+                       context="{'default_is_subcontractor': True}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

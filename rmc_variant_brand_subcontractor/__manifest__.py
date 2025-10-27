@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+{
+    "name": "RMC Variant Brand Subcontractor",
+    "summary": "Manage subcontractors per Brand attribute value with priorities and validity.",
+    "version": "1.0.0",
+    "license": "LGPL-3",
+    "author": "RMC",
+    "website": "https://www.example.com",
+    "category": "Inventory",
+    "depends": ["base", "product", "purchase", "mrp", "portal"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/res_config_settings_views.xml",
+        "views/res_partner_views.xml",
+        "views/product_ptav_views.xml",
+        "views/product_attribute_value_views.xml",
+        "views/product_product_views.xml",
+        "views/purchase_views.xml",
+        "views/mrp_views.xml",
+        "views/purchase_portal_templates.xml",
+        "data/mail_templates.xml",
+    ],
+    "demo": ["data/demo_brand_mapping.xml"],
+    "application": False,
+    "installable": True,
+}

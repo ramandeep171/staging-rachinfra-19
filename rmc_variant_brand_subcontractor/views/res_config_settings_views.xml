@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_brand_attribute" model="ir.ui.view">
+        <field name="name">res.config.settings.brand.attribute</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="product.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@id='product_general_settings']" position="inside">
+                <setting id="brand_attribute_setting" string="Brand Attribute"
+                         help="Select which product attribute acts as the Brand for subcontractor mappings.">
+                    <field name="brand_attribute_id" options="{'no_create': False, 'no_open': False}"/>
+                    <div class="text-muted">
+                        Choose the product attribute representing the Brand used to restrict subcontractor choices.
+                    </div>
+                    <div class="text-warning" invisible="not brand_attribute_warning">
+                        <i class="fa fa-exclamation-triangle"/> <field name="brand_attribute_warning" nolabel="1"/>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

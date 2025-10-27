@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_rmc_ptav_subcontractor_map_tree" model="ir.ui.view">
+        <field name="name">rmc.ptav.subcontractor.map.tree</field>
+        <field name="model">rmc.ptav.subcontractor.map</field>
+        <field name="arch" type="xml">
+            <list string="Subcontractor Mappings" editable="bottom">
+                <field name="partner_id" options="{'no_create': False}" required="1"/>
+                <field name="sequence"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rmc_ptav_subcontractor_map_form" model="ir.ui.view">
+        <field name="name">rmc.ptav.subcontractor.map.form</field>
+        <field name="model">rmc.ptav.subcontractor.map</field>
+        <field name="arch" type="xml">
+            <form string="Subcontractor Mapping">
+                <group>
+                    <field name="partner_id" options="{'no_open': False}"/>
+                    <field name="sequence"/>
+                    <field name="valid_from"/>
+                    <field name="valid_to"/>
+                    <field name="active"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="product_template_attribute_value_form_inherit_brand_subcontractor" model="ir.ui.view">
+        <field name="name">product.template.attribute.value.form.brand.subcontractor</field>
+        <field name="model">product.template.attribute.value</field>
+        <field name="inherit_id" ref="product.product_template_attribute_value_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form/sheet/group" position="after">
+                <notebook>
+                    <page string="Subcontractors">
+                        <field name="subcontractor_map_ids" context="{'default_ptav_id': id, 'tree_view_ref': 'rmc_variant_brand_subcontractor.view_rmc_ptav_subcontractor_map_tree', 'form_view_ref': 'rmc_variant_brand_subcontractor.view_rmc_ptav_subcontractor_map_form'}"/>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+</odoo>

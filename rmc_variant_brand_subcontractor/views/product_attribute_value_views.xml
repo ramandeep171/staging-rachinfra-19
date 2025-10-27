@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_rmc_pav_subcontractor_map_tree" model="ir.ui.view">
+        <field name="name">rmc.pav.subcontractor.map.tree</field>
+        <field name="model">rmc.pav.subcontractor.map</field>
+        <field name="arch" type="xml">
+            <list string="Subcontractor Mappings" editable="bottom">
+                <field name="partner_id" options="{'no_create': False}" required="1"/>
+                <field name="sequence"/>
+                <field name="valid_from"/>
+                <field name="valid_to"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_rmc_pav_subcontractor_map_form" model="ir.ui.view">
+        <field name="name">rmc.pav.subcontractor.map.form</field>
+        <field name="model">rmc.pav.subcontractor.map</field>
+        <field name="arch" type="xml">
+            <form string="Subcontractor Mapping">
+                <group>
+                    <field name="partner_id" options="{'no_open': False}"/>
+                    <field name="sequence"/>
+                    <field name="valid_from"/>
+                    <field name="valid_to"/>
+                    <field name="active"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_product_attribute_value_form_brand_subcontractor" model="ir.ui.view">
+        <field name="name">product.attribute.value.form.brand.subcontractor.form</field>
+        <field name="model">product.attribute.value</field>
+        <field name="priority" eval="20"/>
+        <field name="arch" type="xml">
+            <form string="Attribute Value">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="attribute_id" readonly="1"/>
+                            <field name="name"/>
+                        </group>
+                        <group>
+                            <field name="default_extra_price"/>
+                            <field name="html_color"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Subcontractors">
+                            <field
+                                name="subcontractor_map_ids"
+                                context="{
+                                    'default_product_attribute_value_id': id,
+                                    'tree_view_ref': 'rmc_variant_brand_subcontractor.view_rmc_pav_subcontractor_map_tree',
+                                    'form_view_ref': 'rmc_variant_brand_subcontractor.view_rmc_pav_subcontractor_map_form'
+                                }"
+                            />
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_product_attribute_values_brand_subcontractor" model="ir.actions.act_window">
+        <field name="name">Attribute Values</field>
+        <field name="res_model">product.attribute.value</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="product.product_attribute_value_list"/>
+    </record>
+
+    <menuitem
+        id="menu_product_attribute_values_brand_subcontractor"
+        name="Attribute Subcontractors"
+        parent="sale.prod_config_main"
+        sequence="12"
+        action="rmc_variant_brand_subcontractor.action_product_attribute_values_brand_subcontractor"
+        groups="product.group_product_variant"
+    />
+</odoo>
