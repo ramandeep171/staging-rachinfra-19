@@ -192,23 +192,24 @@ class WebsiteVariantTilesController(WebsiteSaleController):
 
     def _wvt_get_selected_values_by_attribute(self, qcontext):
         """Return a mapping of attribute_id -> set(product.attribute.value ids) filtered in the URL."""
-        attribute_value_dict = qcontext.get('attrib_values') or {}
         selected_by_attribute = {}
 
         pav_model = request.env['product.attribute.value']
         ptav_model = request.env['product.template.attribute.value']
-        for attr_id, value_ids in attribute_value_dict.items():
+
+        attribute_value_dict = qcontext.get('attrib_values') or {}
+        for raw_attr_id, raw_value_ids in attribute_value_dict.items():
             try:
-                attr_id_int = int(attr_id)
-            except (ValueError, TypeError):
+                attr_id = int(raw_attr_id)
+            except (TypeError, ValueError):
                 continue
 
-            pav_records = pav_model.browse(value_ids).exists()
+            pav_records = pav_model.browse(raw_value_ids).exists()
             if pav_records:
-                selected_by_attribute.setdefault(attr_id_int, set()).update(pav_records.ids)
+                selected_by_attribute.setdefault(attr_id, set()).update(pav_records.ids)
                 continue
 
-            ptav_records = ptav_model.browse(value_ids).exists()
+            ptav_records = ptav_model.browse(raw_value_ids).exists()
             for ptav in ptav_records:
                 selected_by_attribute.setdefault(ptav.attribute_id.id, set()).add(
                     ptav.product_attribute_value_id.id
@@ -219,7 +220,11 @@ class WebsiteVariantTilesController(WebsiteSaleController):
             if not raw_attrib:
                 continue
             try:
-                _, raw_values = raw_attrib.split('-', 1)
+                raw_attr_id, raw_values = raw_attrib.split('-', 1)
+            except ValueError:
+                continue
+            try:
+                attr_id = int(raw_attr_id)
             except ValueError:
                 continue
             for token in raw_values.split(','):
@@ -232,12 +237,11 @@ class WebsiteVariantTilesController(WebsiteSaleController):
                     continue
                 if not ptav.exists():
                     continue
-                selected_by_attribute.setdefault(ptav.attribute_id.id, set()).add(
+                selected_by_attribute.setdefault(attr_id, set()).add(
                     ptav.product_attribute_value_id.id
                 )
 
         # /shop?attribute_values=... uses product.attribute.value IDs.
-        pav_model = request.env['product.attribute.value']
         for raw_value in request.httprequest.args.getlist('attribute_values'):
             if not raw_value:
                 continue
