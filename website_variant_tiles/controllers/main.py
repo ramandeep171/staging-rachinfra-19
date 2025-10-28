@@ -1,3 +1,5 @@
+from math import ceil
+
 from markupsafe import Markup
 
 from odoo import http
@@ -36,10 +38,9 @@ class WebsiteVariantTilesController(WebsiteSaleController):
             qcontext['wvt_variant_map'] = {}
             return response
 
+        website = request.env['website'].get_current_website()
         search_templates = qcontext.get('search_product') or products
         selected_values_by_attribute = self._wvt_get_selected_values_by_attribute(qcontext)
-
-        website = request.env['website'].get_current_website()
 
         variant_tiles = []
         view = request.env['ir.ui.view']
@@ -95,23 +96,50 @@ class WebsiteVariantTilesController(WebsiteSaleController):
                     'product_price_html': Markup(price_html),
                 })
 
-        if not variant_tiles:
+        total_variants = len(variant_tiles)
+        ppg = qcontext.get('ppg') or website.shop_ppg or 21
+        ppr = qcontext.get('ppr') or website.shop_ppr or 4
+
+        if not total_variants:
+            qcontext['bins'] = []
+            qcontext['products'] = request.env['product.template']
+            qcontext['products_prices'] = {}
+            qcontext['get_product_prices'] = lambda product: {}
+            qcontext['search_count'] = 0
+            url_args_empty = {
+                key: value
+                for key, value in request.httprequest.args.items()
+                if key != 'page'
+            }
+            qcontext['pager'] = website.pager(
+                url=self._get_shop_path(qcontext.get('category')),
+                total=0,
+                page=1,
+                step=ppg,
+                scope=5,
+                url_args=url_args_empty,
+            )
+            request.wvt_variant_map = {}
             qcontext['wvt_variant_map'] = {}
             return response
 
-        ppg = qcontext.get('ppg') or website.shop_ppg or 21
-        ppr = qcontext.get('ppr') or website.shop_ppr or 4
+        requested_page = max(int(page or 1), 1)
+        page_count = max(1, ceil(total_variants / ppg))
+        if requested_page > page_count:
+            requested_page = page_count
 
         url_args = {}
         for key in request.httprequest.args:
             values = request.httprequest.args.getlist(key)
             if not values:
                 continue
+            if key == 'page':
+                continue
             url_args[key] = values if len(values) > 1 else values[0]
         pager = website.pager(
             url=self._get_shop_path(qcontext.get('category')),
-            total=len(variant_tiles),
-            page=page,
+            total=total_variants,
+            page=requested_page,
             step=ppg,
             scope=5,
             url_args=url_args,
