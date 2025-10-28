@@ -33,6 +33,7 @@
     >
         <xpath expr="//t[@t-call='website_sale.products_item']" position="before">
             <t t-set="product_variant" t-value="td_product and td_product.get('variant')"/>
+            <t t-set="product_price" t-value="td_product and td_product.get('product_price')"/>
         </xpath>
     </template>
 </odoo>

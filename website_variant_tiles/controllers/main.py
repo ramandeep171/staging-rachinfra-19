@@ -1,3 +1,5 @@
+from markupsafe import Markup
+
 from odoo import http
 from odoo.http import request
 
@@ -37,7 +39,10 @@ class WebsiteVariantTilesController(WebsiteSaleController):
         search_templates = qcontext.get('search_product') or products
         selected_values_by_attribute = self._wvt_get_selected_values_by_attribute(qcontext)
 
+        website = request.env['website'].get_current_website()
+
         variant_tiles = []
+        view = request.env['ir.ui.view']
         for template in search_templates:
             variants = template.product_variant_ids
             if selected_values_by_attribute:
@@ -71,16 +76,29 @@ class WebsiteVariantTilesController(WebsiteSaleController):
                 variants = template.product_variant_ids.filtered(lambda v: v.product_tmpl_id == template)
 
             for variant in variants:
+                combination_info = template._get_combination_info(
+                    product_id=variant.id,
+                    add_qty=1.0,
+                )
+                price_html = view._render_template(
+                    'website_sale.product_price',
+                    {
+                        'website': website,
+                        'product': variant,
+                        'combination_info': combination_info,
+                        'editable': False,
+                    },
+                )
                 variant_tiles.append({
                     'template': template,
                     'variant': variant,
+                    'product_price_html': Markup(price_html),
                 })
 
         if not variant_tiles:
             qcontext['wvt_variant_map'] = {}
             return response
 
-        website = request.env['website'].get_current_website()
         ppg = qcontext.get('ppg') or website.shop_ppg or 21
         ppr = qcontext.get('ppr') or website.shop_ppr or 4
 
@@ -114,6 +132,7 @@ class WebsiteVariantTilesController(WebsiteSaleController):
                     break
                 cell['product'] = tile['template']
                 cell['variant'] = tile['variant']
+                cell['product_price'] = tile.get('product_price_html')
                 cell['ribbon'] = cell['product'].sudo().website_ribbon_id
 
         qcontext['bins'] = bins
