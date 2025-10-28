@@ -1,3 +1,5 @@
+from difflib import SequenceMatcher
+
 from odoo import api, fields, models, tools
 
 
@@ -92,6 +94,28 @@ class RmcGeoZone(models.Model):
         if not best_zone and normalized_city:
             for zone in candidates:
                 if zone.city and zone.city.strip().lower() == normalized_city_lower:
+                    best_zone = zone
+                    break
+
+        if not best_zone and normalized_city:
+            best_ratio = 0.0
+            for zone in candidates:
+                zone_city = zone.city.strip().lower() if zone.city else ""
+                if not zone_city:
+                    continue
+                ratio = SequenceMatcher(None, zone_city, normalized_city_lower).ratio()
+                if ratio >= 0.75 and ratio > best_ratio:
+                    best_zone = zone
+                    best_ratio = ratio
+
+        if not best_zone and normalized_city:
+            city_tokens = normalized_city_lower.replace("-", " ").split()
+            for zone in candidates:
+                zone_city = (zone.city or "").strip().lower()
+                if not zone_city:
+                    continue
+                zone_tokens = zone_city.replace("-", " ").split()
+                if set(city_tokens) & set(zone_tokens):
                     best_zone = zone
                     break
 
