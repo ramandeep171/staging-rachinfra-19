@@ -5,7 +5,7 @@ from markupsafe import Markup
 from odoo import http
 from odoo.http import request
 
-from odoo.addons.website_sale.controllers.main import TableCompute, WebsiteSale as WebsiteSaleController
+from odoo.addons.website_sale.controllers.main import WebsiteSale as WebsiteSaleController
 
 
 class WebsiteVariantTilesController(WebsiteSaleController):
@@ -149,19 +149,7 @@ class WebsiteVariantTilesController(WebsiteSaleController):
 
         page_tiles = variant_tiles[offset: offset + ppg]
 
-        table_computer = TableCompute()
-        bins = table_computer.process([tile['template'] for tile in page_tiles], ppg=ppg, ppr=ppr)
-
-        tiles_iter = iter(page_tiles)
-        for row in bins:
-            for cell in row:
-                tile = next(tiles_iter, None)
-                if not tile:
-                    break
-                cell['product'] = tile['template']
-                cell['variant'] = tile['variant']
-                cell['product_price'] = tile.get('product_price_html')
-                cell['ribbon'] = cell['product'].sudo().website_ribbon_id
+        bins = self._wvt_build_variant_bins(page_tiles, ppr)
 
         qcontext['bins'] = bins
         qcontext['search_count'] = len(variant_tiles)
@@ -177,16 +165,56 @@ class WebsiteVariantTilesController(WebsiteSaleController):
         qcontext['wvt_variant_map'] = request.wvt_variant_map
         return response
 
+    @staticmethod
+    def _wvt_build_variant_bins(tiles, ppr):
+        """Group the variant tiles into rows compatible with the website grid."""
+        bins = []
+        current_row = []
+
+        for tile in tiles:
+            if len(current_row) >= ppr:
+                bins.append(current_row)
+                current_row = []
+
+            current_row.append({
+                'product': tile['template'],
+                'variant': tile['variant'],
+                'product_price': tile.get('product_price_html'),
+                'ribbon': tile['template'].sudo().website_ribbon_id,
+                'x': 1,
+                'y': 1,
+            })
+
+        if current_row:
+            bins.append(current_row)
+
+        return bins
+
     def _wvt_get_selected_values_by_attribute(self, qcontext):
         """Return a mapping of attribute_id -> set(product.attribute.value ids) filtered in the URL."""
         attribute_value_dict = qcontext.get('attrib_values') or {}
-        selected_by_attribute = {
-            int(attr_id): set(value_ids)
-            for attr_id, value_ids in attribute_value_dict.items()
-        }
+        selected_by_attribute = {}
+
+        pav_model = request.env['product.attribute.value']
+        ptav_model = request.env['product.template.attribute.value']
+        for attr_id, value_ids in attribute_value_dict.items():
+            try:
+                attr_id_int = int(attr_id)
+            except (ValueError, TypeError):
+                continue
+
+            pav_records = pav_model.browse(value_ids).exists()
+            if pav_records:
+                selected_by_attribute.setdefault(attr_id_int, set()).update(pav_records.ids)
+                continue
+
+            ptav_records = ptav_model.browse(value_ids).exists()
+            for ptav in ptav_records:
+                selected_by_attribute.setdefault(ptav.attribute_id.id, set()).add(
+                    ptav.product_attribute_value_id.id
+                )
 
         # Legacy ?attrib= parameters use template attribute values (ptav); map them back to pav.
-        ptav_model = request.env['product.template.attribute.value']
         for raw_attrib in request.httprequest.args.getlist('attrib'):
             if not raw_attrib:
                 continue
