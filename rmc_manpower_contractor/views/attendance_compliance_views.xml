@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_attendance_compliance_form" model="ir.ui.view">
+            <field name="name">rmc.attendance.compliance.form</field>
+            <field name="model">rmc.attendance.compliance</field>
+            <field name="arch" type="xml">
+                <form string="Attendance Compliance">
+                    <header>
+                        <button name="action_validate"
+                                string="Validate"
+                                type="object"
+                                class="oe_highlight"
+                                invisible="state == 'validated'"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name" readonly="1"/>
+                                <field name="agreement_id"/>
+                                <field name="date"/>
+                            </group>
+                            <group>
+                                <field name="headcount_expected" readonly="1"/>
+                                <field name="headcount_present"/>
+                                <field name="documents_ok"/>
+                                <field name="supervisor_ok"/>
+                                <field name="compliance_percentage" readonly="1" widget="progressbar"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="employee_ids" widget="many2many_tags"
+                                   domain="[('id', 'in', agreement_id.driver_ids.ids)]"/>
+                        </group>
+                        <field name="notes"/>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_attendance_compliance_tree" model="ir.ui.view">
+            <field name="name">rmc.attendance.compliance.tree</field>
+            <field name="model">rmc.attendance.compliance</field>
+            <field name="arch" type="xml">
+                <list decoration-success="state == 'validated'">
+                    <field name="name"/>
+                    <field name="date"/>
+                    <field name="agreement_id"/>
+                    <field name="headcount_present"/>
+                    <field name="employee_ids" widget="many2many_tags"/>
+                    <field name="compliance_percentage"/>
+                    <field name="state" widget="badge"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_attendance_compliance" model="ir.actions.act_window">
+            <field name="name">Attendance Compliance</field>
+            <field name="res_model">rmc.attendance.compliance</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>
