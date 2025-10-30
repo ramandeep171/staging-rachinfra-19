@@ -300,8 +300,11 @@ notwithstanding any temporary stoppages.</p>
                                 <th class="w-25">Company</th>
                                 <td>
                                     <strong t-esc="company.name"/>
-                                    <div t-if="company.partner_id.contact_address">
-                                        <span t-esc="company.partner_id.contact_address"/>
+                                    <div t-if="company_address">
+                                        <p class="mb-0" t-esc="company_address"/>
+                                    </div>
+                                    <div t-if="company.vat">
+                                        GST/VAT: <span t-esc="company.vat"/>
                                     </div>
                                     <div t-if="company.phone">
                                         Phone: <span t-esc="company.phone"/>
@@ -309,23 +312,34 @@ notwithstanding any temporary stoppages.</p>
                                     <div t-if="company.email">
                                         Email: <span t-esc="company.email"/>
                                     </div>
+                                    <div t-if="company_website">
+                                        Website:
+                                        <a t-att-href="company_website_href" t-esc="company_website"/>
+                                    </div>
                                 </td>
                             </tr>
                             <tr>
                                 <th>Contractor</th>
                                 <td>
-                                    <strong t-esc="contractor.name or '-'"/>
-                                    <div t-if="contractor.contact_address">
-                                        <span t-esc="contractor.contact_address"/>
+                                    <strong t-esc="contractor_company_name or '-'"/>
+                                    <div t-if="contractor != contractor_company_partner">
+                                        Contact: <span t-esc="contractor.name"/>
+                                    </div>
+                                    <div t-if="contractor_address">
+                                        <p class="mb-0" t-esc="contractor_address"/>
                                     </div>
                                     <div t-if="contractor.vat">
                                         GST/VAT: <span t-esc="contractor.vat"/>
                                     </div>
-                                    <div t-if="contractor.phone">
-                                        Phone: <span t-esc="contractor.phone"/>
+                                    <div t-if="contractor_phone">
+                                        Phone: <span t-esc="contractor_phone"/>
                                     </div>
-                                    <div t-if="contractor.email">
-                                        Email: <span t-esc="contractor.email"/>
+                                    <div t-if="contractor_email">
+                                        Email: <span t-esc="contractor_email"/>
+                                    </div>
+                                    <div t-if="contractor_website">
+                                        Website:
+                                        <a t-att-href="contractor_website_href" t-esc="contractor_website"/>
                                     </div>
                                 </td>
                             </tr>

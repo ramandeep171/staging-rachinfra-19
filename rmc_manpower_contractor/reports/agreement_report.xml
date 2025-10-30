@@ -230,6 +230,9 @@
                                 <t t-set="annex_d_clause" t-value="annex_clauses.filtered(lambda c: c.title and c.title.lower().startswith('annexure d'))[:1]"/>
                                 <t t-set="annex_e_clause" t-value="annex_clauses.filtered(lambda c: c.title and c.title.lower().startswith('annexure e'))[:1]"/>
                                 <t t-set="additional_annexes" t-value="annex_clauses.filtered(lambda c: not c.title or not (c.title.lower().startswith('annexure a') or c.title.lower().startswith('annexure b') or c.title.lower().startswith('annexure c') or c.title.lower().startswith('annexure d') or c.title.lower().startswith('annexure e')))"/>
+                                <t t-set="part_a_fixed_amount" t-value="doc.part_a_fixed or 0.0"/>
+                                <t t-set="part_b_variable_amount" t-value="doc.part_b_variable or 0.0"/>
+                                <t t-set="monthly_total_amount" t-value="doc.total_amount if doc.total_amount not in (False, None) else (part_a_fixed_amount + part_b_variable_amount)"/>
 
                                 <h3 class="mt-0">
                                     <t t-esc="annex_a_clause.title or 'Annexure A – Manpower Matrix (Illustrative)'"/>
@@ -303,12 +306,9 @@
                                             </tr>
                                         </tbody>
                                         <tfoot>
-                                            <tr class="fw-semibold">
-                                                <td colspan="5" class="text-center">Total Contract Value</td>
-                                                <td class="text-end">₹3,75,000</td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="6" class="text-muted small">
+                                             <tr>
+                                                <td colspan="6" class="text-muted ">
+                                                    <strong>Total Contract Value:</strong><td><span t-esc="doc.currency_id.symbol"/> <span t-esc="('%0.2f' % monthly_total_amount)"/></td>
                                                     Inclusive of all manpower components under Part-A and Part-B. Taxes extra.
                                                 </td>
                                             </tr>
@@ -325,9 +325,6 @@
                                 <t t-else="">
                                     <p>Monthly MGQ targets, Part-A fixed value, and Part-B variable payouts are detailed below. MGQ achievement shall be validated through company production reports.</p>
                                 </t>
-                                <t t-set="part_a_fixed_amount" t-value="doc.part_a_fixed or 0.0"/>
-                                <t t-set="part_b_variable_amount" t-value="doc.part_b_variable or 0.0"/>
-                                <t t-set="monthly_total_amount" t-value="part_a_fixed_amount + part_b_variable_amount"/>
                                 <table class="table table-sm border w-75">
                                     <tbody>
                                         <tr>
