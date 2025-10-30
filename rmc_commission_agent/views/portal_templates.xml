@@ -1,0 +1,476 @@
+<odoo>
+    <data>
+        <template id="portal_my_home_menu_commission" inherit_id="portal.portal_my_home">
+            <xpath expr="//div[@id='portal_common_category']" position="inside">
+                <t t-set="_can_view_commission_portal"
+                   t-value="not request.env.user._is_public() and request.env.user.has_group('rmc_commission_agent.group_portal_commission_agent')"/>
+                <t t-if="_can_view_commission_portal">
+                    <t t-set="_portal_partner" t-value="request.env.user.partner_id"/>
+                    <t t-if="_portal_partner">
+                        <t t-set="_commission_agent"
+                           t-value="request.env['rmc.commission.agent'].sudo().search(['|', ('partner_id', 'child_of', (_portal_partner.commercial_partner_id or _portal_partner).id), ('partner_id', '=', _portal_partner.id)], limit=1)"/>
+                        <t t-if="_commission_agent">
+                            <t t-call="portal.portal_docs_entry">
+                                <t t-set="icon" t-value="'/portal/static/src/img/portal-orders.svg'"/>
+                                <t t-set="title" t-value="request.env._('Commission Dashboard')"/>
+                                <t t-set="text" t-value="request.env._('Track your channel performance and orders')"/>
+                                <t t-set="url" t-value="'/my/commission'"/>
+                                <t t-set="config_card" t-value="True"/>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+            </xpath>
+        </template>
+
+        <template id="portal_agent_dashboard" name="Commission Dashboard">
+            <t t-call="portal.portal_layout">
+                <t t-set="title" t-value="request.env._('Commission Dashboard')"/>
+                <t t-set="metrics" t-value="commission_dashboard_metrics or {}"/>
+                <t t-set="metrics_display" t-value="commission_dashboard_metrics_display or {}"/>
+                <t t-set="currency" t-value="commission_currency"/>
+                <style>
+                    .rmc-dashboard-body { background-color: #f7f8fb; padding-bottom: 32px; }
+                    .rmc-dashboard-container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+                    .rmc-dashboard-grid { display: grid; gap: 16px; grid-template-columns: 290px 1fr; }
+                    .rmc-card { background: #ffffff; border-radius: 14px; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04); overflow: hidden; }
+                    .rmc-card-section { padding: 18px; }
+                    .rmc-card-header { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #111827; }
+                    .rmc-muted { color: #6b7280; }
+                    .rmc-profile { display: flex; gap: 14px; align-items: center; }
+                    .rmc-profile img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #e5e7eb; }
+                    .rmc-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius:999px; font-size: 12px; background: #eef2ff; color: #3730a3; margin-right: 6px; margin-top: 6px; }
+                    .rmc-info-row { display: grid; gap: 6px; margin-top: 16px; }
+                    .rmc-info-row span { font-size: 13px; color: #374151; }
+                    .rmc-stage-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+                    .rmc-stage { padding: 4px 10px; font-size: 12px; border-radius: 999px; background: #f3f4f6; color: #1f2937; }
+                    .rmc-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+                    .rmc-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid #e5e7eb; background: #ffffff; cursor: pointer; transition: all 0.2s ease; font-size: 13px; color: #1f2937; text-decoration: none; }
+                    .rmc-btn:hover { border-color: #6366f1; color: #4338ca; }
+                    .rmc-btn-primary { background: #4f46e5; border-color: #4f46e5; color: #ffffff; }
+                    .rmc-btn-primary:hover { background: #4338ca; border-color: #4338ca; color: #ffffff; }
+                    .rmc-kpi-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+                    .rmc-kpi { padding: 18px; border-radius: 14px; background: #ffffff; border: 1px solid #edf1f7; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+                    .rmc-kpi-title { font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #6b7280; }
+                    .rmc-kpi-value { font-size: 24px; font-weight: 700; margin-top: 6px; color: #111827; }
+                    .rmc-kpi-sub { font-size: 12px; color: #6b7280; margin-top: 6px; }
+                    .rmc-pill { padding: 4px 8px; border-radius: 999px; font-size: 11px; color: #0f5132; background: #e8f7ee; display: inline-block; margin-top: 6px; }
+                    .rmc-section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+                    .rmc-section-title h3 { margin: 0; font-size: 16px; font-weight: 600; color: #111827; }
+                    .rmc-table-wrapper { overflow-x: auto; }
+                    .rmc-table-wrapper table { width: 100%; border-spacing: 0; border-collapse: separate; border-radius: 12px; overflow: hidden; background: #ffffff; }
+                    .rmc-table-wrapper th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; background: #f8fafc; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+                    .rmc-table-wrapper td { font-size: 13px; color: #1f2937; padding: 12px; border-bottom: 1px solid #f1f5f9; }
+                    .rmc-table-wrapper tr:last-child td { border-bottom: none; }
+                    .rmc-status { padding: 4px 10px; border-radius: 999px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+                    .rmc-status--ok { background: #e8f7ee; color: #166534; }
+                    .rmc-status--warn { background: #fff7ed; color: #92400e; }
+                    .rmc-status--danger { background: #fef2f2; color: #991b1b; }
+                    .rmc-secondary-card { margin-top: 16px; }
+                    .rmc-stars { font-size: 14px; color: #f59e0b; letter-spacing: 1px; }
+                    .rmc-subtle { font-size: 12px; color: #6b7280; }
+                    .rmc-link { color: #4f46e5; text-decoration: none; font-size: 12px; }
+                    .rmc-link:hover { text-decoration: underline; }
+                    .rmc-performance { margin-top: 16px; }
+                    .rmc-performance-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 4px; }
+                    .rmc-performance-list { display: grid; gap: 4px; }
+                    .rmc-performance-item { font-size: 12px; color: #374151; background: #f3f4f6; border-radius: 999px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px; width: fit-content; }
+                    .rmc-performance-value { font-weight: 600; color: #111827; }
+                    @media (max-width: 1040px) { .rmc-dashboard-grid { grid-template-columns: 1fr; } }
+                    @media (max-width: 640px) { .rmc-kpi-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); } .rmc-card-section { padding: 16px; } }
+                </style>
+
+                <div class="o_portal_wrap rmc-dashboard-body">
+                    <div class="rmc-dashboard-container">
+                        <div class="rmc-dashboard-grid">
+                            <aside class="rmc-card">
+                                <div class="rmc-card-section">
+                                    <div class="rmc-card-header" t-esc="request.env._('Agent Profile')"/>
+                                    <div class="rmc-profile">
+                                        <t t-if="agent.partner_id">
+                                            <img t-att-src="'/web/image/res.partner/%s/image_128' % agent.partner_id.id" alt="avatar"/>
+                                        </t>
+                                        <t t-else="">
+                                            <img src="/web/static/img/placeholder.png" alt="avatar"/>
+                                        </t>
+                                        <div>
+                                            <div style="font-weight: 600; font-size: 16px;" t-esc="agent.name"/>
+                                            <div class="rmc-muted" style="font-size: 12px;">
+                                                <t t-esc="request.env._('Channel:')"/>
+                                                <strong t-esc="channel_label"/>
+                                            </div>
+                                            <div class="rmc-muted" style="font-size: 12px;">
+                                                <t t-esc="request.env._('Region:')"/>
+                                                <span t-esc="country_label"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="rmc-info-row">
+                                        <span>
+                                            <t t-esc="request.env._('Commission Master:')"/>
+                                            <t t-if="agent.commission_master_id">
+                                                <strong t-esc="agent.commission_master_id.display_name"/>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="rmc-muted" t-esc="request.env._('Not assigned yet')"/>
+                                            </t>
+                                        </span>
+                                        <span t-if="agent.commission_master_suggestion_id and agent.commission_master_id != agent.commission_master_suggestion_id" class="rmc-muted">
+                                            <t t-esc="request.env._('Suggested master:')"/>
+                                            <strong t-esc="agent.commission_master_suggestion_id.display_name"/>
+                                        </span>
+                                        <span class="rmc-muted">
+                                            <t t-esc="request.env._('Linked Sales Orders:')"/>
+                                            <strong t-esc="metrics.get('orders_count', 0)"/>
+                                        </span>
+                                    </div>
+
+                                    <div class="rmc-stage-badges" t-if="metrics.get('stage_breakdown')">
+                                        <t t-foreach="metrics['stage_breakdown']" t-as="stage">
+                                            <span class="rmc-stage">
+                                                <span t-esc="stage['label']"/> ·
+                                                <strong t-esc="stage['count']"/>
+                                            </span>
+                                        </t>
+                                    </div>
+
+                                    <div class="rmc-performance" t-if="commission_agent_weights">
+                                        <div class="rmc-performance-title" t-esc="request.env._('Performance Weights')"/>
+                                        <div class="rmc-performance-list">
+                                            <span class="rmc-performance-item" t-foreach="commission_agent_weights" t-as="weight">
+                                                <span t-esc="weight['label']"/>
+                                                <span class="rmc-performance-value" t-esc="'{}%'.format(weight['value'])"/>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="rmc-actions">
+                                        <a class="rmc-btn rmc-btn-primary" href="/my/commission/orders" t-esc="request.env._('View Orders')"/>
+                                        <a class="rmc-btn" t-if="agent.partner_id" t-att-href="'mailto:%s' % agent.partner_id.email if agent.partner_id.email else '#'" t-esc="request.env._('Contact Coordinator')"/>
+                                    </div>
+                                </div>
+                            </aside>
+
+                            <main class="rmc-main">
+                                <div class="rmc-kpi-grid">
+                                    <div class="rmc-kpi">
+                                        <div class="rmc-kpi-title" t-esc="request.env._('Total Commission (All Time)')"/>
+                                        <div class="rmc-kpi-value">
+                                            <t t-raw="metrics_display.get('commission_total')"/>
+                                        </div>
+                                        <div class="rmc-kpi-sub">
+                                            <t t-esc="request.env._('Paid:')"/>
+                                            <strong>
+                                                <t t-raw="metrics_display.get('commission_paid_total')"/>
+                                            </strong>
+                                            <t t-esc="request.env._('Pending:')"/>
+                                            <strong>
+                                                <t t-raw="metrics_display.get('commission_pending_total')"/>
+                                            </strong>
+                                        </div>
+                                    </div>
+                                    <div class="rmc-kpi">
+                                        <div class="rmc-kpi-title" t-esc="request.env._('Delivered Volume')"/>
+                                        <div class="rmc-kpi-value">
+                                            <t t-raw="metrics_display.get('delivered_volume_total')"/>
+                                        </div>
+                                        <div class="rmc-kpi-sub">
+                                            <t t-esc="request.env._('Last 30 days:')"/>
+                                            <strong>
+                                                <t t-raw="metrics_display.get('delivered_volume_recent')"/>
+                                            </strong>
+                                        </div>
+                                    </div>
+                                    <div class="rmc-kpi">
+                                        <div class="rmc-kpi-title" t-esc="request.env._('Recovery Rate')"/>
+                                        <div class="rmc-kpi-value">
+                                            <t t-raw="metrics_display.get('recovery_rate_avg')"/>
+                                            <span>%</span>
+                                        </div>
+                                        <span class="rmc-pill" t-if="metrics.get('recovery_rate_avg') and metrics['recovery_rate_avg'] >= 90">
+                                            <t t-esc="request.env._('On Track')"/>
+                                        </span>
+                                    </div>
+                                    <div class="rmc-kpi">
+                                        <div class="rmc-kpi-title" t-esc="request.env._('Orders Managed')"/>
+                                        <div class="rmc-kpi-value" t-esc="metrics.get('orders_count', 0)"/>
+                                        <div class="rmc-kpi-sub">
+                                            <t t-esc="request.env._('Channel')"/>
+                                            <strong t-esc="channel_label"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rmc-card rmc-secondary-card">
+                                    <div class="rmc-card-section">
+                                        <div class="rmc-section-title">
+                                            <h3 t-esc="request.env._('Linked Sales Orders')"/>
+                                            <a class="rmc-btn" href="/my/commission/orders" t-esc="request.env._('All orders')"/>
+                                        </div>
+                                        <div class="rmc-table-wrapper" t-if="orders_by_channel">
+                                            <t t-call="rmc_commission_agent.portal_agent_table_base"/>
+                                        </div>
+                                        <div class="alert alert-warning mb-0" role="alert" t-else="">
+                                            <t t-esc="request.env._('There are no commission orders for this agent yet.')"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rmc-card rmc-secondary-card">
+                                    <div class="rmc-card-section">
+                                        <div class="rmc-section-title">
+                                            <h3 t-esc="request.env._('Commission Vouchers')"/>
+                                        </div>
+                                        <div class="rmc-table-wrapper" t-if="commission_vouchers">
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th t-esc="request.env._('Voucher')"/>
+                                                        <th t-esc="request.env._('Linked Order')"/>
+                                                        <th t-esc="request.env._('Stage')"/>
+                                                        <th t-esc="request.env._('Amount')"/>
+                                                        <th t-esc="request.env._('Date')"/>
+                                                        <th t-esc="request.env._('Status')"/>
+                                                        <th class="text-end" t-esc="request.env._('Download')"/>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr t-foreach="commission_vouchers" t-as="voucher">
+                                                        <td t-esc="voucher['name']"/>
+                                                        <td t-esc="voucher['order_name']"/>
+                                                        <td t-esc="voucher['stage_label']"/>
+                                                        <td><t t-raw="voucher['amount_display']"/></td>
+                                                        <td><t t-raw="voucher['date_display']"/></td>
+                                                        <td>
+                                                            <span class="rmc-status" t-attf-class="rmc-status #{voucher['status_code'] in ('posted',) and 'rmc-status--ok' or (voucher['status_code'] in ('draft',) and 'rmc-status--warn' or 'rmc-status--danger')}">
+                                                                <t t-esc="voucher['status_label']"/>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <a class="rmc-btn" t-att-href="voucher['download_url']" t-esc="request.env._('PDF')"/>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="alert alert-info mb-0" role="alert" t-else="">
+                                            <t t-esc="request.env._('Voucher documents will appear here once generated.')"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rmc-card rmc-secondary-card">
+                                    <div class="rmc-card-section">
+                                        <div class="rmc-section-title">
+                                            <h3 t-esc="request.env._('Agent Leaderboard (Monthly)')"/>
+                                        </div>
+                                        <div class="rmc-table-wrapper" t-if="commission_leaderboard">
+                                            <table>
+                                                <thead>
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th t-esc="request.env._('Agent')"/>
+                                                        <th t-esc="request.env._('Stars')"/>
+                                                        <th t-esc="request.env._('Volume')"/>
+                                                        <th t-esc="request.env._('Recovery')"/>
+                                                        <th t-esc="request.env._('Commissions')"/>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr t-foreach="commission_leaderboard" t-as="entry">
+                                                        <td t-esc="entry['rank']"/>
+                                                        <td t-esc="entry['name']"/>
+                                                        <td class="rmc-stars" t-esc="entry['stars_text']"/>
+                                                        <td>
+                                                            <t t-raw="entry['volume_display']"/>
+                                                            <span class="rmc-subtle">m³</span>
+                                                        </td>
+                                                        <td>
+                                                            <t t-raw="entry['recovery_display']"/>
+                                                            <span>%</span>
+                                                        </td>
+                                                        <td><t t-raw="entry['commission_display']"/></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="alert alert-info mb-0" role="alert" t-else="">
+                                            <t t-esc="request.env._('Leaderboard data will appear once peer agent metrics are available.')"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </main>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <template id="portal_agent_table_base">
+            <t t-call="portal.portal_table">
+                <thead>
+                    <tr class="active">
+                        <th>
+                            <t t-if="agent.agent_type == 'rmc_dropshipping'" t-esc="request.env._('SO Ref')"/>
+                            <t t-elif="agent.agent_type in ['rental', 'distribution', 'retention']" t-esc="request.env._('Order')"/>
+                            <t t-else="" t-esc="request.env._('Order')"/>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="orders_by_channel" t-as="entry">
+                        <td>
+                            <a t-att-href="entry['order'].get_portal_url()" t-esc="entry['order'].name"/>
+                        </td>
+                    </tr>
+                </tbody>
+            </t>
+        </template>
+
+        <template id="portal_agent_table_columns" inherit_id="rmc_commission_agent.portal_agent_table_base">
+            <xpath expr="//thead/tr" position="inside">
+                <th t-if="agent.agent_type == 'rmc_dropshipping'" t-esc="request.env._('Delivered Volume')"/>
+                <th t-if="agent.agent_type == 'rmc_dropshipping'" t-esc="request.env._('Commission Stage')"/>
+                <th t-if="agent.agent_type == 'rmc_dropshipping'" class="text-end" t-esc="request.env._('Commission Amount')"/>
+
+                <th t-if="agent.agent_type == 'rental'" t-esc="request.env._('Rental Start')"/>
+                <th t-if="agent.agent_type == 'rental'" t-esc="request.env._('Rental End')"/>
+                <th t-if="agent.agent_type == 'rental'" t-esc="request.env._('Equipment Reference')"/>
+                <th t-if="agent.agent_type == 'rental'" t-esc="request.env._('Commission Stage')"/>
+
+                <th t-if="agent.agent_type == 'distribution'" t-esc="request.env._('Volume')"/>
+                <th t-if="agent.agent_type == 'distribution'" t-esc="request.env._('Recovery Rate (%)')"/>
+
+                <th t-if="agent.agent_type == 'retention'" t-esc="request.env._('Repeat Orders')"/>
+                <th t-if="agent.agent_type == 'retention'" t-esc="request.env._('Retention Bonus Status')"/>
+
+                <th t-if="agent.agent_type not in ['rmc_dropshipping', 'rental', 'distribution', 'retention']" t-esc="request.env._('Status')"/>
+            </xpath>
+            <xpath expr="//tbody/tr" position="inside">
+                <td t-if="agent.agent_type == 'rmc_dropshipping'" class="text-end">
+                    <span t-esc="entry.get('delivered_volume') or 0.0"/>
+                </td>
+                <td t-if="agent.agent_type == 'rmc_dropshipping'">
+                    <span t-esc="dict(entry['order']._fields['commission_stage'].selection).get(entry['order'].commission_stage)"/>
+                </td>
+                <td t-if="agent.agent_type == 'rmc_dropshipping'" class="text-end">
+                    <span t-field="entry['order'].commission_amount"/>
+                </td>
+
+                <td t-if="agent.agent_type == 'rental'">
+                    <span t-esc="entry.get('rental_start') or ''"/>
+                </td>
+                <td t-if="agent.agent_type == 'rental'">
+                    <span t-esc="entry.get('rental_end') or ''"/>
+                </td>
+                <td t-if="agent.agent_type == 'rental'">
+                    <span t-esc="entry.get('equipment_reference') or ''"/>
+                </td>
+                <td t-if="agent.agent_type == 'rental'">
+                    <span t-esc="dict(entry['order']._fields['commission_stage'].selection).get(entry['order'].commission_stage)"/>
+                </td>
+
+                <td t-if="agent.agent_type == 'distribution'" class="text-end">
+                    <span t-esc="entry.get('volume') or 0.0"/>
+                </td>
+                <td t-if="agent.agent_type == 'distribution'" class="text-end">
+                    <span t-esc="entry.get('recovery_rate') or 0.0"/>
+                </td>
+
+                <td t-if="agent.agent_type == 'retention'" class="text-end">
+                    <span t-esc="entry.get('repeat_count') or 0"/>
+                </td>
+                <td t-if="agent.agent_type == 'retention'">
+                    <span t-esc="dict(entry['order']._fields['commission_retention_bonus_status'].selection).get(entry['order'].commission_retention_bonus_status)"/>
+                </td>
+
+                <td t-if="agent.agent_type not in ['rmc_dropshipping', 'rental', 'distribution', 'retention']">
+                    <span t-esc="dict(entry['order']._fields['state'].selection).get(entry['order'].state)"/>
+                </td>
+            </xpath>
+        </template>
+
+        <template id="portal_agent_missing" name="Commission Agent Missing">
+            <t t-call="portal.portal_layout">
+                <t t-set="title" t-value="request.env._('Commission Dashboard')"/>
+                <div class="o_portal_wrap">
+                    <div class="alert alert-warning" role="alert" t-esc="request.env._('Your contact is not linked to a commission agent yet. Please contact your coordinator.')"/>
+                </div>
+            </t>
+        </template>
+
+        <template id="portal_agent_orders" name="Commission Orders">
+            <t t-call="portal.portal_layout">
+                <t t-set="title" t-value="request.env._('Commission Orders')"/>
+                <t t-set="currency" t-value="commission_currency"/>
+                <style>
+                    .rmc-orders-body { background-color: #f7f8fb; padding-bottom: 32px; }
+                    .rmc-orders-container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+                    .rmc-card { background: #ffffff; border-radius: 14px; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04); overflow: hidden; }
+                    .rmc-card-section { padding: 18px; }
+                    .rmc-section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+                    .rmc-section-title h2 { margin: 0; font-size: 20px; font-weight: 600; color: #111827; }
+                    .rmc-table-wrapper { overflow-x: auto; }
+                    .rmc-table-wrapper table { width: 100%; border-spacing: 0; border-collapse: separate; border-radius: 12px; overflow: hidden; background: #ffffff; }
+                    .rmc-table-wrapper th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; background: #f8fafc; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+                    .rmc-table-wrapper td { font-size: 13px; color: #1f2937; padding: 12px; border-bottom: 1px solid #f1f5f9; }
+                    .rmc-table-wrapper tr:last-child td { border-bottom: none; }
+                    .rmc-status { padding: 4px 10px; border-radius: 999px; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+                    .rmc-status--ok { background: #e8f7ee; color: #166534; }
+                    .rmc-status--warn { background: #fff7ed; color: #92400e; }
+                    .rmc-status--danger { background: #fef2f2; color: #991b1b; }
+                    .rmc-muted { color: #6b7280; font-size: 12px; }
+                </style>
+                <div class="o_portal_wrap rmc-orders-body">
+                    <div class="rmc-orders-container">
+                        <div class="rmc-card">
+                            <div class="rmc-card-section">
+                                <div class="rmc-section-title">
+                                    <h2 t-esc="request.env._('Commission Orders')"/>
+                                    <span class="rmc-muted" t-esc="request.env._('Total: %s orders') % len(orders)"/>
+                                </div>
+                                <div class="rmc-table-wrapper" t-if="orders">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th t-esc="request.env._('Order')"/>
+                                                <th t-esc="request.env._('Customer')"/>
+                                                <th t-esc="request.env._('Commission Stage')"/>
+                                                <th t-esc="request.env._('Commission Amount')"/>
+                                                <th t-esc="request.env._('Order Total')"/>
+                                                <th t-esc="request.env._('Order Date')"/>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="orders" t-as="order">
+                                                <td>
+                                                    <a t-att-href="order.get_portal_url()" t-esc="order.name"/>
+                                                </td>
+                                                <td t-esc="order.partner_id.display_name"/>
+                                                <td>
+                                                    <span class="rmc-status" t-attf-class="rmc-status #{order.commission_stage == 'paid' and 'rmc-status--ok' or (order.commission_stage == 'submitted' and 'rmc-status--warn' or '')}">
+                                                        <t t-esc="dict(order._fields['commission_stage'].selection).get(order.commission_stage)"/>
+                                                    </span>
+                                                </td>
+                                                <td><t t-raw="commission_order_commission_amounts.get(order.id)"/></td>
+                                                <td><t t-raw="commission_order_total_amounts.get(order.id)"/></td>
+                                                <td><t t-raw="commission_order_dates.get(order.id)"/></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="alert alert-info mb-0" role="alert" t-else="">
+                                    <t t-esc="request.env._('No matching orders yet.')"/>
+                                </div>
+                                <div class="mt-3">
+                                    <t t-call="portal.pager"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>

@@ -1,0 +1,18 @@
+<odoo>
+  <data>
+    <record id="commission_agent_landing_page" model="website.page">
+      <field name="name">Commission Agents</field>
+      <field name="url">/commission-agents</field>
+      <field name="view_id" ref="rmc_commission_agent.commission_agent_website_page"/>
+      <field name="website_published">True</field>
+    </record>
+
+    <record id="commission_agent_menu" model="website.menu">
+      <field name="name">Commission Agents</field>
+      <field name="parent_id" ref="website.main_menu"/>
+      <field name="url">/commission-agents</field>
+      <field name="sequence">45</field>
+    </record>
+
+  </data>
+</odoo>

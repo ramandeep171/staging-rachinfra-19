@@ -1,0 +1,2121 @@
+<odoo>
+  <data>
+    <template id="commission_agent_website_page" name="Commission Agent Landing Page">
+      <t t-call="website.layout">
+        <t t-set="title">RMC Commission Agent Program | RACH INFRA</t>
+        <t t-set="head">
+          <t t-raw="head"/>
+          <meta name="description" content="Join RACH INFRA's RMC Commission Agent Program. Earn unlimited commissions selling Ready-Mix Concrete with free training, tech tools, and flexible work."/>
+          <link rel="preconnect" href="https://fonts.googleapis.com"/>
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"/>
+          <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=Poppins:wght@400;500;600;700;800&amp;display=swap"/>
+          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
+          <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
+          <style>
+            :root {
+              --primary-orange: #ff6b35;
+              --primary-orange-dark: #e85a28;
+              --secondary-blue: #004aad;
+              --secondary-blue-dark: #003580;
+              --white: #ffffff;
+              --gray-50: #f9fafb;
+              --gray-100: #f3f4f6;
+              --gray-200: #e5e7eb;
+              --gray-300: #d1d5db;
+              --gray-400: #9ca3af;
+              --gray-500: #6b7280;
+              --gray-600: #4b5563;
+              --gray-700: #374151;
+              --gray-800: #1f2937;
+              --gray-900: #111827;
+              --success: #10b981;
+              --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+              --font-heading: 'Poppins', sans-serif;
+              --radius-sm: 6px;
+              --radius-md: 12px;
+              --radius-lg: 16px;
+              --radius-xl: 24px;
+              --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+              --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+              --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+              --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+              --transition-base: 0.3s ease;
+            }
+
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+
+            body {
+              font-family: var(--font-primary);
+              font-size: 16px;
+              line-height: 1.6;
+              color: var(--gray-700);
+            }
+
+            a {
+              color: inherit;
+              text-decoration: none;
+              transition: var(--transition-base);
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+              font-family: var(--font-heading);
+              color: var(--gray-900);
+            }
+
+            .rmc-container {
+              max-width: 1200px;
+              margin: 0 auto;
+              padding: 0 20px;
+            }
+
+            .rmc-btn {
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+              padding: 14px 26px;
+              font-weight: 600;
+              border-radius: var(--radius-md);
+              border: none;
+              cursor: pointer;
+              transition: all var(--transition-base);
+              font-size: 16px;
+            }
+
+            .rmc-btn-primary {
+              background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark));
+              color: var(--white);
+              box-shadow: 0 8px 24px rgba(255, 107, 53, 0.25);
+            }
+
+            .rmc-btn-secondary {
+              background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-dark));
+              color: var(--white);
+              box-shadow: 0 8px 24px rgba(0, 74, 173, 0.25);
+            }
+
+            .rmc-btn-primary:hover,
+            .rmc-btn-secondary:hover {
+              transform: translateY(-3px);
+            }
+
+            .rmc-btn-large {
+              padding: 16px 32px;
+              font-size: 18px;
+            }
+
+            .rmc-btn-sm {
+              padding: 8px 18px;
+              font-size: 14px;
+            }
+
+            .rmc-btn-block {
+              display: flex;
+              width: 100%;
+              justify-content: center;
+            }
+
+            /* Hero */
+            .rmc-hero {
+              position: relative;
+              min-height: 100vh;
+              padding: 140px 0 80px;
+              background: linear-gradient(135deg, #004aad 0%, #1855c0 45%, #ff6b35 100%);
+              color: var(--white);
+              overflow: hidden;
+            }
+
+            .rmc-hero::before {
+              content: '';
+              position: absolute;
+              inset: 0;
+              background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.15), transparent 60%),
+                          radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.08), transparent 60%);
+            }
+
+            .rmc-hero-content {
+              position: relative;
+              z-index: 1;
+              text-align: center;
+              max-width: 960px;
+              margin: 0 auto;
+            }
+
+            .rmc-hero-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 10px;
+              padding: 10px 22px;
+              border-radius: 999px;
+              background: rgba(255, 255, 255, 0.2);
+              font-weight: 600;
+              margin-bottom: 24px;
+              backdrop-filter: blur(6px);
+            }
+
+            .rmc-hero-title {
+              font-size: 3.5rem;
+              font-weight: 800;
+              line-height: 1.1;
+              margin-bottom: 24px;
+            }
+
+            .rmc-gradient-text {
+              background: linear-gradient(135deg, #ffd700, #ffa500, #ff6b35);
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+            }
+
+            .rmc-hero-subtitle {
+              font-size: 1.125rem;
+              margin-bottom: 36px;
+              opacity: 0.95;
+            }
+
+            .rmc-hero-stats {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 20px;
+              margin-bottom: 40px;
+            }
+
+            .rmc-stat {
+              padding: 18px;
+              border-radius: var(--radius-lg);
+              background: rgba(255, 255, 255, 0.12);
+              backdrop-filter: blur(8px);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .rmc-stat-number {
+              font-size: 2rem;
+              font-weight: 800;
+            }
+
+            .rmc-hero-cta {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 16px;
+              justify-content: center;
+              margin-bottom: 36px;
+            }
+
+            .rmc-trust-badges {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 24px;
+              justify-content: center;
+              font-size: 0.9375rem;
+            }
+
+            .rmc-trust-badges i {
+              color: #ffd700;
+            }
+
+            .rmc-hero-scroll {
+              position: absolute;
+              bottom: 24px;
+              left: 50%;
+              transform: translateX(-50%);
+              font-size: 20px;
+              animation: rmc-bounce 2s infinite;
+            }
+
+            @keyframes rmc-bounce {
+              0%, 100% { transform: translate(-50%, 0); }
+              50% { transform: translate(-50%, 10px); }
+            }
+
+            .rmc-section {
+              padding: 80px 0;
+            }
+
+            .rmc-section-header {
+              text-align: center;
+              max-width: 760px;
+              margin: 0 auto 56px;
+            }
+
+            .rmc-section-badge {
+              display: inline-block;
+              padding: 8px 18px;
+              border-radius: 999px;
+              background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark));
+              color: var(--white);
+              font-weight: 600;
+              font-size: 14px;
+              letter-spacing: 0.5px;
+              text-transform: uppercase;
+              margin-bottom: 16px;
+            }
+
+            .rmc-section-title {
+              font-size: 2.5rem;
+              margin-bottom: 16px;
+            }
+
+            .rmc-section-desc {
+              color: var(--gray-600);
+              font-size: 1.125rem;
+              line-height: 1.7;
+            }
+
+            .rmc-benefits-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 24px;
+              margin-bottom: 60px;
+            }
+
+            .rmc-benefit-card {
+              background: var(--white);
+              padding: 32px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-lg);
+              border-top: 4px solid var(--primary-orange);
+              transition: var(--transition-base);
+            }
+
+            .rmc-benefit-card:hover {
+              transform: translateY(-6px);
+              box-shadow: var(--shadow-xl);
+            }
+
+            .rmc-benefit-icon {
+              width: 60px;
+              height: 60px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border-radius: 16px;
+              background: rgba(255, 107, 53, 0.1);
+              color: var(--primary-orange);
+              font-size: 26px;
+              margin-bottom: 20px;
+            }
+
+            .rmc-benefit-card h3 {
+              font-size: 1.25rem;
+              margin-bottom: 10px;
+            }
+
+            .rmc-benefit-card p {
+              color: var(--gray-600);
+            }
+
+            .rmc-steps {
+              background: var(--white);
+              padding: 48px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-xl);
+            }
+
+            .rmc-steps-list {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 20px;
+              align-items: center;
+              justify-content: space-between;
+            }
+
+            .rmc-step {
+              flex: 1;
+              min-width: 220px;
+              text-align: center;
+            }
+
+            .rmc-step-number {
+              width: 62px;
+              height: 62px;
+              border-radius: 50%;
+              background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-dark));
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: var(--white);
+              font-size: 24px;
+              font-weight: 700;
+              margin: 0 auto 12px;
+              box-shadow: 0 6px 16px rgba(0, 74, 173, 0.25);
+            }
+
+            .rmc-step-title {
+              font-size: 1.125rem;
+              margin-bottom: 6px;
+            }
+
+            .rmc-step-desc {
+              font-size: 0.9375rem;
+              color: var(--gray-600);
+            }
+
+            .rmc-step-arrow {
+              color: var(--gray-300);
+              font-size: 22px;
+            }
+
+            /* Earnings */
+            .rmc-earnings {
+              background: var(--white);
+            }
+
+            .rmc-earnings-content {
+              display: grid;
+              gap: 40px;
+              grid-template-columns: 1fr 1fr;
+            }
+
+            .rmc-commission-structure {
+              background: var(--white);
+              padding: 32px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-lg);
+            }
+
+            .rmc-commission-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 24px;
+              border-radius: var(--radius-lg);
+              overflow: hidden;
+              box-shadow: var(--shadow-md);
+            }
+
+            .rmc-commission-table thead {
+              background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-dark));
+              color: var(--white);
+            }
+
+            .rmc-commission-table th,
+            .rmc-commission-table td {
+              padding: 18px 24px;
+              text-align: left;
+              border-bottom: 1px solid var(--gray-200);
+            }
+
+            .rmc-commission-table tbody tr:last-child td {
+              border-bottom: none;
+            }
+
+            .rmc-commission-table tbody tr.highlight {
+              background: rgba(255, 107, 53, 0.07);
+            }
+
+            .rmc-earnings-card {
+              background: var(--white);
+              padding: 32px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-xl);
+              position: sticky;
+              top: 100px;
+            }
+
+            .rmc-form-group {
+              margin-bottom: 18px;
+            }
+
+            .rmc-form-group label {
+              display: block;
+              font-weight: 600;
+              color: var(--gray-700);
+              margin-bottom: 6px;
+            }
+
+            .rmc-input {
+              width: 100%;
+              padding: 12px 16px;
+              border-radius: var(--radius-md);
+              border: 2px solid var(--gray-200);
+              font-size: 16px;
+              transition: var(--transition-base);
+            }
+
+            .rmc-input:focus {
+              outline: none;
+              border-color: var(--primary-orange);
+              box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.12);
+            }
+
+            .rmc-input-info {
+              font-size: 12px;
+              color: var(--gray-500);
+              margin-top: 4px;
+            }
+
+            .rmc-earnings-result {
+              margin-top: 24px;
+              padding: 24px;
+              border-radius: var(--radius-lg);
+              background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark));
+              color: var(--white);
+              text-align: center;
+            }
+
+            .rmc-result-amount {
+              font-size: 3rem;
+              font-weight: 800;
+              margin: 12px 0;
+            }
+
+            .rmc-result-breakdown {
+              background: rgba(255, 255, 255, 0.15);
+              border-radius: var(--radius-md);
+              padding: 16px;
+              text-align: left;
+              font-size: 0.9375rem;
+            }
+
+            .rmc-timeline {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            }
+
+            .rmc-timeline-item {
+              display: flex;
+              justify-content: space-between;
+              padding: 12px;
+              background: var(--gray-50);
+              border-radius: var(--radius-md);
+              border: 1px solid var(--gray-100);
+            }
+
+            .rmc-timeline-item span {
+              font-weight: 700;
+              color: var(--primary-orange);
+            }
+
+            /* Audience cards */
+            .rmc-audience {
+              background: var(--gray-50);
+            }
+
+            .rmc-audience-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 32px;
+            }
+
+            .rmc-audience-card {
+              background: var(--white);
+              padding: 40px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-lg);
+              border-top: 6px solid var(--primary-orange);
+            }
+
+            .rmc-audience-card.is-experienced {
+              border-top-color: var(--secondary-blue);
+            }
+
+            .rmc-audience-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 16px;
+              border-radius: 999px;
+              background: rgba(255, 107, 53, 0.12);
+              color: var(--primary-orange);
+              font-weight: 600;
+              margin-bottom: 20px;
+            }
+
+            .is-experienced .rmc-audience-badge {
+              background: rgba(0, 74, 173, 0.12);
+              color: var(--secondary-blue);
+            }
+
+            .rmc-list {
+              list-style: none;
+              margin: 20px 0 28px;
+              padding: 0;
+            }
+
+            .rmc-list li {
+              position: relative;
+              padding-left: 30px;
+              margin-bottom: 12px;
+              color: var(--gray-600);
+            }
+
+            .rmc-list li::before {
+              content: "•";
+              position: absolute;
+              left: 10px;
+              color: var(--primary-orange);
+              font-size: 20px;
+            }
+
+            .is-experienced .rmc-list li::before {
+              color: var(--secondary-blue);
+            }
+
+            /* Success Stories */
+            .rmc-success {
+              background: var(--white);
+            }
+
+            .rmc-testimonials {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 28px;
+            }
+
+            .rmc-testimonial-card {
+              background: var(--white);
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-lg);
+              padding: 28px;
+              position: relative;
+              border: 1px solid var(--gray-100);
+            }
+
+            .rmc-testimonial-card.featured {
+              border-color: var(--primary-orange);
+              background: linear-gradient(135deg, rgba(255, 107, 53, 0.05), rgba(0, 74, 173, 0.05));
+            }
+
+            .rmc-top-ribbon {
+              position: absolute;
+              top: -12px;
+              right: 24px;
+              background: linear-gradient(135deg, #ffd700, #ffa500);
+              color: var(--white);
+              font-size: 12px;
+              font-weight: 700;
+              padding: 6px 14px;
+              border-radius: 999px;
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              box-shadow: 0 6px 16px rgba(255, 215, 0, 0.35);
+            }
+
+            .rmc-testimonial-header {
+              display: flex;
+              gap: 16px;
+              margin-bottom: 20px;
+            }
+
+            .rmc-avatar {
+              position: relative;
+            }
+
+            .rmc-avatar img {
+              width: 72px;
+              height: 72px;
+              border-radius: 50%;
+              border: 3px solid var(--white);
+              box-shadow: var(--shadow-md);
+            }
+
+            .rmc-avatar-badge {
+              position: absolute;
+              bottom: -8px;
+              left: 50%;
+              transform: translateX(-50%);
+              background: var(--primary-orange);
+              color: var(--white);
+              font-size: 10px;
+              font-weight: 700;
+              padding: 4px 10px;
+              border-radius: 999px;
+            }
+
+            .rmc-avatar-badge.is-experienced {
+              background: var(--secondary-blue);
+            }
+
+            .rmc-testimonial-info h4 {
+              margin-bottom: 4px;
+            }
+
+            .rmc-earnings-tag {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              background: linear-gradient(135deg, var(--success), #059669);
+              color: var(--white);
+              border-radius: 999px;
+              padding: 4px 12px;
+              font-weight: 700;
+              font-size: 0.875rem;
+            }
+
+            .rmc-testimonial-text {
+              color: var(--gray-600);
+              font-size: 0.95rem;
+              margin-bottom: 18px;
+            }
+
+            .rmc-testimonial-metrics {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 12px;
+              padding-top: 16px;
+              border-top: 1px solid var(--gray-200);
+              font-size: 0.875rem;
+            }
+
+            .rmc-video-callout {
+              margin-top: 48px;
+              padding: 32px;
+              border-radius: var(--radius-xl);
+              background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-dark));
+              color: var(--white);
+              text-align: center;
+            }
+
+            /* Why Section */
+            .rmc-why {
+              background: var(--gray-50);
+            }
+
+            .rmc-point-card {
+              display: flex;
+              gap: 20px;
+              background: var(--white);
+              padding: 28px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-md);
+              margin-bottom: 20px;
+            }
+
+            .rmc-point-icon {
+              width: 60px;
+              height: 60px;
+              border-radius: var(--radius-md);
+              background: rgba(255, 107, 53, 0.12);
+              color: var(--primary-orange);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 26px;
+            }
+
+            .rmc-point-card h3 {
+              margin-bottom: 10px;
+            }
+
+            .rmc-point-card ul {
+              margin: 16px 0 0;
+              padding-left: 18px;
+            }
+
+            .rmc-client-logos {
+              margin-top: 48px;
+              padding: 28px;
+              border-radius: var(--radius-xl);
+              background: var(--white);
+              display: flex;
+              flex-wrap: wrap;
+              gap: 20px;
+              justify-content: center;
+              box-shadow: var(--shadow-md);
+            }
+
+            .rmc-client-logos span {
+              padding: 10px 22px;
+              border-radius: var(--radius-md);
+              background: var(--gray-50);
+              font-weight: 600;
+              color: var(--gray-700);
+            }
+
+            /* FAQ */
+            .rmc-faq-category {
+              margin-bottom: 44px;
+            }
+
+            .rmc-faq-category h3 {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              color: var(--secondary-blue);
+              margin-bottom: 18px;
+            }
+
+            .rmc-faq-item {
+              border: 2px solid var(--gray-200);
+              border-radius: var(--radius-lg);
+              margin-bottom: 14px;
+              overflow: hidden;
+              transition: var(--transition-base);
+            }
+
+            .rmc-faq-item.active {
+              border-color: var(--primary-orange);
+              box-shadow: var(--shadow-md);
+            }
+
+            .rmc-faq-question {
+              padding: 18px 22px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              cursor: pointer;
+              font-weight: 600;
+            }
+
+            .rmc-faq-answer {
+              max-height: 0;
+              overflow: hidden;
+              transition: max-height var(--transition-base);
+            }
+
+            .rmc-faq-item.active .rmc-faq-answer {
+              max-height: 800px;
+            }
+
+            .rmc-faq-answer-inner {
+              padding: 0 22px 22px;
+              color: var(--gray-600);
+            }
+
+            .rmc-faq-cta {
+              margin-top: 48px;
+              padding: 36px;
+              border-radius: var(--radius-xl);
+              background: var(--gray-50);
+              text-align: center;
+            }
+
+            .rmc-faq-cta-buttons {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 16px;
+              justify-content: center;
+              margin-top: 16px;
+            }
+
+            /* Apply section */
+            .rmc-apply {
+              background: linear-gradient(135deg, var(--secondary-blue), var(--secondary-blue-dark));
+              color: var(--white);
+            }
+
+            .rmc-apply-content {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 42px;
+            }
+
+            .rmc-apply-benefits {
+              display: grid;
+              gap: 14px;
+              margin: 24px 0;
+            }
+
+            .rmc-apply-benefits li {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              list-style: none;
+            }
+
+            .rmc-apply-benefits i {
+              color: var(--success);
+            }
+
+            .rmc-urgency-banner {
+              display: flex;
+              gap: 14px;
+              padding: 18px;
+              border-radius: var(--radius-md);
+              background: rgba(255, 107, 53, 0.15);
+              border-left: 4px solid var(--primary-orange);
+              margin: 26px 0;
+            }
+
+            .rmc-contact-buttons {
+              display: grid;
+              gap: 12px;
+            }
+
+            .rmc-contact-btn {
+              display: flex;
+              align-items: center;
+              gap: 14px;
+              padding: 16px;
+              border: 2px solid rgba(255, 255, 255, 0.2);
+              border-radius: var(--radius-md);
+              background: rgba(255, 255, 255, 0.08);
+              color: var(--white);
+            }
+
+            .rmc-apply-form {
+              background: var(--white);
+              color: var(--gray-800);
+              padding: 36px;
+              border-radius: var(--radius-xl);
+              box-shadow: var(--shadow-xl);
+            }
+
+            .rmc-applicant-type {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 12px;
+              margin-bottom: 26px;
+            }
+
+            .rmc-radio-card {
+              position: relative;
+            }
+
+            .rmc-radio-card input {
+              position: absolute;
+              inset: 0;
+              opacity: 0;
+              cursor: pointer;
+            }
+
+            .rmc-radio-ui {
+              border: 2px solid var(--gray-200);
+              border-radius: var(--radius-lg);
+              padding: 18px;
+              text-align: center;
+              transition: var(--transition-base);
+            }
+
+            .rmc-radio-card input:checked + .rmc-radio-ui {
+              border-color: var(--primary-orange);
+              background: rgba(255, 107, 53, 0.06);
+            }
+
+            .rmc-form-row {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 14px;
+            }
+
+            .rmc-textarea {
+              width: 100%;
+              min-height: 90px;
+              padding: 12px 16px;
+              border-radius: var(--radius-md);
+              border: 2px solid var(--gray-200);
+              resize: vertical;
+              font-size: 16px;
+            }
+
+            .rmc-success-message {
+              display: none;
+              text-align: center;
+              padding: 40px;
+            }
+
+            .rmc-success-message.active {
+              display: block;
+            }
+
+            .rmc-radio-group {
+              display: flex;
+              gap: 16px;
+              flex-wrap: wrap;
+            }
+
+            
+
+            /* Floating Actions */
+            .rmc-floating-actions {
+              position: fixed;
+              bottom: 26px;
+              right: 26px;
+              display: flex;
+              flex-direction: column;
+              gap: 14px;
+              z-index: 1000;
+            }
+
+            .rmc-floating-btn {
+              width: 52px;
+              height: 52px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: var(--white);
+              font-size: 22px;
+              box-shadow: var(--shadow-lg);
+              border: none;
+              cursor: pointer;
+            }
+
+            .rmc-floating-btn.whatsapp {
+              background: linear-gradient(135deg, #25d366, #128c7e);
+            }
+
+            .rmc-floating-btn.phone {
+              background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark));
+            }
+
+            .rmc-floating-btn.top {
+              background: linear-gradient(135deg, var(--gray-700), var(--gray-600));
+              opacity: 0;
+              visibility: hidden;
+              transition: all var(--transition-base);
+            }
+
+            .rmc-floating-btn.top.visible {
+              opacity: 1;
+              visibility: visible;
+            }
+
+            /* Responsive */
+            @media (max-width: 1199px) {
+              .rmc-benefits-grid,
+              .rmc-testimonials {
+                grid-template-columns: repeat(2, 1fr);
+              }
+            }
+
+            @media (max-width: 991px) {
+              .rmc-hero {
+                padding: 110px 0 60px;
+              }
+
+              .rmc-hero-title {
+                font-size: 2.6rem;
+              }
+
+              .rmc-hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+              }
+
+              .rmc-benefits-grid,
+              .rmc-audience-grid,
+              .rmc-earnings-content {
+                grid-template-columns: 1fr;
+              }
+
+              .rmc-testimonials {
+                grid-template-columns: 1fr;
+              }
+
+              .rmc-apply-content {
+                grid-template-columns: 1fr;
+              }
+
+            }
+
+            @media (max-width: 767px) {
+              .rmc-hero-title {
+                font-size: 2.2rem;
+              }
+
+              .rmc-hero-stats {
+                grid-template-columns: 1fr;
+              }
+
+              .rmc-section {
+                padding: 60px 0;
+              }
+
+              .rmc-section-title {
+                font-size: 2rem;
+              }
+
+              .rmc-steps {
+                padding: 32px;
+              }
+
+              .rmc-step-arrow {
+                display: none;
+              }
+
+              .rmc-form-row {
+                grid-template-columns: 1fr;
+              }
+
+
+              .rmc-floating-actions {
+                bottom: 20px;
+                right: 20px;
+              }
+            }
+          </style>
+        </t>
+        <div id="wrap" class="oe_structure rmc-commission-agent">
+          
+          <!-- Hero -->
+          <section class="rmc-hero" id="rmc-hero">
+            <div class="rmc-container">
+              <div class="rmc-hero-content" data-aos="fade-up">
+                <div class="rmc-hero-badge">
+                  <i class="fas fa-star"></i>
+                  Limited Positions Available — Apply Now
+                </div>
+                <h1 class="rmc-hero-title">
+                  Earn <span class="rmc-gradient-text">₹50,000 - ₹5 Lakhs/Month</span><br/>
+                  As an RMC Commission Agent
+                </h1>
+                <p class="rmc-hero-subtitle">
+                  Join India's fastest-growing construction material supplier. No investment required.<br/>
+                  Work from anywhere. Get trained. Earn unlimited commissions.
+                </p>
+                <div class="rmc-hero-stats">
+                  <div class="rmc-stat">
+                    <div class="rmc-stat-number">₹100Cr+</div>
+                    <div class="rmc-stat-label">Annual Revenue</div>
+                  </div>
+                  <div class="rmc-stat">
+                    <div class="rmc-stat-number">85%</div>
+                    <div class="rmc-stat-label">Agent Retention</div>
+                  </div>
+                  <div class="rmc-stat">
+                    <div class="rmc-stat-number">15+</div>
+                    <div class="rmc-stat-label">RMC Plants</div>
+                  </div>
+                  <div class="rmc-stat">
+                    <div class="rmc-stat-number">100+</div>
+                    <div class="rmc-stat-label">Active Projects</div>
+                  </div>
+                </div>
+                <div class="rmc-hero-cta">
+                  <a class="rmc-btn rmc-btn-primary rmc-btn-large" href="#apply-fresher">
+                    <i class="fas fa-graduation-cap"></i>
+                    I'm a Fresher — Apply Now
+                  </a>
+                  <a class="rmc-btn rmc-btn-secondary rmc-btn-large" href="#apply-experienced">
+                    <i class="fas fa-briefcase"></i>
+                    I'm Experienced — Join
+                  </a>
+                </div>
+                <div class="rmc-trust-badges">
+                  <span><i class="fas fa-certificate"></i> ISO 9001:2015</span>
+                  <span><i class="fas fa-shield-alt"></i> NABL Accredited</span>
+                  <span><i class="fas fa-users"></i> 500+ Agents</span>
+                </div>
+              </div>
+            </div>
+            <div class="rmc-hero-scroll">
+              <i class="fas fa-chevron-down"></i>
+            </div>
+          </section>
+
+          <!-- Program Overview -->
+          <section class="rmc-section" id="rmc-program">
+            <div class="rmc-container">
+              <div class="rmc-section-header" data-aos="fade-up">
+                <span class="rmc-section-badge">About The Program</span>
+                <h2 class="rmc-section-title">What is the RMC Commission Agent Program?</h2>
+                <p class="rmc-section-desc">
+                  Partner with RACH INFRA to sell Ready-Mix Concrete (RMC), AAC Blocks, Construction Equipment, and Building Materials. Earn attractive commissions on every successful sale.
+                </p>
+              </div>
+              <div class="rmc-benefits-grid">
+                <div class="rmc-benefit-card" data-aos="fade-up" data-aos-delay="0">
+                  <div class="rmc-benefit-icon"><i class="fas fa-money-bill-wave"></i></div>
+                  <h3>No Investment Required</h3>
+                  <p>Zero capital needed. We provide all materials, marketing collateral, and technical support.</p>
+                </div>
+                <div class="rmc-benefit-card" data-aos="fade-up" data-aos-delay="100">
+                  <div class="rmc-benefit-icon"><i class="fas fa-laptop-house"></i></div>
+                  <h3>Work From Anywhere</h3>
+                  <p>Flexible working hours. Operate from home, field, or office. You choose your schedule.</p>
+                </div>
+                <div class="rmc-benefit-card" data-aos="fade-up" data-aos-delay="200">
+                  <div class="rmc-benefit-icon"><i class="fas fa-chart-line"></i></div>
+                  <h3>Unlimited Earnings</h3>
+                  <p>No cap on commissions. The more you sell, the more you earn. Top agents make ₹3-5L/month.</p>
+                </div>
+                <div class="rmc-benefit-card" data-aos="fade-up" data-aos-delay="300">
+                  <div class="rmc-benefit-icon"><i class="fas fa-graduation-cap"></i></div>
+                  <h3>Complete Training</h3>
+                  <p>Free product training, sales techniques, and CRM tools. We teach you everything.</p>
+                </div>
+                <div class="rmc-benefit-card" data-aos="fade-up" data-aos-delay="400">
+                  <div class="rmc-benefit-icon"><i class="fas fa-headset"></i></div>
+                  <h3>24/7 Support</h3>
+                  <p>Dedicated support team, technical assistance, and direct CEO escalation when needed.</p>
+                </div>
+                <div class="rmc-benefit-card" data-aos="fade-up" data-aos-delay="500">
+                  <div class="rmc-benefit-icon"><i class="fas fa-mobile-alt"></i></div>
+                  <h3>Tech-Enabled Tools</h3>
+                  <p>Access to RMC Calculator, CRM dashboard, client tracking, and real-time order updates.</p>
+                </div>
+              </div>
+              <div class="rmc-steps" data-aos="fade-up">
+                <h3 class="rmc-section-title" style="text-align:center; margin-bottom:32px;">How It Works — Simple 4-Step Process</h3>
+                <div class="rmc-steps-list">
+                  <div class="rmc-step">
+                    <div class="rmc-step-number">1</div>
+                    <div class="rmc-step-title">Apply &amp; Get Onboarded</div>
+                    <div class="rmc-step-desc">Fill the application form. Get verified and onboarded within 48 hours.</div>
+                  </div>
+                  <div class="rmc-step-arrow"><i class="fas fa-arrow-right"></i></div>
+                  <div class="rmc-step">
+                    <div class="rmc-step-number">2</div>
+                    <div class="rmc-step-title">Get Trained</div>
+                    <div class="rmc-step-desc">Attend free training. Learn products, pricing, and sales strategies.</div>
+                  </div>
+                  <div class="rmc-step-arrow"><i class="fas fa-arrow-right"></i></div>
+                  <div class="rmc-step">
+                    <div class="rmc-step-number">3</div>
+                    <div class="rmc-step-title">Find Clients &amp; Sell</div>
+                    <div class="rmc-step-desc">Meet builders, contractors, developers. Demonstrate value &amp; close deals.</div>
+                  </div>
+                  <div class="rmc-step-arrow"><i class="fas fa-arrow-right"></i></div>
+                  <div class="rmc-step">
+                    <div class="rmc-step-number">4</div>
+                    <div class="rmc-step-title">Earn Commission</div>
+                    <div class="rmc-step-desc">Get paid within 7 days of delivery. Track earnings in real-time.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Earnings -->
+          <section class="rmc-section rmc-earnings" id="rmc-earnings">
+            <div class="rmc-container">
+              <div class="rmc-section-header" data-aos="fade-up">
+                <span class="rmc-section-badge">Income Opportunity</span>
+                <h2 class="rmc-section-title">Your Earning Potential is Unlimited</h2>
+                <p class="rmc-section-desc">Our commission structure is designed to reward performance. No caps, no limits.</p>
+              </div>
+              <div class="rmc-earnings-content">
+                <div class="rmc-commission-structure" data-aos="fade-right">
+                  <h3>Commission Structure</h3>
+                  <table class="rmc-commission-table">
+                    <thead>
+                      <tr>
+                        <th>Product Category</th>
+                        <th>Commission Rate</th>
+                        <th>Example Earning</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Ready-Mix Concrete (RMC)</strong><br/><span>Per cubic meter</span></td>
+                        <td>₹50 - ₹150</td>
+                        <td>100m³ = <strong>₹5,000 - ₹15,000</strong></td>
+                      </tr>
+                      <tr>
+                        <td><strong>AAC Blocks (ACC.ON)</strong><br/><span>Per order value</span></td>
+                        <td>3% - 5%</td>
+                        <td>₹2L order = <strong>₹6,000 - ₹10,000</strong></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Construction Equipment</strong><br/><span>Rental/Sale</span></td>
+                        <td>5% - 8%</td>
+                        <td>₹5L deal = <strong>₹25,000 - ₹40,000</strong></td>
+                      </tr>
+                      <tr>
+                        <td><strong>Building Materials</strong><br/><span>Cement, Tiles, Stone</span></td>
+                        <td>2% - 4%</td>
+                        <td>₹3L order = <strong>₹6,000 - ₹12,000</strong></td>
+                      </tr>
+                      <tr class="highlight">
+                        <td><strong>Repeat Client Bonus</strong><br/><span>Additional incentive</span></td>
+                        <td>+10%</td>
+                        <td>Extra <strong>₹2,000 - ₹5,000/month</strong></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="rmc-commission-note">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Commissions paid within 7 days of successful delivery. No hidden deductions. Experienced agents unlock 15-25% bonus tiers.</p>
+                  </div>
+                </div>
+                <div class="rmc-earnings-card" data-aos="fade-left">
+                  <h3>Calculate Your Monthly Income</h3>
+                  <p class="rmc-section-desc" style="font-size:0.95rem;">Estimate your potential earnings based on realistic sales targets.</p>
+                  <div class="rmc-form-group">
+                    <label for="rmcSales">RMC Sales (cubic meters/month)</label>
+                    <input class="rmc-input" id="rmcSales" type="number" value="200" min="0"/>
+                    <div class="rmc-input-info">Average: 150-300 m³/month</div>
+                  </div>
+                  <div class="rmc-form-group">
+                    <label for="aacOrders">AAC Block Orders (₹/month)</label>
+                    <input class="rmc-input" id="aacOrders" type="number" value="500000" min="0" step="50000"/>
+                    <div class="rmc-input-info">Average: ₹3-5 lakhs/month</div>
+                  </div>
+                  <div class="rmc-form-group">
+                    <label for="equipmentDeals">Equipment Deals (₹/month)</label>
+                    <input class="rmc-input" id="equipmentDeals" type="number" value="1000000" min="0" step="100000"/>
+                    <div class="rmc-input-info">Average: ₹8-15 lakhs/month</div>
+                  </div>
+                  <div class="rmc-form-group">
+                    <label for="materialsSales">Building Materials (₹/month)</label>
+                    <input class="rmc-input" id="materialsSales" type="number" value="300000" min="0" step="50000"/>
+                    <div class="rmc-input-info">Average: ₹2-4 lakhs/month</div>
+                  </div>
+                  <button class="rmc-btn rmc-btn-primary rmc-btn-block" id="rmcCalculateBtn" type="button">
+                    <i class="fas fa-calculator"></i> Calculate My Earnings
+                  </button>
+                  <div class="rmc-earnings-result" id="rmcEarningsResult">
+                    <div class="rmc-result-header">Your Estimated Monthly Income</div>
+                    <div class="rmc-result-amount" id="rmcResultAmount">₹0</div>
+                    <div class="rmc-result-breakdown" id="rmcResultBreakdown"></div>
+                    <div style="margin-top:16px;">
+                      <p style="margin-bottom:10px;">Ready to start earning? Apply now!</p>
+                      <a class="rmc-btn rmc-btn-secondary rmc-btn-block" href="#rmc-apply">Apply Now</a>
+                    </div>
+                  </div>
+                  <div class="top-earner-badge" style="margin-top:24px; display:flex; align-items:center; gap:14px; padding:18px; border-radius:var(--radius-lg); background:linear-gradient(135deg,#ffd700,#ffa500); color:var(--white); box-shadow:0 8px 20px rgba(255,215,0,0.3);">
+                    <i class="fas fa-trophy" style="font-size:30px;"></i>
+                    <div>
+                      <strong style="display:block;">Top Agent This Month</strong>
+                      <span>Earned ₹4.8 Lakhs in March 2025</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Who Can Join -->
+          <section class="rmc-section rmc-audience" id="rmc-join">
+            <div class="rmc-container">
+              <div class="rmc-section-header" data-aos="fade-up">
+                <span class="rmc-section-badge">Join Us</span>
+                <h2 class="rmc-section-title">Who Can Become a Commission Agent?</h2>
+                <p class="rmc-section-desc">Whether you're just starting out or have years of experience, we have the perfect opportunity for you.</p>
+              </div>
+              <div class="rmc-audience-grid">
+                <div class="rmc-audience-card" id="apply-fresher" data-aos="fade-right">
+                  <div class="rmc-audience-badge">
+                    <i class="fas fa-graduation-cap"></i>
+                    For Fresh Graduates
+                  </div>
+                  <h3>Launch Your Sales Career</h3>
+                  <p class="rmc-section-desc" style="font-size:0.95rem;">Perfect opportunity to learn, earn, and grow in the construction industry.</p>
+                  <h4 style="display:flex; align-items:center; gap:10px; color:var(--secondary-blue);"><i class="fas fa-check-circle"></i> Requirements</h4>
+                  <ul class="rmc-list">
+                    <li>Any graduation (B.Tech, B.Com, BBA, BA, etc.)</li>
+                    <li>Age: 21-28 years</li>
+                    <li>Good communication skills (English/Hindi)</li>
+                    <li>Smartphone with internet connection</li>
+                    <li>Willingness to learn and hustle</li>
+                    <li>Two-wheeler (preferred, not mandatory)</li>
+                  </ul>
+                  <h4 style="display:flex; align-items:center; gap:10px; color:var(--secondary-blue);"><i class="fas fa-gift"></i> What You Get</h4>
+                  <ul class="rmc-list">
+                    <li>Comprehensive 2-week training program</li>
+                    <li>Dedicated mentorship &amp; initial lead support</li>
+                    <li>Flexible hours with part-time pathway</li>
+                    <li>Career growth to sales manager roles</li>
+                    <li>₹5,000 joining bonus after first sale</li>
+                  </ul>
+                  <div class="rmc-timeline">
+                    <strong>Expected Earnings</strong>
+                    <div class="rmc-timeline-item"><span>₹25,000 - ₹50,000</span> Month 1-3</div>
+                    <div class="rmc-timeline-item"><span>₹50,000 - ₹1,00,000</span> Month 4-6</div>
+                    <div class="rmc-timeline-item"><span>₹1,00,000 - ₹2,50,000</span> Month 6+</div>
+                  </div>
+                  <a class="rmc-btn rmc-btn-primary rmc-btn-block" href="#rmc-apply-form">
+                    <i class="fas fa-graduation-cap"></i>
+                    Apply as Fresher
+                  </a>
+                </div>
+                <div class="rmc-audience-card is-experienced" id="apply-experienced" data-aos="fade-left">
+                  <div class="rmc-audience-badge">
+                    <i class="fas fa-briefcase"></i>
+                    For Experienced Professionals
+                  </div>
+                  <h3>Scale Your Income</h3>
+                  <p class="rmc-section-desc" style="font-size:0.95rem;">Leverage your network and experience to maximize earnings in the construction sector.</p>
+                  <h4 style="display:flex; align-items:center; gap:10px; color:var(--secondary-blue);"><i class="fas fa-check-circle"></i> Requirements</h4>
+                  <ul class="rmc-list">
+                    <li>2+ years in sales, real estate, or construction</li>
+                    <li>Existing network of builders/contractors (preferred)</li>
+                    <li>Proven sales track record &amp; negotiation skills</li>
+                    <li>Smartphone + laptop recommended</li>
+                    <li>Own vehicle (preferred)</li>
+                  </ul>
+                  <h4 style="display:flex; align-items:center; gap:10px; color:var(--secondary-blue);"><i class="fas fa-gift"></i> What You Get</h4>
+                  <ul class="rmc-list">
+                    <li>Higher commissions with 15-25% bonus tiers</li>
+                    <li>Exclusive territory assignments</li>
+                    <li>Direct CEO access &amp; fast-track decisions</li>
+                    <li>₹10,000/month marketing allowance</li>
+                    <li>Build your sub-agent network &amp; earn overrides</li>
+                    <li>Quarterly incentives up to ₹1L</li>
+                  </ul>
+                  <div class="rmc-timeline">
+                    <strong>Expected Earnings</strong>
+                    <div class="rmc-timeline-item"><span>₹75,000 - ₹1,50,000</span> Month 1-3</div>
+                    <div class="rmc-timeline-item"><span>₹1,50,000 - ₹3,00,000</span> Month 4-6</div>
+                    <div class="rmc-timeline-item"><span>₹3,00,000 - ₹5,00,000+</span> Month 6+</div>
+                  </div>
+                  <a class="rmc-btn rmc-btn-secondary rmc-btn-block" href="#rmc-apply-form">
+                    <i class="fas fa-briefcase"></i>
+                    Apply as Experienced
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Success Stories -->
+          <section class="rmc-section rmc-success" id="rmc-success">
+            <div class="rmc-container">
+              <div class="rmc-section-header" data-aos="fade-up">
+                <span class="rmc-section-badge">Success Stories</span>
+                <h2 class="rmc-section-title">Meet Our Top-Performing Agents</h2>
+                <p class="rmc-section-desc">Real people, real success. See how our agents are transforming their lives.</p>
+              </div>
+              <div class="rmc-testimonials">
+                <div class="rmc-testimonial-card" data-aos="fade-up" data-aos-delay="0">
+                  <div class="rmc-testimonial-header">
+                    <div class="rmc-avatar">
+                      <img src="https://ui-avatars.com/api/?name=Rahul+Sharma&amp;background=ff6b35&amp;color=fff&amp;size=80" alt="Rahul Sharma"/>
+                      <span class="rmc-avatar-badge">Fresher</span>
+                    </div>
+                    <div class="rmc-testimonial-info">
+                      <h4>Rahul Sharma</h4>
+                      <p>B.Tech Graduate, Delhi</p>
+                      <div class="rmc-earnings-tag"><i class="fas fa-rupee-sign"></i>₹1.8L/month</div>
+                    </div>
+                  </div>
+                  <p class="rmc-testimonial-text">“I graduated in 2024 with no job offers. Joined RACH INFRA in June as a commission agent. Within 6 months, I'm earning more than my college seniors in corporate jobs! The training was excellent, and the support team helped me close my first ₹5L RMC deal in week 3. Now I handle 4-5 builder clients regularly.”</p>
+                  <div class="rmc-testimonial-metrics">
+                    <div>
+                      <strong>8 months</strong>
+                      <span>with RACH INFRA</span>
+                    </div>
+                    <div>
+                      <strong>₹32L+</strong>
+                      <span>total sales</span>
+                    </div>
+                    <div>
+                      <strong>12</strong>
+                      <span>active clients</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="rmc-testimonial-card featured" data-aos="fade-up" data-aos-delay="150">
+                  <div class="rmc-top-ribbon">
+                    <i class="fas fa-trophy"></i>
+                    Top Performer Mar 2025
+                  </div>
+                  <div class="rmc-testimonial-header">
+                    <div class="rmc-avatar">
+                      <img src="https://ui-avatars.com/api/?name=Priya+Mehta&amp;background=004aad&amp;color=fff&amp;size=80" alt="Priya Mehta"/>
+                      <span class="rmc-avatar-badge is-experienced">Experienced</span>
+                    </div>
+                    <div class="rmc-testimonial-info">
+                      <h4>Priya Mehta</h4>
+                      <p>Ex-Real Estate Agent, Gurgaon</p>
+                      <div class="rmc-earnings-tag"><i class="fas fa-rupee-sign"></i>₹4.2L/month</div>
+                    </div>
+                  </div>
+                  <p class="rmc-testimonial-text">“After 5 years in real estate, I was looking for better margins and less stress. Joining RACH INFRA was the best decision! The commission structure is transparent, payments are always on time, and the product quality makes selling effortless. I've built a team of 3 sub-agents now.”</p>
+                  <div class="rmc-testimonial-metrics">
+                    <div>
+                      <strong>14 months</strong>
+                      <span>with RACH INFRA</span>
+                    </div>
+                    <div>
+                      <strong>₹1.2Cr+</strong>
+                      <span>total sales</span>
+                    </div>
+                    <div>
+                      <strong>28</strong>
+                      <span>active clients</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="rmc-testimonial-card" data-aos="fade-up" data-aos-delay="300">
+                  <div class="rmc-testimonial-header">
+                    <div class="rmc-avatar">
+                      <img src="https://ui-avatars.com/api/?name=Amit+Kumar&amp;background=ff6b35&amp;color=fff&amp;size=80" alt="Amit Kumar"/>
+                      <span class="rmc-avatar-badge">Fresher</span>
+                    </div>
+                    <div class="rmc-testimonial-info">
+                      <h4>Amit Kumar</h4>
+                      <p>MBA Graduate, Noida</p>
+                      <div class="rmc-earnings-tag"><i class="fas fa-rupee-sign"></i>₹95K/month</div>
+                    </div>
+                  </div>
+                  <p class="rmc-testimonial-text">“Started part-time while preparing for other exams. The flexibility is amazing! I work 4-5 hours daily, mostly making calls and visiting sites. The RMC Calculator tool is a game-changer—clients love the instant quote generation. Made my first ₹50K commission in month 2.”</p>
+                  <div class="rmc-testimonial-metrics">
+                    <div>
+                      <strong>5 months</strong>
+                      <span>with RACH INFRA</span>
+                    </div>
+                    <div>
+                      <strong>₹18L+</strong>
+                      <span>total sales</span>
+                    </div>
+                    <div>
+                      <strong>7</strong>
+                      <span>active clients</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rmc-video-callout" data-aos="fade-up">
+                <div style="font-size:18px; font-weight:600; margin-bottom:10px;">Watch Success Stories Video</div>
+                <p style="margin-bottom:8px;">3 minutes • Hear from 10+ agents</p>
+                <div style="display:flex; justify-content:center; gap:18px; align-items:center; margin-top:16px;">
+                  <div style="width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:26px;">
+                    <i class="fas fa-play"></i>
+                  </div>
+                  <span>Tap to request a personalised walkthrough</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Why RACH INFRA -->
+          <section class="rmc-section rmc-why">
+            <div class="rmc-container">
+              <div class="rmc-section-header" data-aos="fade-up">
+                <span class="rmc-section-badge">Why Choose Us</span>
+                <h2 class="rmc-section-title">Why Partner with RACH INFRA?</h2>
+                <p class="rmc-section-desc">We're not just a supplier—we're your growth partner in the construction industry.</p>
+              </div>
+              <div class="rmc-why-points">
+                <div class="rmc-point-card" data-aos="fade-right" data-aos-delay="0">
+                  <div class="rmc-point-icon"><i class="fas fa-building"></i></div>
+                  <div>
+                    <h3>Established Market Leader</h3>
+                    <p>₹100Cr+ revenue company with 15 owned RMC plants across North &amp; West India. Serving 100+ active projects monthly.</p>
+                    <ul>
+                      <li>ISO 9001:2015 certified processes</li>
+                      <li>NABL accredited testing lab</li>
+                      <li>98% on-time delivery record</li>
+                      <li>85% client retention rate</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="rmc-point-card" data-aos="fade-right" data-aos-delay="100">
+                  <div class="rmc-point-icon"><i class="fas fa-laptop-code"></i></div>
+                  <div>
+                    <h3>Technology-Driven Support</h3>
+                    <p>Cutting-edge tools make selling easy and professional—no competitor matches our tech stack.</p>
+                    <ul>
+                      <li>RMC Calculator with instant quote PDFs</li>
+                      <li>Agent CRM dashboard &amp; mobile app</li>
+                      <li>QR traceability for material certifications</li>
+                      <li>GPS tracking for real-time delivery updates</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="rmc-point-card" data-aos="fade-right" data-aos-delay="200">
+                  <div class="rmc-point-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                  <div>
+                    <h3>Comprehensive Training &amp; Mentorship</h3>
+                    <p>We invest in your success with best-in-class onboarding, rated 4.8/5 by agents.</p>
+                    <ul>
+                      <li>Week 1: Product mastery</li>
+                      <li>Week 2: Sales playbook &amp; closing techniques</li>
+                      <li>Week 3: Field training with top agent</li>
+                      <li>Weekly webinars &amp; monthly workshops</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="rmc-point-card" data-aos="fade-right" data-aos-delay="300">
+                  <div class="rmc-point-icon"><i class="fas fa-box-open"></i></div>
+                  <div>
+                    <h3>Diverse Product Portfolio</h3>
+                    <p>Sell multiple products to the same client to maximise lifetime value.</p>
+                    <ul>
+                      <li>20+ RMC grades &amp; custom mixes</li>
+                      <li>AAC blocks, equipment, building materials</li>
+                      <li>Modular furniture &amp; lab equipment</li>
+                      <li>Exclusive ACC.ON AAC distribution</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="rmc-point-card" data-aos="fade-right" data-aos-delay="400">
+                  <div class="rmc-point-icon"><i class="fas fa-handshake"></i></div>
+                  <div>
+                    <h3>Transparent &amp; Timely Payments</h3>
+                    <p>No payment delays, no hidden deductions. Your trust is our priority.</p>
+                    <ul>
+                      <li>Commission paid within 7 days</li>
+                      <li>Detailed monthly statements</li>
+                      <li>Zero payment escalation since 2020</li>
+                      <li>Dedicated finance liaison for agents</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="rmc-point-card" data-aos="fade-right" data-aos-delay="500">
+                  <div class="rmc-point-icon"><i class="fas fa-trophy"></i></div>
+                  <div>
+                    <h3>Growth &amp; Recognition</h3>
+                    <p>We celebrate top performers with rewards, recognition, and career paths.</p>
+                    <ul>
+                      <li>Quarterly awards &amp; annual international trip</li>
+                      <li>Agent → Senior Agent → Territory Manager path</li>
+                      <li>Override commissions for team builders</li>
+                      <li>Spotlight on website &amp; social media</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="rmc-client-logos" data-aos="fade-up">
+                <span>L&amp;T</span>
+                <span>Shapoorji Pallonji</span>
+                <span>Tata Projects</span>
+                <span>DLF</span>
+                <span>Godrej Properties</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- FAQ -->
+          <section class="rmc-section" id="rmc-faq">
+            <div class="rmc-container">
+              <div class="rmc-section-header" data-aos="fade-up">
+                <span class="rmc-section-badge">FAQ</span>
+                <h2 class="rmc-section-title">Frequently Asked Questions</h2>
+                <p class="rmc-section-desc">Got questions? We've got answers. Here's everything you need to know.</p>
+              </div>
+              <div class="rmc-faq-grid">
+                <div class="rmc-faq-category" data-aos="fade-up" data-aos-delay="0">
+                  <h3><i class="fas fa-money-check-alt"></i> Commission &amp; Payments</h3>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">How much commission can I earn?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Commission varies by product: RMC ₹50-₹150/m³, AAC 3-5%, Equipment 5-8%, Materials 2-4%. Experienced agents unlock 15-25% bonuses. Top performers make ₹3-5L/month with repeat bonuses.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">When do I get paid?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Commissions are paid within 7 days of successful delivery and client payment via bank transfer. Track everything in real-time via the agent dashboard. We've maintained 100% on-time payments since 2020.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">Any hidden deductions or targets?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Zero hidden deductions. Only statutory TDS is applied with monthly statements. No mandatory targets for the first 3 months—then a simple expectation of at least one sale per month to stay active.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rmc-faq-category" data-aos="fade-up" data-aos-delay="150">
+                  <h3><i class="fas fa-user-graduate"></i> Training &amp; Support</h3>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">I have no sales experience. Can I still apply?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Absolutely! 40% of our agents joined as freshers. A 3-week onboarding covers product knowledge, sales playbooks, client hunting, objection handling, and tool mastery. Expect mentorship and lead support.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">What support do I get after training?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        You receive 24/7 WhatsApp support, dedicated mentor for 90 days, technical assistance, marketing collateral, initial leads (for freshers), and direct CEO escalation for priority deals.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">What tools will I use?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        You'll receive access to our RMC Calculator, agent CRM &amp; mobile app, digital catalogues, delivery tracking, and QR-based certification sharing. Tech-enabled selling gives you a competitive edge.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rmc-faq-category" data-aos="fade-up" data-aos-delay="300">
+                  <h3><i class="fas fa-map-marked-alt"></i> Territory &amp; Operations</h3>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">Do I get an exclusive territory?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Experienced agents can lock exclusive zones after two months of consistent performance. Freshers begin in shared territories and can earn exclusivity after six months of results.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">Can I work from my current city?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Yes, we operate across North &amp; West India including Delhi NCR, Haryana, Punjab, Uttar Pradesh, Rajasthan, and Maharashtra. Nearby cities welcomed—expansion in progress.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">Is part-time participation allowed?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Freshers can start part-time (4-5 hours/day). Experienced agents are encouraged full-time, but we support transitional part-time for the first month while you shift from other roles.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="rmc-faq-category" data-aos="fade-up" data-aos-delay="450">
+                  <h3><i class="fas fa-clipboard-check"></i> Application &amp; Onboarding</h3>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">How do I apply and what’s the process?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        1) Submit the quick form. 2) Receive a phone screening within 24 hours. 3) If selected, onboard in 48 hours with full tool access. Many agents close their first deal within 3-4 weeks.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">Any joining fee or investment?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        Zero investment. Zero security deposit. We provide training, marketing, tools, and leads free of cost. You earn purely on commission with full transparency.
+                      </div>
+                    </div>
+                  </div>
+                  <div class="rmc-faq-item">
+                    <div class="rmc-faq-question">Is this a job or partnership?<i class="fas fa-chevron-down"></i></div>
+                    <div class="rmc-faq-answer">
+                      <div class="rmc-faq-answer-inner">
+                        It's an independent partnership. You're your own boss—no fixed timings, unlimited earning potential, and the freedom to scale by building a sub-agent team.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="rmc-faq-cta" data-aos="fade-up">
+                <p>Still have questions?</p>
+                <div class="rmc-faq-cta-buttons">
+                  <a class="rmc-btn rmc-btn-primary" href="https://wa.me/919289375999?text=Hi%2C%20I%20have%20questions%20about%20the%20Commission%20Agent%20Program" target="_blank">
+                    <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+                  </a>
+                  <a class="rmc-btn rmc-btn-secondary" href="tel:+919289375999">
+                    <i class="fas fa-phone"></i> Call: +91 92893 75999
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Apply -->
+          <section class="rmc-section rmc-apply" id="rmc-apply">
+            <div class="rmc-container">
+              <div class="rmc-apply-content">
+                <div class="rmc-apply-info" data-aos="fade-right">
+                  <h2>Ready to Start Your Journey?</h2>
+                  <p class="rmc-section-desc" style="color:rgba(255,255,255,0.9);">Join 500+ agents already earning with RACH INFRA.</p>
+                  <ul class="rmc-apply-benefits">
+                    <li><i class="fas fa-check-circle"></i> Free training &amp; mentorship</li>
+                    <li><i class="fas fa-check-circle"></i> No investment required</li>
+                    <li><i class="fas fa-check-circle"></i> Unlimited earning potential</li>
+                    <li><i class="fas fa-check-circle"></i> Work from anywhere</li>
+                    <li><i class="fas fa-check-circle"></i> Tech-enabled tools provided</li>
+                    <li><i class="fas fa-check-circle"></i> Payment within 7 days</li>
+                  </ul>
+                  <div class="rmc-urgency-banner">
+                    <i class="fas fa-fire"></i>
+                    <div>
+                      <strong>Only 18 positions left!</strong>
+                      <p>We're onboarding 50 agents this quarter. Apply before slots fill up.</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h4>Prefer to talk first?</h4>
+                    <div class="rmc-contact-buttons">
+                      <a class="rmc-contact-btn" href="https://wa.me/919289375999?text=Hi%2C%20I%27m%20interested%20in%20the%20Commission%20Agent%20Program" target="_blank">
+                        <i class="fab fa-whatsapp"></i>
+                        <div>
+                          <strong>WhatsApp Us</strong>
+                          <span>Get instant response</span>
+                        </div>
+                      </a>
+                      <a class="rmc-contact-btn" href="tel:+919289375999">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                          <strong>Call Us</strong>
+                          <span>+91 92893 75999</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div class="rmc-apply-form" id="rmc-apply-form" data-aos="fade-left">
+                  <form id="rmcApplicationForm">
+                    <h3>Apply Now — Quick &amp; Easy</h3>
+                    <p class="rmc-section-desc" style="font-size:0.95rem;">Takes only 2 minutes. Get a call within 24 hours.</p>
+                    <div class="rmc-applicant-type">
+                      <label class="rmc-radio-card">
+                        <input name="applicantType" type="radio" value="fresher" required="required"/>
+                        <div class="rmc-radio-ui">
+                          <i class="fas fa-graduation-cap"></i>
+                          <span>I'm a Fresher</span>
+                        </div>
+                      </label>
+                      <label class="rmc-radio-card">
+                        <input name="applicantType" type="radio" value="experienced" required="required"/>
+                        <div class="rmc-radio-ui">
+                          <i class="fas fa-briefcase"></i>
+                          <span>I'm Experienced</span>
+                        </div>
+                      </label>
+                    </div>
+                    <div class="rmc-form-row">
+                      <div class="rmc-form-group">
+                        <label>Full Name *</label>
+                        <input class="rmc-input" name="fullName" type="text" required="required" placeholder="Enter your full name"/>
+                      </div>
+                      <div class="rmc-form-group">
+                        <label>Age *</label>
+                        <input class="rmc-input" name="age" type="number" min="18" max="65" required="required" placeholder="Enter your age"/>
+                      </div>
+                    </div>
+                    <div class="rmc-form-row">
+                      <div class="rmc-form-group">
+                        <label>Phone Number *</label>
+                        <input class="rmc-input" name="phone" type="tel" pattern="[0-9]{10}" required="required" placeholder="Enter 10-digit mobile number"/>
+                      </div>
+                      <div class="rmc-form-group">
+                        <label>Email Address *</label>
+                        <input class="rmc-input" name="email" type="email" required="required" placeholder="Enter your email"/>
+                      </div>
+                    </div>
+                    <div class="rmc-form-row">
+                      <div class="rmc-form-group">
+                        <label>City *</label>
+                        <input class="rmc-input" name="city" type="text" required="required" placeholder="Your city"/>
+                      </div>
+                      <div class="rmc-form-group">
+                        <label>State *</label>
+                        <select class="rmc-input" name="state" required="required">
+                          <option value="">Select State</option>
+                          <option>Delhi</option>
+                          <option>Haryana</option>
+                          <option>Uttar Pradesh</option>
+                          <option>Punjab</option>
+                          <option>Rajasthan</option>
+                          <option>Maharashtra</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="rmc-form-group rmc-fresher-fields" style="display:none;">
+                      <label>Highest Qualification *</label>
+                      <select class="rmc-input" name="qualification">
+                        <option value="">Select Qualification</option>
+                        <option>B.Tech/B.E.</option>
+                        <option>BBA/B.Com</option>
+                        <option>BA/B.Sc.</option>
+                        <option>MBA</option>
+                        <option>Diploma</option>
+                        <option>12th Pass</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div class="rmc-experienced-fields" style="display:none;">
+                      <div class="rmc-form-row">
+                        <div class="rmc-form-group">
+                          <label>Years of Experience *</label>
+                          <input class="rmc-input" name="experience" type="number" min="0" max="30" placeholder="Years in sales/construction"/>
+                        </div>
+                        <div class="rmc-form-group">
+                          <label>Current/Last Industry *</label>
+                          <select class="rmc-input" name="industry">
+                            <option value="">Select Industry</option>
+                            <option>Construction</option>
+                            <option>Real Estate</option>
+                            <option>Building Materials</option>
+                            <option>B2B Sales</option>
+                            <option>Retail</option>
+                            <option>Other</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="rmc-form-group">
+                        <label>Do you have builder/contractor contacts?</label>
+                        <div class="rmc-radio-group">
+                          <label><input name="hasContacts" type="radio" value="Yes"/> Yes</label>
+                          <label><input name="hasContacts" type="radio" value="No"/> No</label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="rmc-form-group">
+                      <label>Do you own a vehicle?</label>
+                      <div class="rmc-radio-group">
+                        <label><input name="hasVehicle" type="radio" value="Two-wheeler" required="required"/> Two-wheeler</label>
+                        <label><input name="hasVehicle" type="radio" value="Four-wheeler" required="required"/> Four-wheeler</label>
+                        <label><input name="hasVehicle" type="radio" value="No" required="required"/> No</label>
+                      </div>
+                    </div>
+                    <div class="rmc-form-group">
+                      <label>Preferred Working Style *</label>
+                      <div class="rmc-radio-group">
+                        <label><input name="workingStyle" type="radio" value="Full-time" required="required"/> Full-time</label>
+                        <label><input name="workingStyle" type="radio" value="Part-time" required="required"/> Part-time</label>
+                      </div>
+                    </div>
+                    <div class="rmc-form-group">
+                      <label>How did you hear about us?</label>
+                      <select class="rmc-input" name="source">
+                        <option value="">Select Source</option>
+                        <option>Google Search</option>
+                        <option>Social Media</option>
+                        <option>LinkedIn</option>
+                        <option>Friend/Family Referral</option>
+                        <option>Job Portal</option>
+                        <option>Other</option>
+                      </select>
+                    </div>
+                    <div class="rmc-form-group">
+                      <label>Any message for us? (Optional)</label>
+                      <textarea class="rmc-textarea" name="message" rows="3" placeholder="Tell us why you want to join, expectations, or questions..."></textarea>
+                    </div>
+                    <div class="rmc-form-group">
+                      <label class="checkbox-label">
+                        <input type="checkbox" name="agreement" required="required"/> I agree to be contacted by RACH INFRA via phone/WhatsApp/email.
+                      </label>
+                    </div>
+                    <button class="rmc-btn rmc-btn-primary rmc-btn-block rmc-btn-large" type="submit">
+                      <i class="fas fa-paper-plane"></i> Submit Application
+                    </button>
+                    <p style="margin-top:16px; font-size:0.875rem; color:var(--gray-500); text-align:center;">
+                      <i class="fas fa-shield-alt"></i> Your information is secure. We never share data with third parties.
+                    </p>
+                  </form>
+                  <div class="rmc-success-message" id="rmcSuccessMessage">
+                    <div style="font-size:60px; color:var(--success); margin-bottom:20px;">
+                      <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h3>Application Submitted Successfully!</h3>
+                    <p>Thank you for applying to the RACH INFRA Commission Agent Program.</p>
+                    <p>Our team will review your profile and contact you within <strong>24 hours</strong>.</p>
+                    <div class="next-steps">
+                      <h4>What happens next?</h4>
+                      <ol>
+                        <li>Phone screening call within 24 hours</li>
+                        <li>Onboarding email with training schedule</li>
+                        <li>Start earning from week 3</li>
+                      </ol>
+                    </div>
+                    <p class="whatsapp-cta">Want to expedite? <a href="https://wa.me/919289375999?text=Hi%2C%20I%20just%20submitted%20my%20application" target="_blank">Message us on WhatsApp</a></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        
+
+          <!-- Floating Actions -->
+          <div class="rmc-floating-actions">
+            <a class="rmc-floating-btn whatsapp" href="https://wa.me/919289375999?text=Hi%2C%20I%27m%20interested%20in%20the%20Commission%20Agent%20Program" target="_blank" title="Chat on WhatsApp">
+              <i class="fab fa-whatsapp"></i>
+            </a>
+            <a class="rmc-floating-btn phone" href="tel:+919289375999" title="Call Us">
+              <i class="fas fa-phone"></i>
+            </a>
+            <button class="rmc-floating-btn top" id="rmcScrollTop" type="button" title="Back to Top">
+              <i class="fas fa-arrow-up"></i>
+            </button>
+          </div>
+        </div>
+        <script type="text/javascript" src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+        <script type="text/javascript">
+          document.addEventListener('DOMContentLoaded', function () {
+            if (window.AOS) {
+              AOS.init({ duration: 800, easing: 'ease-in-out', once: true, offset: 100 });
+            }
+
+            const siteHeader = document.querySelector('#wrapwrap header');
+            const scrollTopBtn = document.getElementById('rmcScrollTop');
+
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+              anchor.addEventListener('click', function (e) {
+                const targetSelector = this.getAttribute('href');
+                if (!targetSelector || targetSelector === '#') {
+                  return;
+                }
+                const target = document.querySelector(targetSelector);
+                if (target) {
+                  e.preventDefault();
+                  const headerHeight = siteHeader ? siteHeader.offsetHeight : 0;
+                  const top = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 10;
+                  window.scrollTo({ top, behavior: 'smooth' });
+                }
+              });
+            });
+
+            const handleScroll = () => {
+              if (scrollTopBtn) {
+                if (window.scrollY > 300) {
+                  scrollTopBtn.classList.add('visible');
+                } else {
+                  scrollTopBtn.classList.remove('visible');
+                }
+              }
+            };
+
+            window.addEventListener('scroll', handleScroll);
+            handleScroll();
+
+            if (scrollTopBtn) {
+              scrollTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              });
+            }
+
+            const faqItems = document.querySelectorAll('.rmc-faq-item');
+            faqItems.forEach(item => {
+              const question = item.querySelector('.rmc-faq-question');
+              question.setAttribute('tabindex', '0');
+              question.setAttribute('role', 'button');
+              question.setAttribute('aria-expanded', 'false');
+
+              question.addEventListener('click', () => {
+                faqItems.forEach(other => {
+                  if (other !== item) {
+                    other.classList.remove('active');
+                    const q = other.querySelector('.rmc-faq-question');
+                    if (q) {
+                      q.setAttribute('aria-expanded', 'false');
+                    }
+                  }
+                });
+                item.classList.toggle('active');
+                question.setAttribute('aria-expanded', item.classList.contains('active') ? 'true' : 'false');
+              });
+
+              question.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  question.click();
+                }
+              });
+            });
+
+            const rmcSalesInput = document.getElementById('rmcSales');
+            const aacOrdersInput = document.getElementById('aacOrders');
+            const equipmentDealsInput = document.getElementById('equipmentDeals');
+            const materialsSalesInput = document.getElementById('materialsSales');
+            const resultAmount = document.getElementById('rmcResultAmount');
+            const resultBreakdown = document.getElementById('rmcResultBreakdown');
+            const resultSection = document.getElementById('rmcEarningsResult');
+            const calculateBtn = document.getElementById('rmcCalculateBtn');
+
+            const formatCurrency = (amount) => {
+              return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+              }).format(amount);
+            };
+
+            const calculateEarnings = () => {
+              const rmcSales = parseFloat(rmcSalesInput.value) || 0;
+              const aacOrders = parseFloat(aacOrdersInput.value) || 0;
+              const equipmentDeals = parseFloat(equipmentDealsInput.value) || 0;
+              const materialsSales = parseFloat(materialsSalesInput.value) || 0;
+
+              const rmcCommission = rmcSales * 100;
+              const aacCommission = aacOrders * 0.04;
+              const equipmentCommission = equipmentDeals * 0.065;
+              const materialsCommission = materialsSales * 0.03;
+              const totalEarnings = rmcCommission + aacCommission + equipmentCommission + materialsCommission;
+
+              if (resultAmount) {
+                resultAmount.textContent = formatCurrency(totalEarnings);
+              }
+
+              if (resultBreakdown) {
+                resultBreakdown.innerHTML = `
+                  <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between;"><span>RMC Commission:</span><strong>${formatCurrency(rmcCommission)}</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>AAC Blocks Commission:</span><strong>${formatCurrency(aacCommission)}</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Equipment Commission:</span><strong>${formatCurrency(equipmentCommission)}</strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Materials Commission:</span><strong>${formatCurrency(materialsCommission)}</strong></div>
+                  </div>
+                `;
+              }
+
+              if (resultSection) {
+                resultSection.style.display = 'block';
+              }
+            };
+
+            if (calculateBtn) {
+              calculateBtn.addEventListener('click', calculateEarnings);
+            }
+            calculateEarnings();
+
+            const form = document.getElementById('rmcApplicationForm');
+            const successMessage = document.getElementById('rmcSuccessMessage');
+            const fresherFields = document.querySelector('.rmc-fresher-fields');
+            const experiencedFields = document.querySelector('.rmc-experienced-fields');
+
+            const toggleApplicantFields = (type) => {
+              if (type === 'fresher') {
+                fresherFields.style.display = 'block';
+                experiencedFields.style.display = 'none';
+                fresherFields.querySelectorAll('select, input').forEach(el => el.setAttribute('required', 'required'));
+                experiencedFields.querySelectorAll('select, input').forEach(el => el.removeAttribute('required'));
+              } else if (type === 'experienced') {
+                fresherFields.style.display = 'none';
+                experiencedFields.style.display = 'block';
+                experiencedFields.querySelectorAll('select, input').forEach(el => el.setAttribute('required', 'required'));
+                fresherFields.querySelectorAll('select, input').forEach(el => el.removeAttribute('required'));
+              } else {
+                fresherFields.style.display = 'none';
+                experiencedFields.style.display = 'none';
+              }
+            };
+
+            document.querySelectorAll('input[name="applicantType"]').forEach(input => {
+              input.addEventListener('change', function () {
+                toggleApplicantFields(this.value);
+              });
+            });
+
+            const phoneInput = form ? form.querySelector('input[name="phone"]') : null;
+            if (phoneInput) {
+              phoneInput.addEventListener('blur', function () {
+                const phoneRegex = /^[6-9]\d{9}$/;
+                if (this.value &amp;&amp; !phoneRegex.test(this.value)) {
+                  this.setCustomValidity('Please enter a valid 10-digit mobile number starting with 6-9');
+                } else {
+                  this.setCustomValidity('');
+                }
+              });
+              phoneInput.addEventListener('input', function () {
+                this.setCustomValidity('');
+              });
+            }
+
+            if (form) {
+              form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (!form.checkValidity()) {
+                  form.reportValidity();
+                  return;
+                }
+                const formData = new FormData(form);
+                console.log('Commission agent application submitted:', Object.fromEntries(formData.entries()));
+                form.style.display = 'none';
+                if (successMessage) {
+                  successMessage.classList.add('active');
+                  successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              });
+            }
+
+            const observer = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  entry.target.classList.add('visible');
+                }
+              });
+            }, { threshold: 0.2 });
+
+            document.querySelectorAll('.rmc-benefit-card, .rmc-point-card, .rmc-testimonial-card').forEach(el => {
+              observer.observe(el);
+            });
+          });
+        </script>
+      </t>
+    </template>
+  </data>
+</odoo>

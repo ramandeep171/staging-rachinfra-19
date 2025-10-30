@@ -1,0 +1,9 @@
+<odoo>
+    <data>
+        <record id="group_portal_commission_agent" model="res.groups">
+            <field name="name">Commission Agent Portal</field>
+            <field name="comment">Portal users created automatically for commission agents.</field>
+            <field name="implied_ids" eval="[(4, ref('base.group_portal'))]"/>
+        </record>
+    </data>
+</odoo>
