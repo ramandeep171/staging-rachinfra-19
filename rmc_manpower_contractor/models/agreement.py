@@ -108,6 +108,14 @@ class RmcContractAgreement(models.Model):
         currency_field='currency_id',
         help='Variable payment linked to MGQ achievement'
     )
+    total_amount = fields.Monetary(
+        string='Total Amount',
+        currency_field='currency_id',
+        compute='_compute_total_amount',
+        inverse='_inverse_total_amount',
+        store=True,
+        help='Sum of Part-A fixed and Part-B variable components'
+    )
     currency_id = fields.Many2one(
         'res.currency',
         string='Currency',
@@ -157,6 +165,18 @@ class RmcContractAgreement(models.Model):
         compute='_compute_attendance_kpi',
         store=True
     )
+
+    @api.depends('part_a_fixed', 'part_b_variable')
+    def _compute_total_amount(self):
+        for agreement in self:
+            agreement.total_amount = (agreement.part_a_fixed or 0.0) + (agreement.part_b_variable or 0.0)
+
+    def _inverse_total_amount(self):
+        for agreement in self:
+            total = agreement.total_amount or 0.0
+            part_a = agreement.part_a_fixed or 0.0
+            part_b = total - part_a
+            agreement.part_b_variable = part_b if part_b > 0 else 0.0
 
     # Pending Items
     pending_items_count = fields.Integer(

@@ -173,7 +173,69 @@ notwithstanding any temporary stoppages.</p>
             <field name="sequence">100</field>
             <field name="title">Annexure A – Manpower Matrix (Illustrative)</field>
             <field name="body_html"><![CDATA[
-<p>The manpower matrix summarises designation-wise headcount, shift, fixed rates, and Part-A / Part-B classification. Refer to the Manpower Matrix tab for live values included in billing.</p>
+<p>The manpower matrix summarises designation-wise headcount, shift, fixed rates, and Part-A / Part-B classification. Refer to the Manpower Matrix tab for live values included in billing. The illustrative structure below will be used as a fallback whenever live records are not available.</p>
+<table class="table table-sm border">
+    <thead>
+        <tr>
+            <th>Post / Category</th>
+            <th class="text-center">Headcount</th>
+            <th class="text-center">Shift</th>
+            <th class="text-center">Fixed Salary / Head (₹)</th>
+            <th class="text-center">Component</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Senior Batching Plant Operator</td>
+            <td class="text-center">2</td>
+            <td class="text-center">A/B</td>
+            <td class="text-center">-</td>
+            <td class="text-center">Part-A</td>
+        </tr>
+        <tr>
+            <td>JCB Operator</td>
+            <td class="text-center">2</td>
+            <td class="text-center">A/B</td>
+            <td class="text-center">-</td>
+            <td class="text-center">Part-A</td>
+        </tr>
+        <tr>
+            <td>Lab Helper</td>
+            <td class="text-center">4</td>
+            <td class="text-center">A/B</td>
+            <td class="text-center">-</td>
+            <td class="text-center">Part-A</td>
+        </tr>
+        <tr>
+            <td>Batching Plant Helper</td>
+            <td class="text-center">4</td>
+            <td class="text-center">A/B</td>
+            <td class="text-center">-</td>
+            <td class="text-center">Part-A</td>
+        </tr>
+        <tr>
+            <td>Welder (Maintenance)</td>
+            <td class="text-center">1</td>
+            <td class="text-center">A/B</td>
+            <td class="text-center">-</td>
+            <td class="text-center">Part-B</td>
+        </tr>
+        <tr>
+            <td>Maintenance In-charge / Engineer</td>
+            <td class="text-center">1</td>
+            <td class="text-center">A/B</td>
+            <td class="text-center">-</td>
+            <td class="text-center">Part-B</td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr class="fw-semibold">
+            <td colspan="4" class="text-end">Total Contract Value (Illustrative)</td>
+            <td class="text-center">₹3,75,000 / month</td>
+        </tr>
+    </tfoot>
+</table>
+<p class="text-muted small mb-0">Note: Amounts are indicative; actual values depend on the live manpower matrix linked to the agreement. Taxes are extra.</p>
 ]]></field>
         </record>
 

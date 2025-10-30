@@ -90,6 +90,7 @@
                                 <field name="mgq_target"/>
                                 <field name="part_a_fixed"/>
                                 <field name="part_b_variable"/>
+                                <field name="total_amount" string="Total Monthly Amount"/>
                             </group>
                             <group>
                                 <field name="analytic_account_id"/>
