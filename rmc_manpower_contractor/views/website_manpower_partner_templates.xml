@@ -273,12 +273,6 @@
 
                 </div>
         </template>
-
-        <record id="website_manpower_partner_page_record" model="website.page">
-            <field name="name">Manpower Contractor Partnerships</field>
-            <field name="url">/manpower-partner</field>
-            <field name="type">qweb</field>
-            <field name="view_id" ref="website_manpower_partner_page"/>
-        </record>
+        
     </data>
 </odoo>
