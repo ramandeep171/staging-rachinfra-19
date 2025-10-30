@@ -161,72 +161,7 @@ notwithstanding any temporary stoppages.&lt;/p&gt;
       <field name="contract_type">pump_ops</field>
       <field name="sequence">100</field>
       <field name="title">Annexure A – Manpower Matrix (Illustrative)</field>
-      <field name="body_html">
-&lt;p&gt;The manpower matrix summarises designation-wise headcount, shift, fixed rates, and Part-A / Part-B classification. Refer to the Manpower Matrix tab for live values included in billing. The illustrative structure below will be used as a fallback whenever live records are not available.&lt;/p&gt;
-&lt;div class="annexure-a-fallback"&gt;
-    &lt;thead&gt;
-        &lt;tr&gt;
-            &lt;th&gt;Post / Category&lt;/th&gt;
-            &lt;th class="text-center"&gt;Headcount&lt;/th&gt;
-            &lt;th class="text-center"&gt;Shift&lt;/th&gt;
-            &lt;th class="text-center"&gt;Fixed Salary / Head (₹)&lt;/th&gt;
-            &lt;th class="text-center"&gt;Component&lt;/th&gt;
-        &lt;/tr&gt;
-    &lt;/thead&gt;
-    &lt;tbody&gt;
-        &lt;tr&gt;
-            &lt;td&gt;Senior Batching Plant Operator&lt;/td&gt;
-            &lt;td class="text-center"&gt;2&lt;/td&gt;
-            &lt;td class="text-center"&gt;A/B&lt;/td&gt;
-            &lt;td class="text-center"&gt;-&lt;/td&gt;
-            &lt;td class="text-center"&gt;Part-A&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-            &lt;td&gt;JCB Operator&lt;/td&gt;
-            &lt;td class="text-center"&gt;2&lt;/td&gt;
-            &lt;td class="text-center"&gt;A/B&lt;/td&gt;
-            &lt;td class="text-center"&gt;-&lt;/td&gt;
-            &lt;td class="text-center"&gt;Part-A&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-            &lt;td&gt;Lab Helper&lt;/td&gt;
-            &lt;td class="text-center"&gt;4&lt;/td&gt;
-            &lt;td class="text-center"&gt;A/B&lt;/td&gt;
-            &lt;td class="text-center"&gt;-&lt;/td&gt;
-            &lt;td class="text-center"&gt;Part-A&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-            &lt;td&gt;Batching Plant Helper&lt;/td&gt;
-            &lt;td class="text-center"&gt;4&lt;/td&gt;
-            &lt;td class="text-center"&gt;A/B&lt;/td&gt;
-            &lt;td class="text-center"&gt;-&lt;/td&gt;
-            &lt;td class="text-center"&gt;Part-A&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-            &lt;td&gt;Welder (Maintenance)&lt;/td&gt;
-            &lt;td class="text-center"&gt;1&lt;/td&gt;
-            &lt;td class="text-center"&gt;A/B&lt;/td&gt;
-            &lt;td class="text-center"&gt;-&lt;/td&gt;
-            &lt;td class="text-center"&gt;Part-B&lt;/td&gt;
-        &lt;/tr&gt;
-        &lt;tr&gt;
-            &lt;td&gt;Maintenance In-charge / Engineer&lt;/td&gt;
-            &lt;td class="text-center"&gt;1&lt;/td&gt;
-            &lt;td class="text-center"&gt;A/B&lt;/td&gt;
-            &lt;td class="text-center"&gt;-&lt;/td&gt;
-            &lt;td class="text-center"&gt;Part-B&lt;/td&gt;
-        &lt;/tr&gt;
-    &lt;/tbody&gt;
-    &lt;tfoot&gt;
-        &lt;tr class="fw-semibold"&gt;
-            &lt;td colspan="4" class="text-end"&gt;Total Contract Value (Illustrative)&lt;/td&gt;
-            &lt;td class="text-center"&gt;₹3,75,000 / month&lt;/td&gt;
-        &lt;/tr&gt;
-    &lt;/tfoot&gt;
-&lt;/table&gt;
-&lt;p class="text-muted small mb-0"&gt;Note: Amounts are indicative; actual values depend on the live manpower matrix linked to the agreement. Taxes are extra.&lt;/p&gt;
-&lt;/div&gt;
-</field>
+        <field name="body_html"><![CDATA[]]></field>
     </record>
     <record id="clause_template_pump_ops_annex_b" model="rmc.agreement.clause.template">
       <field name="name">Pump Ops - Annexure B</field>
