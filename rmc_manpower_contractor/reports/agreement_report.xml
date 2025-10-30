@@ -237,7 +237,7 @@
                                 <h3 class="mt-0">
                                     <t t-esc="annex_a_clause.title or 'Annexure A – Manpower Matrix (Illustrative)'"/>
                                 </h3>
-                                <t t-if="annex_a_clause and annex_a_clause.body_html">
+                                <t t-if="annex_a_clause and annex_a_clause.body_html and 'annexure-a-fallback' not in (annex_a_clause.body_html or '')">
                                     <div t-raw="annex_a_clause.body_html"/>
                                 </t>
                                 <t t-else="">
@@ -368,29 +368,45 @@
                                 </t>
                                 <t t-else="">
                                 <table class="table table-sm border">
-                                    <thead>
-                                        <tr>
-                                            <th>Party</th>
-                                            <th>Primary Contact</th>
-                                            <th>Phone</th>
-                                            <th>Email</th>
-                                            <th>GST / VAT</th>
-                                        </tr>
-                                    </thead>
                                     <tbody>
                                         <tr>
-                                            <td><span t-esc="company.name"/></td>
-                                            <td><span t-esc="company.partner_id.name or '-'"/></td>
-                                            <td><span t-esc="company.phone or '-'"/></td>
-                                            <td><span t-esc="company.email or '-'"/></td>
-                                            <td><span t-esc="company.vat or '-'"/></td>
+                                            <th class="w-25 align-top">Company</th>
+                                            <td>
+                                                <strong t-esc="company.name"/>
+                                                <div t-if="company_address" class="mt-1">
+                                                    <t t-foreach="company_address.split('\n')" t-as="addr_line">
+                                                        <div><span t-esc="addr_line"/></div>
+                                                    </t>
+                                                </div>
+                                                <div t-if="company.vat">GST/VAT: <span t-esc="company.vat"/></div>
+                                                <div t-if="company.phone">Phone: <span t-esc="company.phone"/></div>
+                                                <div t-if="company.email">Email: <span t-esc="company.email"/></div>
+                                                <div t-if="company_website">
+                                                    Website:
+                                                    <a t-att-href="company_website_href" t-esc="company_website"/>
+                                                </div>
+                                            </td>
                                         </tr>
                                         <tr>
-                                            <td><span t-esc="contractor.name or 'Contractor'"/></td>
-                                            <td><span t-esc="contractor.parent_id and contractor.parent_id.display_name or contractor.display_name"/></td>
-                                            <td><span t-esc="contractor.phone or '-'"/></td>
-                                            <td><span t-esc="contractor.email or '-'"/></td>
-                                            <td><span t-esc="contractor.vat or '-'"/></td>
+                                            <th class="align-top">Contractor</th>
+                                            <td>
+                                                <strong t-esc="contractor_company_name or '-'"/>
+                                                <div t-if="contractor != contractor_company_partner">
+                                                    Contact: <span t-esc="contractor.name"/>
+                                                </div>
+                                                <div t-if="contractor_address" class="mt-1">
+                                                    <t t-foreach="contractor_address.split('\n')" t-as="addr_line">
+                                                        <div><span t-esc="addr_line"/></div>
+                                                    </t>
+                                                </div>
+                                                <div t-if="contractor.vat">GST/VAT: <span t-esc="contractor.vat"/></div>
+                                                <div t-if="contractor_phone">Phone: <span t-esc="contractor_phone"/></div>
+                                                <div t-if="contractor_email">Email: <span t-esc="contractor_email"/></div>
+                                                <div t-if="contractor_website">
+                                                    Website:
+                                                    <a t-att-href="contractor_website_href" t-esc="contractor_website"/>
+                                                </div>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
