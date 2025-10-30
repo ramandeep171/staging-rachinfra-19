@@ -1,7 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_rmc_commission_agent_user,access.rmc.commission.agent.user,model_rmc_commission_agent,base.group_user,1,1,1,0
-access_rmc_commission_master_user,access.rmc.commission.master.user,model_rmc_commission_master,base.group_user,1,1,1,0
-access_rmc_commission_agent_portal,access.rmc.commission.agent.portal,model_rmc_commission_agent,base.group_portal,1,0,0,0
-access_rmc_commission_master_portal,access.rmc.commission.master.portal,model_rmc_commission_master,base.group_portal,1,0,0,0
-access_rmc_commission_voucher_user,access.rmc.commission.voucher.user,model_rmc_commission_voucher,base.group_user,1,1,0,0
-access_rmc_commission_voucher_portal,access.rmc.commission.voucher.portal,model_rmc_commission_voucher,base.group_portal,1,0,0,0
