@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <template id="website_manpower_partner_page" name="Manpower Contractor Partnerships">
-            <t t-call="website.layout">
-                <div id="wrap" class="o_manpower_partner">
+        <template id="website_manpower_partner_page_content">
+            <div class="o_manpower_partner">
 
                     <section class="hero">
                         <div class="hero-overlay"></div>
@@ -206,89 +205,7 @@
                                 </div>
                             </div>
                         </div>
-                    </section>
-
-                    <section id="apply" class="section application-form">
-                        <div class="container">
-                            <div class="section-header">
-                                <h2 class="section-title">Apply as Contractor</h2>
-                                <p class="section-subtitle">Join our network of trusted manpower partners</p>
-                            </div>
-                            <div class="form-container">
-                                <form id="contractorForm" class="contractor-form" action="#">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="agencyName">Agency Name <span class="required">*</span></label>
-                                            <input type="text" id="agencyName" name="agencyName" required="required"/>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="contactPerson">Contact Person <span class="required">*</span></label>
-                                            <input type="text" id="contactPerson" name="contactPerson" required="required"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="phone">Phone Number <span class="required">*</span></label>
-                                            <input type="tel" id="phone" name="phone" required="required"/>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="email">Email Address <span class="required">*</span></label>
-                                            <input type="email" id="email" name="email" required="required"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="city">City <span class="required">*</span></label>
-                                            <input type="text" id="city" name="city" required="required"/>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="state">State <span class="required">*</span></label>
-                                            <input type="text" id="state" name="state" required="required"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Contract Type(s) <span class="required">*</span></label>
-                                        <div class="checkbox-group">
-                                            <label class="checkbox-label"><input type="checkbox" name="contractType" value="driver-transport"/> Driver/Transport Operations</label>
-                                            <label class="checkbox-label"><input type="checkbox" name="contractType" value="pump-operations"/> Pump Operations Manpower</label>
-                                            <label class="checkbox-label"><input type="checkbox" name="contractType" value="accounts-audit"/> Accounts &amp; Audit Manpower</label>
-                                        </div>
-                                    </div>
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label for="teamSize">Team Size (Number of Staff) <span class="required">*</span></label>
-                                            <input type="number" id="teamSize" name="teamSize" min="1" required="required"/>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="shiftCapacity">Shift Capacity <span class="required">*</span></label>
-                                            <select id="shiftCapacity" name="shiftCapacity" required="required">
-                                                <option value="">Select shift capacity</option>
-                                                <option value="single">Single Shift</option>
-                                                <option value="double">Double Shift</option>
-                                                <option value="triple">Triple Shift (24/7)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="documents">Upload Documents <span class="required">*</span></label>
-                                        <input type="file" id="documents" name="documents" multiple="multiple" accept=".pdf,.jpg,.jpeg,.png"/>
-                                        <small class="form-help">Upload GST, PAN, Labour Licence, ESIC/PF, Cancelled Cheque, etc.</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="message">Additional Message (Optional)</label>
-                                        <textarea id="message" name="message" rows="4" placeholder="Tell us about your experience..."></textarea>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary btn-submit"><i class="fas fa-paper-plane"></i> Submit Application</button>
-                                </form>
-                                <div id="successMessage" class="success-message" style="display: none;">
-                                    <div class="success-icon"><i class="fas fa-check-circle"></i></div>
-                                    <h3>Application Submitted Successfully!</h3>
-                                    <p>Thank you for applying. Our team will review your application and contact you within 2-3 business days.</p>
-                                    <p>You will receive a confirmation via WhatsApp and Email shortly.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+                    </section>                    
 
                     <section class="section compliance">
                         <div class="container">
@@ -355,7 +272,6 @@
                     </a>
 
                 </div>
-            </t>
         </template>
 
         <record id="website_manpower_partner_page_record" model="website.page">
