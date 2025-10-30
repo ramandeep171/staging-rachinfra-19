@@ -363,10 +363,6 @@
                                 <h3 class="mt-5">
                                     <t t-esc="annex_d_clause.title or 'Annexure D – Contacts &amp; Notices'"/>
                                 </h3>
-                                <t t-if="annex_d_clause and annex_d_clause.body_html">
-                                    <div t-raw="annex_d_clause.body_html"/>
-                                </t>
-                                <t t-else="">
                                 <table class="table table-sm border">
                                     <tbody>
                                         <tr>
@@ -410,7 +406,6 @@
                                         </tr>
                                     </tbody>
                                 </table>
-                                </t>
 
                                 <h3 class="mt-5">
                                     <t t-esc="annex_e_clause.title or 'Annexure E – Plant Tools &amp; Inventory'"/>
