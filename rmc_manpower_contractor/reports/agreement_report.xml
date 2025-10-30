@@ -237,7 +237,7 @@
                                 <h3 class="mt-0">
                                     <t t-esc="annex_a_clause.title or 'Annexure A – Manpower Matrix (Illustrative)'"/>
                                 </h3>
-                                <t t-if="annex_a_clause and annex_a_clause.body_html and 'annexure-a-fallback' not in (annex_a_clause.body_html or '')">
+                                <t t-if="annex_a_clause and annex_a_clause.body_html and 'table table-sm border' not in (annex_a_clause.body_html or '')">
                                     <div t-raw="annex_a_clause.body_html"/>
                                 </t>
                                 <t t-else="">
