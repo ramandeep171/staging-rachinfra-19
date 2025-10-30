@@ -182,6 +182,7 @@
             <t t-set="placeholder_count" t-value="'agreement_count'"/>
             <t t-set="count" t-value="request.session.get('portal_counters', {}).get('agreement_count', 0)"/>
             <t t-set="show_count" t-value="True"/>
+            <t t-set="config_card" t-value="True"/>
         </t>
     </xpath>
 </template>
