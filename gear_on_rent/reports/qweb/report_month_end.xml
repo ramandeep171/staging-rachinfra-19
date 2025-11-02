@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data>
+    <record id="action_report_month_end" model="ir.actions.report">
+      <field name="name">RMC Month-End Report</field>
+      <field name="model">account.move</field>
+      <field name="report_name">gear_on_rent.report_month_end</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="print_report_name">'%s Month-End' % (object.name or 'Invoice')</field>
+      <field name="binding_model_id" ref="account.model_account_move"/>
+    </record>
+
+    <template id="report_month_end">
+      <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="doc">
+          <t t-set="payload" t-value="doc._gear_get_month_end_payload()"/>
+          <div class="page">
+            <div class="row mb-3">
+              <div class="col-7">
+                <h2>Monthly Client Report</h2>
+                <p>
+                  <strong>Invoice:</strong>
+                  <span t-esc="payload.get('invoice_name')"/>
+                </p>
+                <p>
+                  <strong>Contract:</strong>
+                  <span t-esc="payload.get('contract_name')"/>
+                </p>
+                <p>
+                  <strong>Customer:</strong>
+                  <span t-esc="payload.get('customer_name')"/>
+                </p>
+              </div>
+              <div class="col-5 text-end">
+                <p class="h4 mb-1" t-esc="payload.get('month_label')"/>
+                <p class="lead mb-0">
+                  <strong t-esc="payload.get('version_label')"/>
+                </p>
+              </div>
+            </div>
+
+            <h3>LOTO Wave-Off Summary</h3>
+            <table class="table table-sm table-bordered">
+              <tbody>
+                <tr>
+                  <th>Total LOTO Approved Hours</th>
+                  <td class="text-end" t-esc="payload.get('loto_total_hours', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>Wave-Off Allowance</th>
+                  <td class="text-end" t-esc="payload.get('waveoff_allowance', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>Wave-Off Applied This Month</th>
+                  <td class="text-end text-success" t-esc="payload.get('waveoff_applied', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>Chargeable LOTO Hours</th>
+                  <td class="text-end text-danger" t-esc="payload.get('loto_chargeable_hours', 0.0)"/>
+                </tr>
+              </tbody>
+            </table>
+
+            <h4 class="mt-4">Operational Metrics</h4>
+            <table class="table table-sm table-bordered">
+              <tbody>
+                <tr>
+                  <th>Monthly MGQ Target</th>
+                  <td class="text-end" t-esc="payload.get('target_qty', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>Adjusted MGQ</th>
+                  <td class="text-end" t-esc="payload.get('adjusted_target_qty', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>NGT Hours</th>
+                  <td class="text-end" t-esc="payload.get('ngt_hours', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>NGT Relief (m³)</th>
+                  <td class="text-end" t-esc="payload.get('ngt_qty', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>Prime Output Production (m³)</th>
+                  <td class="text-end" t-esc="payload.get('prime_output_qty', 0.0)"/>
+                </tr>
+                <tr>
+                  <th>Optimized Standby</th>
+                  <td class="text-end" t-esc="payload.get('optimized_standby', 0.0)"/>
+                </tr>
+              </tbody>
+            </table>
+
+            <h4 class="mt-3">Exceptions &amp; Notes</h4>
+            <table class="table table-sm table-bordered">
+              <tbody>
+                <tr>
+                  <th>Materials Shortage</th>
+                  <td t-esc="payload.get('materials_shortage') or '—'"/>
+                </tr>
+                <tr>
+                  <th>Manpower</th>
+                  <td t-esc="payload.get('manpower_notes') or '—'"/>
+                </tr>
+                <tr>
+                  <th>Assets</th>
+                  <td t-esc="payload.get('asset_notes') or '—'"/>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="row mt-3">
+              <div class="col-md-6">
+                <h5>Cooling Windows</h5>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr>
+                      <th>Prorated MGQ</th>
+                      <td class="text-end" t-esc="payload.get('cooling_totals', {}).get('target_qty', 0.0)"/>
+                    </tr>
+                    <tr>
+                      <th>Prime Output (m³)</th>
+                      <td class="text-end" t-esc="payload.get('cooling_totals', {}).get('prime_output_qty', 0.0)"/>
+                    </tr>
+                    <tr>
+                      <th>NGT Billed (m³)</th>
+                      <td class="text-end" t-esc="payload.get('cooling_totals', {}).get('ngt_m3', 0.0)"/>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="col-md-6">
+                <h5>Normal Windows</h5>
+                <table class="table table-sm">
+                  <tbody>
+                    <tr>
+                      <th>Monthly MGQ</th>
+                      <td class="text-end" t-esc="payload.get('normal_totals', {}).get('target_qty', 0.0)"/>
+                    </tr>
+                    <tr>
+                      <th>Prime Output (m³)</th>
+                      <td class="text-end" t-esc="payload.get('normal_totals', {}).get('prime_output_qty', 0.0)"/>
+                    </tr>
+                    <tr>
+                      <th>Standby (m³)</th>
+                      <td class="text-end" t-esc="payload.get('normal_totals', {}).get('standby_qty', 0.0)"/>
+                    </tr>
+                    <tr>
+                      <th>NGT from Approvals (m³)</th>
+                      <td class="text-end" t-esc="payload.get('normal_totals', {}).get('ngt_m3', 0.0)"/>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <h4 class="mt-4">Manufacturing Orders</h4>
+            <table class="table table-sm" style="border:1px solid #000; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="border:1px solid #000;">Date</th>
+                  <th style="border:1px solid #000;">Reference</th>
+                  <th style="border:1px solid #000;">Cooling</th>
+                  <th class="text-end" style="border:1px solid #000;">Daily MGQ</th>
+                  <th class="text-end" style="border:1px solid #000;">Adjusted MGQ</th>
+                  <th class="text-end" style="border:1px solid #000;">Prime Output</th>
+                  <th class="text-end" style="border:1px solid #000;">Optimized Standby</th>
+                  <th class="text-end" style="border:1px solid #000;">NGT Hours</th>
+                  <th class="text-end" style="border:1px solid #000;">LOTO Hours</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr t-if="not payload.get('manufacturing_orders')">
+                  <td colspan="9" class="text-center text-muted" style="border:1px solid #000;">
+                    No manufacturing orders were recorded for this period.
+                  </td>
+                </tr>
+                <t t-foreach="payload.get('manufacturing_orders', [])" t-as="mo">
+                  <tr>
+                    <td t-esc="mo.get('date_start')" style="border:1px solid #000;"/>
+                    <td t-esc="mo.get('reference')" style="border:1px solid #000;"/>
+                    <td class="text-center" style="border:1px solid #000;">
+                      <span t-esc="mo.get('is_cooling') and '✓' or ''"/>
+                    </td>
+                    <td class="text-end" t-esc="mo.get('daily_mgq', 0.0)" style="border:1px solid #000;"/>
+                    <td class="text-end" t-esc="mo.get('adjusted_mgq', 0.0)" style="border:1px solid #000;"/>
+                    <td class="text-end" t-esc="mo.get('prime_output', 0.0)" style="border:1px solid #000;"/>
+                    <td class="text-end" t-esc="mo.get('optimized_standby', 0.0)" style="border:1px solid #000;"/>
+                    <td class="text-end" t-esc="mo.get('ngt_hours', 0.0)" style="border:1px solid #000;"/>
+                    <td class="text-end" t-esc="mo.get('loto_hours', 0.0)" style="border:1px solid #000;"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+          </div>
+        </t>
+      </t>
+    </template>
+  </data>
+</odoo>
