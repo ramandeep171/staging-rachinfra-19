@@ -157,11 +157,25 @@ class SaleOrder(models.Model):
                 managed_orders |= monthly
             all_orders = MonthlyOrder.search([("so_id", "=", order.id)])
             all_orders._gear_reassign_productions_to_windows()
-            for monthly in managed_orders:
+            today = fields.Date.context_today(order)
+            current_orders = managed_orders.filtered(
+                lambda m: m.state != "done"
+                and m.date_start
+                and m.date_end
+                and m.date_start <= today <= m.date_end
+            )
+            if not current_orders:
+                past_orders = managed_orders.filtered(
+                    lambda m: m.state != "done"
+                    and m.date_end
+                    and m.date_end < today
+                )
+                current_orders = past_orders.sorted(key=lambda m: m.date_end or fields.Date.today(), reverse=True)[:1]
+            for monthly in current_orders:
                 has_locked_mo = monthly.production_ids.filtered(lambda p: p.state in ("done", "cancel"))
                 has_locked_wo = monthly.production_ids.mapped("workorder_ids").filtered(lambda wo: wo.state in ("done", "cancel"))
                 if monthly.state != "done" and not has_locked_mo and not has_locked_wo:
-                    monthly.action_schedule_orders()
+                    monthly.action_schedule_orders(until_date=today)
 
     def _gear_iter_monthly_windows(self, start_date, end_date):
         """Return dictionaries describing each monthly window, splitting on cooling transitions."""

@@ -4,9 +4,12 @@ from math import ceil
 
 import pytz
 
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
+_logger = logging.getLogger(__name__)
 
 class GearRmcMonthlyOrder(models.Model):
     """Monthly umbrella that orchestrates daily manufacturing orders."""
@@ -64,6 +67,10 @@ class GearRmcMonthlyOrder(models.Model):
         digits=(16, 2),
         help="Snapshot of the contract MGQ allocated to this window.",
         tracking=True,
+    )
+    last_generated_date = fields.Date(
+        string="Last Generated Day",
+        help="Most recent calendar day for which daily manufacturing orders were generated.",
     )
     state = fields.Selection(
         [
@@ -339,19 +346,21 @@ class GearRmcMonthlyOrder(models.Model):
             return 0.0
         return max(((end_dt - start_dt).total_seconds() + 1.0) / 3600.0, 0.0)
 
-    def action_schedule_orders(self):
+    def action_schedule_orders(self, until_date=False):
         """Generate or refresh the daily manufacturing orders for the month."""
         for order in self:
-            order._generate_daily_productions()
-            order.state = "scheduled"
+            processed = order._generate_daily_productions(until_date=until_date)
+            if processed:
+                order.state = "scheduled"
 
     def action_mark_done(self):
         for order in self:
             order.state = "done"
 
-    def _generate_daily_productions(self):
+    def _generate_daily_productions(self, until_date=False):
         Production = self.env["mrp.production"]
         Workorder = self.env["mrp.workorder"]
+        processed_any = False
         for order in self:
             if not order.product_id:
                 raise UserError(_("Please select an RMC product before scheduling daily orders."))
@@ -388,14 +397,41 @@ class GearRmcMonthlyOrder(models.Model):
                 )
 
             user_tz = order._gear_get_user_tz()
-            cursor = order.date_start
+            if not order.last_generated_date and order.production_ids:
+                existing_dates = [
+                    order._gear_datetime_to_local_date(prod.date_start, user_tz)
+                    for prod in order.production_ids
+                    if prod.date_start
+                ]
+                existing_dates = [d for d in existing_dates if d]
+                if existing_dates:
+                    order.last_generated_date = max(existing_dates)
+            if until_date:
+                generation_end = min(until_date, order.date_end)
+            else:
+                generation_end = order.date_end
+
+            if not generation_end or generation_end < order.date_start:
+                continue
+
+            if until_date:
+                start_day = order.last_generated_date + timedelta(days=1) if order.last_generated_date else order.date_start
+                cursor = max(order.date_start, start_day)
+            else:
+                cursor = order.date_start
+
+            if cursor > generation_end:
+                continue
+
             existing_map = {
                 order._gear_datetime_to_local_date(production.date_start, user_tz): production
                 for production in order.production_ids
                 if production.date_start
             }
 
-            while cursor <= order.date_end:
+            processed_order = False
+
+            while cursor <= generation_end:
                 start_dt, end_dt = order._gear_get_day_bounds(cursor, user_tz)
 
                 production = existing_map.get(cursor)
@@ -438,7 +474,13 @@ class GearRmcMonthlyOrder(models.Model):
 
                 if production.state not in ("done", "cancel"):
                     self._gear_sync_production_workorders(production, workcenter, start_dt, end_dt)
+                processed_order = True
                 cursor += timedelta(days=1)
+
+            if processed_order:
+                order.last_generated_date = generation_end
+                processed_any = True
+        return processed_any
 
     def _gear_compute_billing_summary(self):
         summary = {
@@ -638,6 +680,24 @@ class GearRmcMonthlyOrder(models.Model):
         if quantities:
             quantities[-1] = round(quantities[-1] + adjustment, 2)
         return quantities or [0.0]
+
+    @api.model
+    def _cron_schedule_due_orders(self):
+        """Scheduled task to generate daily orders as windows progress."""
+        today = fields.Date.context_today(self)
+        domain = [
+            ("state", "!=", "done"),
+            ("date_start", "<=", today),
+            ("date_end", ">=", today),
+        ]
+        orders = self.search(domain)
+        if not orders:
+            return
+        for order in orders:
+            try:
+                order.action_schedule_orders(until_date=today)
+            except Exception:
+                _logger.exception("Failed to schedule monthly order %s", order.display_name)
 
     def action_open_prepare_invoice(self):
         self.ensure_one()

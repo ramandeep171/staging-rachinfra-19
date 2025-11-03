@@ -21,6 +21,7 @@
         "data/sequence_data.xml",
         "data/security/gear_on_rent_security.xml",
         "data/security/ir.model.access.csv",
+        "data/cron.xml",
         "data/product_rmc_data.xml",
         "views/gear_on_rent_templates.xml",
         "data/website_page_gear_on_rent.xml",

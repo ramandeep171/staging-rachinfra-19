@@ -112,6 +112,10 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             distribution = getattr(line, "analytic_distribution", {}) or {}
             return {str(key): value for key, value in distribution.items() if value}
 
+        def _compose_line_name(product, label):
+            product_label = product.display_name or product.name or _("Unnamed Product")
+            return f"{product_label} - {label}"
+
         taxes_prime = _extract_taxes(line_by_mode["prime"] or main_line)
         taxes_standby = _extract_taxes(line_by_mode["standby"] or main_line)
         taxes_ngt = _extract_taxes(line_by_mode["ngt"] or main_line)
@@ -180,12 +184,13 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             prime_product = (line_by_mode["prime"] or main_line).product_id
             prime_sale_line_ids = (line_by_mode["prime"] or main_line).ids
             prime_price_unit = (line_by_mode["prime"] or main_line).price_unit
+            prime_label = _("Prime Output for %s - %s") % (period_start_label, period_end_label)
             line_commands.append(
                 (
                     0,
                     0,
                     {
-                        "name": _("Prime Output for %s - %s") % (period_start_label, period_end_label),
+                        "name": _compose_line_name(prime_product, prime_label),
                         "product_id": prime_product.id,
                         "quantity": prime_output,
                         "price_unit": prime_price_unit,
@@ -206,12 +211,13 @@ class PrepareInvoiceFromMrp(models.TransientModel):
                 standby_product = (line_by_mode["prime"] or main_line).product_id
                 standby_price_unit = max(main_line.price_unit - self.x_unproduced_delta, 0.0)
                 standby_sale_line_ids = main_line.ids
+            standby_label = _("MGQ Shortfall Adjustment (%s - %s)") % (period_start_label, period_end_label)
             line_commands.append(
                 (
                     0,
                     0,
                     {
-                        "name": _("MGQ Shortfall Adjustment (%s - %s)") % (period_start_label, period_end_label),
+                        "name": _compose_line_name(standby_product, standby_label),
                         "product_id": standby_product.id,
                         "quantity": standby_qty,
                         "price_unit": standby_price_unit,
@@ -227,12 +233,13 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             ngt_product = (ngt_line or main_line).product_id
             ngt_sale_line_ids = (ngt_line or main_line).ids
             ngt_price_unit = (ngt_line.price_unit if ngt_line else 0.0)
+            ngt_label = _("NGT Relief (%s - %s)") % (period_start_label, period_end_label)
             line_commands.append(
                 (
                     0,
                     0,
                     {
-                        "name": _("NGT Relief (%s - %s)") % (period_start_label, period_end_label),
+                        "name": _compose_line_name(ngt_product, ngt_label),
                         "product_id": ngt_product.id,
                         "quantity": downtime_qty,
                         "price_unit": ngt_price_unit,
