@@ -23,8 +23,10 @@
               .gor-kv-table td{padding:2px 6px;text-align:right;border:none;}
               .gor-section-title{margin-top:18px;}
               .gor-metric-table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:12px;}
-              .gor-metric-table th{padding:4px 6px;text-align:left;border:1px solid #000;}
-              .gor-metric-table td{padding:4px 6px;text-align:right;border:1px solid #000;}
+              .gor-metric-table th{padding:4px 6px;text-align:left;border:none;border-bottom:1px solid #bbb;}
+              .gor-metric-table td{padding:4px 6px;text-align:right;border:none;border-bottom:1px solid #ddd;}
+              .gor-metric-table tr:last-child th,
+              .gor-metric-table tr:last-child td{border-bottom:none;}
               .gor-metric-table.gor-metric-table--left td{text-align:left;}
               .gor-metric-table.gor-metric-table--plain th,
               .gor-metric-table.gor-metric-table--plain td{border:none;}
@@ -40,44 +42,33 @@
               }
               .gor-inline-table{width:100%;}
               .gor-inline-table th,
-              .gor-inline-table td{border:1px solid #000;}
+              .gor-inline-table td{border:none;border-bottom:1px solid #ddd;}
+              .gor-inline-table tr:last-child th,
+              .gor-inline-table tr:last-child td{border-bottom:none;}
               .gor-full-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px;}
               .gor-full-table th,
-              .gor-full-table td{padding:4px 6px;border:1px solid #000;}
-              .gor-full-table th{text-align:left;}
+              .gor-full-table td{padding:4px 6px;border:none;border-bottom:1px solid #ddd;}
+              .gor-full-table th{text-align:left;border-bottom:1px solid #bbb;}
               .gor-full-table td{text-align:right;}
+              .gor-full-table tbody tr:last-child td{border-bottom:none;}
               .gor-full-table thead{display:table-header-group;}
               .gor-text-left{text-align:left;}
               .gor-text-center{text-align:center;}
               .gor-footer{position:running(gor-footer);font-size:10px;text-align:right;}
               .gor-footer-placeholder{height:12mm;}
             </style>
-            <div class="gor-footer">PTO....</div>
+            
             <div class="row mb-3">
               <div class="col-7">
                 <h2>Monthly Client Report</h2>
-                <table class="gor-kv-table">
-                  <tbody>
-                    <tr>
-                      <th>Invoice:</th>
-                      <td>
-                        <t t-esc="payload.get('invoice_name')"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Contract:</th>
-                      <td>
-                        <t t-esc="payload.get('contract_name')"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Customer:</th>
-                      <td>
-                        <t t-esc="payload.get('customer_name')"/>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div style="font-size:12px; line-height:1.7;">
+                  <div><strong>Invoice:</strong>
+                    <span t-esc="payload.get('invoice_name')"/></div>
+                  <div><strong>Contract:</strong>
+                    <span t-esc="payload.get('contract_name')"/></div>
+                  <div><strong>Customer:</strong>
+                    <span t-esc="payload.get('customer_name')"/></div>
+                </div>
               </div>
               <div class="col-5 text-end" style="text-align: right;">
                 <p class="h4 mb-1" t-esc="payload.get('month_label')"/>
@@ -306,6 +297,7 @@
               </tbody>
             </table>
             <div class="gor-footer-placeholder"/>
+            <div class="gor-footer">PTO....</div>
             </div>
           </t>
         </t>
