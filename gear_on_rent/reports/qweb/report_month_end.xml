@@ -77,11 +77,11 @@
                   <td class="text-end" t-esc="payload.get('ngt_hours', 0.0)"/>
                 </tr>
                 <tr>
-                  <th>NGT Relief (m³)</th>
+                  <th>NGT Relief (m^3)</th>
                   <td class="text-end" t-esc="payload.get('ngt_qty', 0.0)"/>
                 </tr>
                 <tr>
-                  <th>Prime Output Production (m³)</th>
+                  <th>Prime Output Production (m^3)</th>
                   <td class="text-end" t-esc="payload.get('prime_output_qty', 0.0)"/>
                 </tr>
                 <tr>
@@ -96,15 +96,15 @@
               <tbody>
                 <tr>
                   <th>Materials Shortage</th>
-                  <td t-esc="payload.get('materials_shortage') or '—'"/>
+                  <td t-esc="payload.get('materials_shortage') or 'N/A'"/>
                 </tr>
                 <tr>
                   <th>Manpower</th>
-                  <td t-esc="payload.get('manpower_notes') or '—'"/>
+                  <td t-esc="payload.get('manpower_notes') or 'N/A'"/>
                 </tr>
                 <tr>
                   <th>Assets</th>
-                  <td t-esc="payload.get('asset_notes') or '—'"/>
+                  <td t-esc="payload.get('asset_notes') or 'N/A'"/>
                 </tr>
               </tbody>
             </table>
@@ -119,11 +119,11 @@
                       <td class="text-end" t-esc="payload.get('cooling_totals', {}).get('target_qty', 0.0)"/>
                     </tr>
                     <tr>
-                      <th>Prime Output (m³)</th>
+                      <th>Prime Output (m^3)</th>
                       <td class="text-end" t-esc="payload.get('cooling_totals', {}).get('prime_output_qty', 0.0)"/>
                     </tr>
                     <tr>
-                      <th>NGT Billed (m³)</th>
+                      <th>NGT Billed (m^3)</th>
                       <td class="text-end" t-esc="payload.get('cooling_totals', {}).get('ngt_m3', 0.0)"/>
                     </tr>
                   </tbody>
@@ -138,15 +138,15 @@
                       <td class="text-end" t-esc="payload.get('normal_totals', {}).get('target_qty', 0.0)"/>
                     </tr>
                     <tr>
-                      <th>Prime Output (m³)</th>
+                      <th>Prime Output (m^3)</th>
                       <td class="text-end" t-esc="payload.get('normal_totals', {}).get('prime_output_qty', 0.0)"/>
                     </tr>
                     <tr>
-                      <th>Standby (m³)</th>
+                      <th>Standby (m^3)</th>
                       <td class="text-end" t-esc="payload.get('normal_totals', {}).get('standby_qty', 0.0)"/>
                     </tr>
                     <tr>
-                      <th>NGT from Approvals (m³)</th>
+                      <th>NGT from Approvals (m^3)</th>
                       <td class="text-end" t-esc="payload.get('normal_totals', {}).get('ngt_m3', 0.0)"/>
                     </tr>
                   </tbody>
@@ -180,7 +180,7 @@
                     <td t-esc="mo.get('date_start')" style="border:1px solid #000;"/>
                     <td t-esc="mo.get('reference')" style="border:1px solid #000;"/>
                     <td class="text-center" style="border:1px solid #000;">
-                      <span t-esc="mo.get('is_cooling') and '✓' or ''"/>
+                      <span t-esc="mo.get('is_cooling') and 'Yes' or ''"/>
                     </td>
                     <td class="text-end" t-esc="mo.get('daily_mgq', 0.0)" style="border:1px solid #000;"/>
                     <td class="text-end" t-esc="mo.get('adjusted_mgq', 0.0)" style="border:1px solid #000;"/>
