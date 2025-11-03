@@ -233,13 +233,15 @@ class AccountMove(models.Model):
         if not report:
             return
         for move in self:
-            pdf_content, content_type = report._render_qweb_pdf(report.id, res_ids=move.ids)
-            attachment_name = _("%s - Log Summary") % (move.name or _("Invoice"))
+            pdf_content, report_type = report._render_qweb_pdf(report.id, res_ids=move.ids)
+            if report_type != "pdf":
+                continue
+            filename = "%s - %s.pdf" % (move.name or _("Invoice"), _("Log Summary"))
             attachment_vals = {
-                "name": attachment_name,
+                "name": filename.replace("/", "_"),
                 "type": "binary",
                 "datas": base64.b64encode(pdf_content),
-                "mimetype": content_type or "application/pdf",
+                "mimetype": "application/pdf",
                 "res_model": move._name,
                 "res_id": move.id,
             }
@@ -255,13 +257,15 @@ class AccountMove(models.Model):
         if not report:
             return
         for move in self.filtered(lambda m: m.x_billing_category == "rmc"):
-            pdf_content, content_type = report._render_qweb_pdf(report.id, res_ids=move.ids)
-            attachment_name = "%s - %s" % (move.name or _("Invoice"), _("Month-End Report"))
+            pdf_content, report_type = report._render_qweb_pdf(report.id, res_ids=move.ids)
+            if report_type != "pdf":
+                continue
+            filename = "%s - %s.pdf" % (move.name or _("Invoice"), _("Month-End Report"))
             attachment_vals = {
-                "name": attachment_name,
+                "name": filename.replace("/", "_"),
                 "type": "binary",
                 "datas": base64.b64encode(pdf_content),
-                "mimetype": content_type or "application/pdf",
+                "mimetype": "application/pdf",
                 "res_model": move._name,
                 "res_id": move.id,
             }
@@ -269,7 +273,7 @@ class AccountMove(models.Model):
                 [
                     ("res_model", "=", move._name),
                     ("res_id", "=", move.id),
-                    ("name", "=", attachment_name),
+                    ("name", "=", filename.replace("/", "_")),
                 ],
                 limit=1,
             )

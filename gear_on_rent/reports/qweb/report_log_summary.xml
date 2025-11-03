@@ -20,7 +20,7 @@
                         </p>
                         <p>
                             <strong>Period:</strong>
-                            <span t-esc="doc.gear_log_period_start"/> →
+                            <span t-esc="doc.gear_log_period_start"/> ->
                             <span t-esc="doc.gear_log_period_end"/>
                         </p>
 
@@ -72,7 +72,7 @@
                             <h3>RMC Production</h3>
                             <p>
                                 <strong>Total Dockets Quantity:</strong>
-                                <span t-esc="doc.gear_log_rmc_qty"/> m³
+                                <span t-esc="doc.gear_log_rmc_qty"/> m^3
                             </p>
                         </t>
                     </div>
