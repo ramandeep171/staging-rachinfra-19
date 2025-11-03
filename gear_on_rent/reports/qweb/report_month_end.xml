@@ -14,7 +14,8 @@
       <t t-call="web.html_container">
         <t t-foreach="docs" t-as="doc">
           <t t-set="payload" t-value="doc._gear_get_month_end_payload()"/>
-          <div class="page gor-page">
+          <t t-call="web.external_layout">
+            <div class="gor-page">
             <style>
               .gor-page{width:90%;margin:0 auto;}
               .gor-kv-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
@@ -305,7 +306,8 @@
               </tbody>
             </table>
             <div class="gor-footer-placeholder"/>
-          </div>
+            </div>
+          </t>
         </t>
       </t>
     </template>
