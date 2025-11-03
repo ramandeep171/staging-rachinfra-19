@@ -43,6 +43,11 @@ class AccountMove(models.Model):
         string="Log Summary Attachment",
         copy=False,
     )
+    gear_month_end_attachment_id = fields.Many2one(
+        comodel_name="ir.attachment",
+        string="Month-End Attachment",
+        copy=False,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -83,18 +88,17 @@ class AccountMove(models.Model):
         orders = self._gear_get_related_sale_orders()
         contract = orders[:1]
 
-        month_orders = self.env["gear.rmc.monthly.order"]
-        if contract:
-            month_orders = month_orders.search(
-                [
-                    ("so_id", "=", contract.id),
-                    ("date_start", ">=", month_start),
-                    ("date_start", "<=", month_end),
-                ]
-            )
-
-        if self.gear_monthly_order_id:
-            month_orders |= self.gear_monthly_order_id
+        month_orders = self.gear_monthly_order_id
+        if not month_orders:
+            month_orders = self.env["gear.rmc.monthly.order"]
+            if contract:
+                month_orders = month_orders.search(
+                    [
+                        ("so_id", "=", contract.id),
+                        ("date_start", ">=", month_start),
+                        ("date_start", "<=", month_end),
+                    ]
+                )
 
         if month_orders:
             summary = month_orders._gear_compute_billing_summary()
@@ -269,15 +273,20 @@ class AccountMove(models.Model):
                 "res_model": move._name,
                 "res_id": move.id,
             }
-            existing = self.env["ir.attachment"].search(
-                [
-                    ("res_model", "=", move._name),
-                    ("res_id", "=", move.id),
-                    ("name", "=", filename.replace("/", "_")),
-                ],
-                limit=1,
-            )
-            if existing:
-                existing.write(attachment_vals)
+            attachment = move.gear_month_end_attachment_id
+            if attachment:
+                attachment.write(attachment_vals)
             else:
-                self.env["ir.attachment"].create(attachment_vals)
+                attachment = self.env["ir.attachment"].search(
+                    [
+                        ("res_model", "=", move._name),
+                        ("res_id", "=", move.id),
+                        ("name", "=", filename.replace("/", "_")),
+                    ],
+                    limit=1,
+                )
+                if attachment:
+                    attachment.write(attachment_vals)
+                else:
+                    attachment = self.env["ir.attachment"].create(attachment_vals)
+                move.gear_month_end_attachment_id = attachment.id

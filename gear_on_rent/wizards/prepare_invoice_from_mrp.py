@@ -77,19 +77,47 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             raise UserError(_("Please select a monthly work order linked to a sale order."))
         if order.x_billing_category != "rmc":
             raise UserError(_("This wizard can only prepare invoices for RMC contracts."))
-        product = order._gear_get_primary_product()
-        if not product:
-            raise UserError(_("The sale order must have a billable product line to derive the rate."))
+        billable_lines = order.order_line.filtered(lambda l: not l.display_type and l.product_id)
+        if not billable_lines:
+            raise UserError(_("The sale order must have at least one billable product line."))
 
-        main_line = order.order_line.filtered(lambda l: not l.display_type)[:1]
-        if not main_line:
-            raise UserError(_("The sale order must have at least one billable line."))
+        def _classify(line):
+            parts = [
+                line.product_id.display_name or "",
+                " ".join(line.product_id.product_template_attribute_value_ids.mapped("name") or []),
+                line.name or "",
+            ]
+            label = " ".join(parts).lower()
+            if "ngt" in label or "no-generation" in label:
+                return "ngt"
+            if "standby" in label or "shortfall" in label or "optimized" in label:
+                return "standby"
+            if "prime" in label:
+                return "prime"
+            return ""
 
-        taxes = getattr(main_line, "tax_id", False) or getattr(main_line, "taxes_id", self.env["account.tax"])
-        analytic_distribution = getattr(main_line, "analytic_distribution", {}) or {}
-        analytic_distribution = {
-            str(key): value for key, value in analytic_distribution.items() if value
-        }
+        line_by_mode = {"prime": None, "standby": None, "ngt": None}
+        for line in billable_lines:
+            mode = _classify(line)
+            if mode and not line_by_mode[mode]:
+                line_by_mode[mode] = line
+
+        main_line = line_by_mode.get("prime") or billable_lines[:1]
+
+        def _extract_taxes(line):
+            taxes_field = getattr(line, "tax_id", False) or getattr(line, "taxes_id", self.env["account.tax"])
+            return taxes_field
+
+        def _extract_analytic(line):
+            distribution = getattr(line, "analytic_distribution", {}) or {}
+            return {str(key): value for key, value in distribution.items() if value}
+
+        taxes_prime = _extract_taxes(line_by_mode["prime"] or main_line)
+        taxes_standby = _extract_taxes(line_by_mode["standby"] or main_line)
+        taxes_ngt = _extract_taxes(line_by_mode["ngt"] or main_line)
+        analytic_prime = _extract_analytic(line_by_mode["prime"] or main_line)
+        analytic_standby = _extract_analytic(line_by_mode["standby"] or main_line)
+        analytic_ngt = _extract_analytic(line_by_mode["ngt"] or main_line)
 
         if monthly.date_start:
             month_start = monthly.date_start.replace(day=1)
@@ -149,53 +177,68 @@ class PrepareInvoiceFromMrp(models.TransientModel):
 
         line_commands = []
         if prime_output > 0:
+            prime_product = (line_by_mode["prime"] or main_line).product_id
+            prime_sale_line_ids = (line_by_mode["prime"] or main_line).ids
+            prime_price_unit = (line_by_mode["prime"] or main_line).price_unit
             line_commands.append(
                 (
                     0,
                     0,
                     {
                         "name": _("Prime Output for %s - %s") % (period_start_label, period_end_label),
-                        "product_id": product.id,
+                        "product_id": prime_product.id,
                         "quantity": prime_output,
-                        "price_unit": main_line.price_unit,
-                        "tax_ids": [(6, 0, taxes.ids)] if taxes else False,
-                        "analytic_distribution": analytic_distribution or False,
-                        "sale_line_ids": [(6, 0, main_line.ids)],
+                        "price_unit": prime_price_unit,
+                        "tax_ids": [(6, 0, taxes_prime.ids)] if taxes_prime else False,
+                        "analytic_distribution": analytic_prime or False,
+                        "sale_line_ids": [(6, 0, prime_sale_line_ids)],
                     },
                 )
             )
 
         if standby_qty > 0:
-            standby_rate = max(main_line.price_unit - self.x_unproduced_delta, 0.0)
+            standby_line = line_by_mode["standby"]
+            if standby_line:
+                standby_product = standby_line.product_id
+                standby_price_unit = standby_line.price_unit
+                standby_sale_line_ids = standby_line.ids
+            else:
+                standby_product = (line_by_mode["prime"] or main_line).product_id
+                standby_price_unit = max(main_line.price_unit - self.x_unproduced_delta, 0.0)
+                standby_sale_line_ids = main_line.ids
             line_commands.append(
                 (
                     0,
                     0,
                     {
                         "name": _("MGQ Shortfall Adjustment (%s - %s)") % (period_start_label, period_end_label),
-                        "product_id": product.id,
+                        "product_id": standby_product.id,
                         "quantity": standby_qty,
-                        "price_unit": standby_rate,
-                        "tax_ids": [(6, 0, taxes.ids)] if taxes else False,
-                        "analytic_distribution": analytic_distribution or False,
-                        "sale_line_ids": [(6, 0, main_line.ids)],
+                        "price_unit": standby_price_unit,
+                        "tax_ids": [(6, 0, taxes_standby.ids)] if taxes_standby else False,
+                        "analytic_distribution": analytic_standby or False,
+                        "sale_line_ids": [(6, 0, standby_sale_line_ids)],
                     },
                 )
             )
 
         if downtime_qty > 0:
+            ngt_line = line_by_mode["ngt"]
+            ngt_product = (ngt_line or main_line).product_id
+            ngt_sale_line_ids = (ngt_line or main_line).ids
+            ngt_price_unit = (ngt_line.price_unit if ngt_line else 0.0)
             line_commands.append(
                 (
                     0,
                     0,
                     {
                         "name": _("NGT Relief (%s - %s)") % (period_start_label, period_end_label),
-                        "product_id": product.id,
+                        "product_id": ngt_product.id,
                         "quantity": downtime_qty,
-                        "price_unit": 0.0,
-                        "tax_ids": [(6, 0, taxes.ids)] if taxes else False,
-                        "analytic_distribution": analytic_distribution or False,
-                        "sale_line_ids": [(6, 0, main_line.ids)],
+                        "price_unit": ngt_price_unit,
+                        "tax_ids": [(6, 0, taxes_ngt.ids)] if taxes_ngt else False,
+                        "analytic_distribution": analytic_ngt or False,
+                        "sale_line_ids": [(6, 0, ngt_sale_line_ids)],
                     },
                 )
             )

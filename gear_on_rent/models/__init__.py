@@ -8,3 +8,4 @@ from . import rmc_docket
 from . import rmc_work_order
 from . import product_template
 from . import product_extra
+from . import account_move_send
