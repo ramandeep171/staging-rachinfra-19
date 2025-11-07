@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Email CC Automation – Odoo 18</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+</head>
+
+<body style="margin:0;padding:0;background:#f7f8fa;color:#111827;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,sans-serif;line-height:1.55">
+
+<!-- HERO -->
+<header style="padding:28px 0;background:#f7f8fa">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <div
+                style="
+        position:relative;overflow:hidden;text-align:center;color:#fff;
+        padding:86px 22px;border-radius:26px;border:1px solid #a7f3d0;
+        box-shadow:0 18px 48px rgba(6,95,70,.28);
+
+        /* tiled green checker + glow + base gradient */
+        background-image:
+          linear-gradient(45deg, rgba(255,255,255,.14) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.14) 75%, rgba(255,255,255,.14)),
+          linear-gradient(45deg, rgba(255,255,255,.14) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.14) 75%, rgba(255,255,255,.14)),
+          radial-gradient(900px 360px at 85% -140px, rgba(255,255,255,.18), transparent 70%),
+          radial-gradient(720px 300px at 10% -120px, rgba(255,255,255,.12), transparent 70%),
+          linear-gradient(135deg,#0ea5e9,#10b981);
+        background-size:44px 44px,44px 44px,auto,auto,auto;
+        background-position:0 0,22px 22px,0 0,0 0,0 0;
+      ">
+            <img src="images/icon.png" alt="Email CC Automation"
+                 style="height:78px;width:auto;border-radius:16px;filter:drop-shadow(0 6px 16px rgba(0,0,0,.35));margin-bottom:12px">
+            <h1 style="font-size:56px;margin:6px 0 0;letter-spacing:.2px">Email CC Automation</h1>
+        </div>
+    </div>
+</header>
+
+
+<!-- INTRO + BADGES -->
+<section style="padding:32px 0;background:#f7f8fa">
+    <div style="max-width:1100px;margin:0 auto;padding:0 18px">
+        <div style="
+      background:linear-gradient(180deg,#ffffff 0%,#fafbff 100%);
+      border:1px solid #e5e7eb;border-radius:16px;
+      box-shadow:0 10px 30px rgba(17,24,39,.08);
+      padding:24px 28px;text-align:center">
+            <p style="font-size:18px;color:#374151;max-width:900px;margin:0 auto 14px">
+                Ensure the right people are always in the loop. Automatically inject CC recipients across Sales,
+                Purchases,
+                Invoicing, and Delivery emails - upgrade-safe and template-agnostic.
+            </p>
+
+            <!-- colored badges (Apps-safe layout) -->
+            <table cellpadding="8" cellspacing="8" border="0" style="margin:6px auto 0">
+                <tr>
+                    <td style="background:#e0f2fe;color:#0c4a6e;border:1px solid #bae6fd;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600">
+                        Odoo 18.0
+                    </td>
+                    <td style="background:#dcfce7;color:#065f46;border:1px solid #bbf7d0;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600">
+                        Enterprise
+                    </td>
+                    <td style="background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600">
+                        No Template Overrides
+                    </td>
+                    <td style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600">
+                        Wizard-Friendly UX
+                    </td>
+                    <td style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600">
+                        Tested
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+</section>
+
+
+<!-- VALUE “What it does” -->
+<section style="padding:56px 0;background:#f7f8fa">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+
+        <!-- light panel around the cards -->
+        <div style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:16px;
+                box-shadow:0 10px 30px rgba(17,24,39,.08);padding:26px">
+
+            <h2 style="font-size:42px;margin:0 0 18px;text-align:center">What it does</h2>
+            <p style="color:#4b5563;max-width:980px;margin:0 auto 18px;text-align:center">
+                This module auto-populates the <b>CC</b> field whenever users send operational emails
+                from Odoo (e.g., quotations, RFQs/POs, invoices/credit notes, and delivery confirmations).
+                You can define a global CC list or let the system fall back to responsible users — with the
+                option to adjust on the fly in the wizards.
+            </p>
+
+            <!-- 3 columns -->
+            <table width="100%" cellpadding="18" cellspacing="18" border="0" style="margin-top:6px">
+                <tr valign="top">
+                    <!-- Card 1 -->
+                    <td width="33%" style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;
+                                  box-shadow:0 6px 18px rgba(17,24,39,.08);padding:18px">
+                        <h3 style="margin:4px 0 8px;font-size:20px">
+              <span style="display:inline-block;margin-right:8px;background:#d1fae5;color:#065f46;
+                           border:1px solid #a7f3d0;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700">
+                AUTO
+              </span>
+                            Global CC Policy
+                        </h3>
+                        <p style="color:#4b5563;margin:0">
+                            Configure a global list of CC partners (by email) from Settings. Applied platform-wide to
+                            supported flows.
+                        </p>
+                    </td>
+
+                    <!-- Card 2 -->
+                    <td width="33%" style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;
+                                  box-shadow:0 6px 18px rgba(17,24,39,.08);padding:18px">
+                        <h3 style="margin:4px 0 8px;font-size:20px">
+              <span style="display:inline-block;margin-right:8px;background:#e0f2fe;color:#0c4a6e;
+                           border:1px solid #bae6fd;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700">
+                SMART
+              </span>
+                            Sensible Fallbacks
+                        </h3>
+                        <p style="color:#4b5563;margin:0">
+                            If no global list is set, CC falls back to the responsible user per document type (e.g.,
+                            salesperson or purchaser).
+                        </p>
+                    </td>
+
+                    <!-- Card 3 -->
+                    <td width="33%" style="background:#fff;border:1px solid #e5e7eb;border-radius:14px;
+                                  box-shadow:0 6px 18px rgba(17,24,39,.08);padding:18px">
+                        <h3 style="margin:4px 0 8px;font-size:20px">
+              <span style="display:inline-block;margin-right:8px;background:#ede9fe;color:#5b21b6;
+                           border:1px solid #ddd6fe;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:700">
+                SAFE
+              </span>
+                            Upgrade-Proof
+                        </h3>
+                        <p style="color:#4b5563;margin:0">
+                            No email template overrides. CC is injected at runtime right before sending, keeping
+                            upgrades smooth.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- WHERE CC IS APPLIED — centered two cards with space between -->
+<section style="padding:56px 0;background:#f7f8fa">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 10px 30px rgba(17,24,39,.08);padding:26px">
+
+            <h2 style="font-size:38px;margin:0 0 18px;text-align:center">Where CC is applied</h2>
+
+            <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:center">
+                <!-- LEFT card -->
+                <div style="width:520px;max-width:100%;padding:10px;box-sizing:border-box">
+                    <div style="background:#fff;border:1px solid #bbf7d0;border-radius:14px;box-shadow:0 6px 18px rgba(16,185,129,.08);padding:18px">
+                        <h3 style="margin:0 0 8px;color:#065f46;font-size:20px">Business Flows</h3>
+                        <ul style="margin:6px 0 0 18px;color:#374151;padding:0;line-height:1.55">
+                            <li style="margin:6px 0">Sales: Quotation / Order emails, cancellation notices</li>
+                            <li style="margin:6px 0">Purchase: RFQ / Purchase Order emails</li>
+                            <li style="margin:6px 0">Accounting: Invoice / Credit Note send wizard</li>
+                            <li style="margin:6px 0">Inventory: Delivery confirmation emails</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- RIGHT card -->
+                <div style="width:520px;max-width:100%;padding:10px;box-sizing:border-box">
+                    <div style="background:#fff;border:1px solid #bfdbfe;border-radius:14px;box-shadow:0 6px 18px rgba(14,165,233,.08);padding:18px">
+                        <h3 style="margin:0 0 8px;color:#0e7490;font-size:20px">Technical Touchpoints</h3>
+                        <ul style="margin:6px 0 0 18px;color:#374151;padding:0;line-height:1.55">
+                            <li style="margin:6px 0">Generic composer (<code>mail.compose.message</code>)</li>
+                            <li style="margin:6px 0">Invoice send wizard (<code>account.move.send</code>)</li>
+                            <li style="margin:6px 0">Sales cancellation wizard</li>
+                            <li style="margin:6px 0">Mail notifications pipeline (<code>mail.thread</code>)</li>
+                            <li style="margin:6px 0">Picking flow: “next CC” preview &amp; merge before send</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- colored dashed tip -->
+            <div style="margin-top:16px;background:#eff6ff;border:1px dashed #2563eb;border-radius:12px;padding:12px 14px;color:#1e3a8a;text-align:center">
+                Tip: These are the points where the module auto-injects CCs — upgrade-safe and template-agnostic.
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- HOW IT WORKS — smaller green numbered circles -->
+<section style="padding:56px 0;background:#fff">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:16px;
+                box-shadow:0 10px 30px rgba(17,24,39,.06);padding:26px">
+            <h2 style="font-size:38px;margin:0 0 18px;text-align:center">How it works (logic)</h2>
+
+            <table width="100%" cellpadding="18" cellspacing="18" border="0">
+                <tr valign="top">
+                    <!-- Step 1 -->
+                    <td style="background:#ffffff;border:1px solid #ffe4cc;border-radius:14px;padding:18px">
+                        <div style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;
+                        background:#fff;border:2px solid #10b981;color:#065f46;border-radius:50%;
+                        font-weight:800;font-size:13px;margin-bottom:10px;box-shadow:0 1px 4px rgba(16,185,129,.15)">1
+                        </div>
+                        <h3 style="margin:0 0 6px;font-size:20px">Resolve CC candidates</h3>
+                        <p style="color:#4b5563;margin:0">Read global CC list (partners with email). If empty/disabled,
+                            compute fallback (e.g., responsible user).</p>
+                    </td>
+
+                    <!-- Step 2 -->
+                    <td style="background:#ffffff;border:1px solid #ffe4cc;border-radius:14px;padding:18px">
+                        <div style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;
+                        background:#fff;border:2px solid #10b981;color:#065f46;border-radius:50%;
+                        font-weight:800;font-size:13px;margin-bottom:10px;box-shadow:0 1px 4px rgba(16,185,129,.15)">2
+                        </div>
+                        <h3 style="margin:0 0 6px;font-size:20px">Prefill the wizard</h3>
+                        <p style="color:#4b5563;margin:0">On opening wizards/composer, CC is prefilled. Users can
+                            add/remove CCs before sending.</p>
+                    </td>
+
+                    <!-- Step 3 -->
+                    <td style="background:#ffffff;border:1px solid #ffe4cc;border-radius:14px;padding:18px">
+                        <div style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;
+                        background:#fff;border:2px solid #10b981;color:#065f46;border-radius:50%;
+                        font-weight:800;font-size:13px;margin-bottom:10px;box-shadow:0 1px 4px rgba(16,185,129,.15)">3
+                        </div>
+                        <h3 style="margin:0 0 6px;font-size:20px">Inject at send</h3>
+                        <p style="color:#4b5563;margin:0">Right before dispatch, the final, de-duplicated CC list is
+                            written to the outgoing message.</p>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="background:#fff;border:1px dashed #fed7aa;border-radius:12px;padding:14px;margin-top:12px;color:#7c2d12">
+                <strong>Tip:</strong> Partners without an email are ignored. Duplicates are removed by email address.
+                You stay in control from the wizard UI.
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- SCREENSHOTS (replace image files with your actual ones) -->
+<section class="ss" style="padding: 100px 0; background-color: #f3f4f6; margin-top: 100px;">
+    <div class="wrap" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+
+        <div style="
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(17,24,39,.08);
+      padding: 40px;
+      overflow: hidden;
+    ">
+            <h2 class="ss-title" style="text-align: center; margin-bottom: 40px; font-size: 3rem;">See It in Action</h2>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Global CC configuration in General Settings</p>
+                <img src="images/cc_settings.png" alt="Global CC settings"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Credit Note mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/credit_note_cc.png" alt="Credit Note send with CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Invoice mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/invoice_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Invoice — fallback CC (auto-populated with responsible user)</p>
+                <img src="images/fallback_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Sales Order mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/order_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Quotation Send mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/quotation_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Sales Order cancellation mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/cancel_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Purchase Order mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/po_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Request for Quotation mail wizard — send with auto-populated global CC recipient</p>
+                <img src="images/rfq_cc.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Delivery Order - wizard in order to global CC recipient</p>
+                <img src="images/shipping_cc1.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Delivery Order - Send mail with global CC recipient</p>
+                <img src="images/shipping_cc2.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Example Outgoing mail with auto-populated CC list applied - 1</p>
+                <img src="images/example1.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+            <div style="margin-bottom: 48px;">
+                <p class="ss-cap" style="text-align: center; margin-bottom: 16px; font-size: 1.1rem; font-weight: bold;">Example Outgoing mail with auto-populated CC list applied - 2</p>
+                <img src="images/example2.png" alt="Invoice CC"
+                     style="display:block;max-width:100%;width:100%;max-height:700px;
+                    object-fit:contain;border-radius:12px;
+                    box-shadow:0 8px 16px rgba(0,0,0,0.2);margin:0 auto;">
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- INSTALLATION — numbered step cards (1 • 2 • 3), Apps-store safe -->
+<section style="padding:56px 0;background:#fff">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+
+        <!-- soft framed panel -->
+        <div style="background:#fff;border:1px solid #fed7aa;border-radius:16px;
+                box-shadow:0 10px 28px rgba(17,24,39,.06);padding:26px">
+            <h2 style="font-size:38px;margin:0 0 18px;text-align:center">Installation</h2>
+
+            <!-- 3 numbered cards -->
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="table-layout:fixed">
+                <tr valign="top">
+                    <!-- STEP 1 -->
+                    <td width="33%" style="padding:0 10px">
+                        <div style="position:relative;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;
+                        box-shadow:0 6px 18px rgba(17,24,39,.06);padding:20px 18px;">
+              <span style="position:absolute;top:12px;left:12px;background:#fff;color:#ef4444;
+                           border:2px solid #ef4444;border-radius:6px;font-weight:700;font-size:12px;
+                           padding:2px 7px;line-height:1;display:inline-block;">1</span>
+                            <h3 style="margin:8px 0 6px;font-size:20px">Install from Apps</h3>
+                            <p style="color:#4b5563;margin:0">Open Odoo Apps and install <em>Email CC Automation</em>
+                                (Odoo 18.0).</p>
+                        </div>
+                    </td>
+
+                    <!-- STEP 2 -->
+                    <td width="33%" style="padding:0 10px">
+                        <div style="position:relative;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;
+                        box-shadow:0 6px 18px rgba(17,24,39,.06);padding:20px 18px;">
+              <span style="position:absolute;top:12px;left:12px;background:#fff;color:#ef4444;
+                           border:2px solid #ef4444;border-radius:6px;font-weight:700;font-size:12px;
+                           padding:2px 7px;line-height:1;display:inline-block;">2</span>
+                            <h3 style="margin:8px 0 6px;font-size:20px">Optional libs</h3>
+                            <p style="color:#4b5563;margin:0">If needed by your stack: <code>pip install -r
+                                requirements.txt</code>.</p>
+                        </div>
+                    </td>
+
+                    <!-- STEP 3 -->
+                    <td width="33%" style="padding:0 10px">
+                        <div style="position:relative;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;
+                        box-shadow:0 6px 18px rgba(17,24,39,.06);padding:20px 18px;">
+              <span style="position:absolute;top:12px;left:12px;background:#fff;color:#ef4444;
+                           border:2px solid #ef4444;border-radius:6px;font-weight:700;font-size:12px;
+                           padding:2px 7px;line-height:1;display:inline-block;">3</span>
+                            <h3 style="margin:8px 0 6px;font-size:20px">Email Server</h3>
+                            <p style="color:#4b5563;margin:0">Configure and test your Outgoing Email Server.</p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- tip -->
+            <div style="margin-top:16px;background:#fff;border:1px dashed #fed7aa;border-radius:12px;padding:12px;color:#7c2d12">
+                <strong>Tip:</strong> After installation, open <em>Settings → General Settings → Email CC
+                Automation</em> to enable and configure the global CC list.
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- CONFIGURATION — accordion (expand/collapse), Apps-store safe -->
+<section style="padding:56px 0;background:#f7f8fa">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;
+                box-shadow:0 10px 30px rgba(17,24,39,.08);padding:26px">
+            <h2 style="font-size:38px;margin:0 0 18px;text-align:center">Configuration</h2>
+
+            <!-- Item A -->
+            <details
+                    style="margin:12px 0;border:1px solid #bbf7d0;border-radius:14px;overflow:hidden;background:#ecfdf5"
+                    open>
+                <summary style="cursor:pointer;padding:14px 16px;font-weight:700;color:#065f46;
+                        background:linear-gradient(90deg,#10b981 0,#34d399 60%,#ecfdf5 100%);
+                        border-bottom:1px solid #bbf7d0">
+          <span style="display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
+                       margin-right:10px;background:#fff;border:2px solid #10b981;color:#065f46;
+                       border-radius:50%;font-size:13px;font-weight:800">A</span>
+                    Global CC List
+                </summary>
+                <div style="padding:14px 16px;background:#ffffff">
+                    <ul style="margin:0 0 0 18px;color:#374151">
+                        <li>Go to <em>Settings → General Settings → Email CC Automation</em>.</li>
+                        <li>Enable the feature and add partners (their emails) to the global CC list.</li>
+                        <li>Save — applies to supported wizards and flows.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <!-- Item B -->
+            <details
+                    style="margin:12px 0;border:1px solid #bfdbfe;border-radius:14px;overflow:hidden;background:#eff6ff">
+                <summary style="cursor:pointer;padding:14px 16px;font-weight:700;color:#1e3a8a;
+                        background:linear-gradient(90deg,#2563eb 0,#60a5fa 60%,#eff6ff 100%);
+                        border-bottom:1px solid #bfdbfe">
+          <span style="display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
+                       margin-right:10px;background:#fff;border:2px solid #2563eb;color:#1e3a8a;
+                       border-radius:50%;font-size:13px;font-weight:800">B</span>
+                    Behavior &amp; Fallback
+                </summary>
+                <div style="padding:14px 16px;background:#ffffff">
+                    <ul style="margin:0 0 0 18px;color:#374151">
+                        <li>If the global list is empty, CC falls back to the responsible user per document.</li>
+                        <li>Inventory pickings provide a “next CC” preview to adjust per operation.</li>
+                        <li>Partners without an email are skipped; duplicates are de-duplicated.</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+    </div>
+</section>
+
+
+<!-- COMPATIBILITY & NOTES — Sticky-note tiles with folded corner (no SVG/emoji) -->
+<section style="padding:56px 0;background:#fff">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <h2 style="font-size:38px;margin:0 0 22px;text-align:center">Compatibility &amp; Notes</h2>
+
+        <div style="font-size:0;text-align:center">
+
+            <!-- Tile 1: Supported Versions -->
+            <div style="display:inline-block;vertical-align:top;width:33.33%;min-width:260px;
+                  padding:10px;box-sizing:border-box;font-size:16px">
+                <div style="position:relative;border-radius:16px;border:1px solid #c7d2fe;
+                    background:
+                      radial-gradient(circle at 12px 12px, rgba(99,102,241,.06) 2px, transparent 3px) 0 0/22px 22px,
+                      linear-gradient(180deg,#ffffff 0%,#eef2ff 100%);
+                    box-shadow:0 10px 24px rgba(99,102,241,.14);
+                    padding:20px 18px;text-align:center">
+                    <!-- folded corner -->
+                    <span style="position:absolute;top:0;right:0;width:0;height:0;
+                       border-top:22px solid #7cc086;border-left:22px solid transparent"></span>
+
+                    <div style="font-weight:800;font-size:26px;margin:6px 0 6px">Odoo 18.0</div>
+                    <div style="color:#4b5563">Supported version</div>
+                </div>
+            </div>
+
+            <!-- Tile 2: Multi-company -->
+            <div style="display:inline-block;vertical-align:top;width:33.33%;min-width:260px;
+                  padding:10px;box-sizing:border-box;font-size:16px">
+                <div style="position:relative;border-radius:16px;border:1px solid #bae6fd;
+                    background:
+                      radial-gradient(circle at 12px 12px, rgba(14,165,233,.08) 2px, transparent 3px) 0 0/22px 22px,
+                      linear-gradient(180deg,#ffffff 0%,#ecfeff 100%);
+                    box-shadow:0 10px 24px rgba(14,165,233,.14);
+                    padding:20px 18px;text-align:center">
+          <span style="position:absolute;top:0;right:0;width:0;height:0;
+                       border-top:22px solid #0ea5e9;border-left:22px solid transparent"></span>
+
+                    <div style="font-weight:800;font-size:26px;margin:6px 0 6px">Global behavior</div>
+                    <div style="color:#4b5563">Multi-company ready</div>
+                </div>
+            </div>
+
+            <!-- Tile 3: Security -->
+            <div style="display:inline-block;vertical-align:top;width:33.33%;min-width:260px;
+                  padding:10px;box-sizing:border-box;font-size:16px">
+                <div style="position:relative;border-radius:16px;border:1px solid #fde68a;
+                    background:
+                      radial-gradient(circle at 12px 12px, rgba(245,158,11,.10) 2px, transparent 3px) 0 0/22px 22px,
+                      linear-gradient(180deg,#ffffff 0%,#fff7ed 100%);
+                    box-shadow:0 10px 24px rgba(245,158,11,.16);
+                    padding:20px 18px;text-align:center">
+          <span style="position:absolute;top:0;right:0;width:0;height:0;
+                       border-top:22px solid #f59e0b;border-left:22px solid transparent"></span>
+
+                    <div style="font-weight:800;font-size:26px;margin:6px 0 6px">Admin-controlled</div>
+                    <div style="color:#4b5563">Only administrators can edit the global CC config</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+
+<!-- ROADMAP — aligned nodes + clear status chips + legend (inline CSS only) -->
+<section style="padding:56px 0;background:#f7f8fa">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;
+                box-shadow:0 12px 34px rgba(17,24,39,.08);padding:28px">
+            <h2 style="font-size:38px;margin:0 0 22px;text-align:center">Roadmap</h2>
+
+            <div style="position:relative;max-width:980px;margin:0 auto;padding-top:72px">
+                <!-- dashed spine -->
+                <div style="position:absolute;left:4%;right:4%;top:48px;height:2px;
+                    background-image:repeating-linear-gradient(90deg,#cbd5e1 0 16px,transparent 16px 28px);
+                    border-radius:999px"></div>
+
+                <div style="font-size:0;text-align:center">
+                    <!-- STEP 1 -->
+                    <div style="display:inline-block;width:33.33%;min-width:240px;vertical-align:top;font-size:16px;position:relative;padding-top:8px">
+                        <!-- status chip (above spine) -->
+                        <span style="position:absolute;left:50%;top:14px;transform:translateX(-50%);
+                         background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;
+                         padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700">Planned</span>
+                        <!-- node on spine -->
+                        <span style="position:absolute;left:50%;top:44px;transform:translateX(-50%);
+                         width:10px;height:10px;border-radius:50%;background:#7c3aed;border:2px solid #f5f3ff"></span>
+                        <!-- connector -->
+                        <span style="position:absolute;left:calc(50% - 1px);top:54px;width:2px;height:22px;background:#e9d5ff"></span>
+
+                        <h3 style="margin:10px 0 6px;font-size:26px">Template-level CC</h3>
+                        <p style="color:#4b5563;margin:0">Priority over global configuration.</p>
+                    </div>
+
+                    <!-- STEP 2 -->
+                    <div style="display:inline-block;width:33.33%;min-width:240px;vertical-align:top;font-size:16px;position:relative;padding-top:8px">
+            <span style="position:absolute;left:50%;top:14px;transform:translateX(-50%);
+                         background:#ecfeff;color:#0e7490;border:1px solid #bae6fd;
+                         padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700">Next</span>
+                        <span style="position:absolute;left:50%;top:44px;transform:translateX(-50%);
+                         width:10px;height:10px;border-radius:50%;background:#0ea5e9;border:2px solid #ecfeff"></span>
+                        <span style="position:absolute;left:calc(50% - 1px);top:54px;width:2px;height:22px;background:#bae6fd"></span>
+
+                        <h3 style="margin:10px 0 6px;font-size:26px">Per-company Rules</h3>
+                        <p style="color:#4b5563;margin:0">Clear precedence across companies.</p>
+                    </div>
+
+                    <!-- STEP 3 -->
+                    <div style="display:inline-block;width:33.33%;min-width:240px;vertical-align:top;font-size:16px;position:relative;padding-top:8px">
+            <span style="position:absolute;left:50%;top:14px;transform:translateX(-50%);
+                         background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;
+                         padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700">Idea</span>
+                        <span style="position:absolute;left:50%;top:44px;transform:translateX(-50%);
+                         width:10px;height:10px;border-radius:50%;background:#f59e0b;border:2px solid #fff7ed"></span>
+                        <span style="position:absolute;left:calc(50% - 1px);top:54px;width:2px;height:22px;background:#fed7aa"></span>
+
+                        <h3 style="margin:10px 0 6px;font-size:26px">BCC Parity</h3>
+                        <p style="color:#4b5563;margin:0">Mirror CC automation to BCC field.</p>
+                    </div>
+                </div>
+
+                <!-- legend -->
+                <div style="margin:18px auto 0;max-width:860px;background:#fff;border:1px dashed #e5e7eb;
+                    border-radius:12px;padding:12px 14px;color:#4b5563">
+                    <span style="display:inline-block;margin-left:8px;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700">Planned</span>
+                    <span style="display:inline-block;margin-left:6px;background:#ecfeff;color:#0e7490;border:1px solid #bae6fd;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700">Next</span>
+                    <span style="display:inline-block;margin-left:6px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700">Idea</span>
+                    <span style="opacity:.85;margin-left:6px">— where each item currently sits on the timeline.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- SUPPORT — tear-off ticket CTA (sanitizer-proof) -->
+<section style="padding:56px 0;background:#fff; text-align:center;">
+    <div style="max-width:1180px;margin:0 auto;padding:0 18px">
+        <div style="background:#ffffff;border:1px solid #dbe1f1;border-radius:18px;box-shadow:0 16px 48px rgba(30,64,175,.18);position:relative;overflow:hidden">
+
+            <!-- LEFT: message + badges -->
+            <div style="display:inline-block;vertical-align:top;width:68%;min-width:280px;padding:28px 26px">
+                <h2 style="font-size:34px;margin:0 0 10px">Need help or have a feature request?</h2>
+                <p style="margin:0 0 16px;max-width:760px;color:#374151">
+                    We provide quick, friendly support for installation, configuration, and roadmap ideas.
+                    Tell us what you need — we’ll get you unstuck fast.
+                </p>
+
+                <!-- badges -->
+                <div style="font-size:0">
+          <span style="display:inline-block;margin:6px 8px 0 0;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;
+                       padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700">Avg. response &lt; 1 business day</span>
+                    <span style="display:inline-block;margin:6px 8px 0 0;background:#ecfeff;color:#0e7490;border:1px solid #bae6fd;
+                       padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700">Enterprise-ready</span>
+                    <span style="display:inline-block;margin:6px 8px 0 0;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;
+                       padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700">Bugfix priority</span>
+                </div>
+            </div>
+
+            <!-- RIGHT: coupon (light background + dark text) -->
+            <div style="display:inline-block;vertical-align:top;width:32%;min-width:240px;padding:28px;text-align:center;background:#ffffff">
+
+                <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px 12px;margin:0 auto 14px;max-width:280px">
+                    <div style="font-size:18px;font-weight:800;margin-bottom:4px;color:#0f172a">Email Us</div>
+                    <div style="font-size:13px;color:#4b5563">Describe your goal &amp; environment — we’ll reply with
+                        exact steps.
+                    </div>
+                </div>
+
+                <a href="mailto:bjit.odoo@bjitgroup.com"
+                   style="display:inline-block;background:#fff;color:#1e3a8a;text-decoration:none;
+                  padding:12px 22px;border-radius:999px;font-weight:700;border:1px solid #e5e7eb;
+                  box-shadow:0 8px 22px rgba(255,255,255,.25)">Contact Support</a>
+
+                <div style="margin-top:10px;font-size:12px;color:#6b7280">
+                    or write to <code
+                        style="background:#f3f4f6;padding:2px 6px;border-radius:6px;border:1px solid #e5e7eb">bjit.odoo@bjitgroup.com</code>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+</body>
+</html>
