@@ -6,8 +6,8 @@
             <field name="name">Contract Agreement</field>
             <field name="model">rmc.contract.agreement</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">rmc_manpower_contractor.report_agreement_contract_document</field>
-            <field name="report_file">rmc_manpower_contractor.report_agreement_contract_document</field>
+            <field name="report_name">rmc_manpower_contractor.report_agreement_contract</field>
+            <field name="report_file">rmc_manpower_contractor.report_agreement_contract</field>
             <field name="print_report_name">
                 (object.name or 'Agreement') + ' - Contract.pdf'
             </field>
@@ -15,7 +15,7 @@
             <field name="binding_type">report</field>
         </record>
 
-<template id="report_agreement_contract_document">
+<template id="report_agreement_contract">
     <t t-call="web.html_container">
         <t t-foreach="docs" t-as="doc">
             <t t-set="company" t-value="doc.company_id or doc.env.company"/>
@@ -129,37 +129,6 @@
 
                    
 
-                    <t t-if="doc.manpower_matrix_ids">
-                        <table class="table table-bordered table-sm mb-4">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Job Position</th>
-                                    <th>Assigned Employee</th>
-                                    <th>Fleet / Equipment</th>
-                                    <th>Shift</th>
-                                    <th>Component</th>
-                                    <th class="text-end">Monthly Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="doc.manpower_matrix_ids" t-as="line">
-                                    <td>
-                                        <span t-esc="(line.employee_id.job_id.name or line.designation or '-')"/>
-                                    </td>
-                                    <td>
-                                        <span t-esc="line.employee_id.name or '-'"/>
-                                    </td>
-                                    <td><span t-esc="line.vehicle_id.display_name or '-'"/></td>
-                                    <td><span t-esc="dict(line._fields['shift'].selection).get(line.shift)"/></td>
-                                    <td><span t-esc="dict(line._fields['remark'].selection).get(line.remark)"/></td>
-                                    <td class="text-end">
-                                        <span t-esc="doc.currency_id.symbol"/> <span t-esc="('%0.2f' % line.total_amount)"/>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </t>
-
                     <t t-if="doc.contract_type == 'pump_ops'">
                         <t t-set="annex_clauses" t-value="doc.clause_ids.filtered(lambda c: c.title and c.title.lower().startswith('annexure'))"/>
                         <t t-set="main_clauses" t-value="doc.clause_ids - annex_clauses"/>
@@ -243,7 +212,54 @@
                                 <t t-else="">
                                     <p>The manpower matrix summarises designation-wise headcount, shifts, and payment component. Values reflect the latest data attached to this agreement.</p>
                                 </t>
-                                <t t-if="not doc.manpower_matrix_ids">
+                                <t t-if="doc.manpower_matrix_ids">
+                                    <table class="table table-sm border mt-2">
+                                        <thead>
+                                            <tr>
+                                                <th>Job Position</th>
+                                                <th>Assigned Employee</th>
+                                                <th class="text-center">Fleet / Equipment</th>
+                                                <th class="text-center">Shift</th>
+                                                <th class="text-center">Component</th>
+                                                <th class="text-end">Monthly Rate</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="doc.manpower_matrix_ids" t-as="line">
+                                                <td>
+                                                    <span t-esc="(line.employee_id.job_id.name or line.designation or '-')"/>
+                                                </td>
+                                                <td>
+                                                    <span t-esc="line.employee_id.name or '-'"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <t t-set="vehicle_label"
+                                                       t-value="line.vehicle_id.display_name or (line.employee_id and line.employee_id.car_ids and ', '.join(line.employee_id.car_ids.mapped('display_name'))) or '-'"/>
+                                                    <span t-esc="vehicle_label"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-esc="dict(line._fields['shift'].selection).get(line.shift)"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-esc="dict(line._fields['remark'].selection).get(line.remark)"/>
+                                                </td>
+                                                <td class="text-end">
+                                                    <span t-esc="doc.currency_id.symbol"/> <span t-esc="('%0.2f' % line.total_amount)"/>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <t t-set="matrix_total" t-value="doc.manpower_matrix_total_amount or sum(l.total_amount for l in doc.manpower_matrix_ids)"/>
+                                        <tfoot t-if="matrix_total">
+                                            <tr>
+                                                <td colspan="5" class="text-end fw-semibold">Total Monthly Rate</td>
+                                                <td class="text-end">
+                                                    <span t-esc="doc.currency_id.symbol"/> <span t-esc="('%0.2f' % matrix_total)"/>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </t>
+                                <t t-else="">
                                     <table class="table table-sm border mt-2">
                                         <thead>
                                             <tr>
@@ -315,7 +331,6 @@
                                         </tfoot>
                                     </table>
                                 </t>
-
                                 <h3 class="mt-5">
                                     <t t-esc="annex_b_clause.title or 'Annexure B – MGQ &amp; Variable Rate'"/>
                                 </h3>

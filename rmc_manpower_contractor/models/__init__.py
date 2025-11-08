@@ -12,3 +12,5 @@ from . import breakdown_event
 from . import inventory_handover
 from . import payment
 from . import hr_attendance
+from . import billing_prepare_log
+from . import fleet_vehicle

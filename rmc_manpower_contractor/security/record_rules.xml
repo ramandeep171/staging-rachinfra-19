@@ -37,6 +37,17 @@
             <field name="groups" eval="[(4, ref('group_rmc_manager'))]"/>
         </record>
 
+        <record id="rmc_diesel_log_contractor_manager_rule" model="ir.rule">
+            <field name="name">RMC Diesel Log: Contractor Manager Access</field>
+            <field name="model_id" ref="model_rmc_diesel_log"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('rmc_manpower_contractor.group_rmc_contractor_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
         <!-- Similar rules for other models -->
         <record id="rmc_maintenance_contractor_rule" model="ir.rule">
             <field name="name">RMC Maintenance: Contractor Own Records</field>

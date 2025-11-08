@@ -81,6 +81,15 @@ daily diesel performance records to ensure transparency and timely payment.&lt;/
 &lt;/ul&gt;
 </field>
     </record>
+    <record id="clause_template_pump_ops_unauthorized_changes" model="rmc.agreement.clause.template">
+      <field name="name">Pump Ops - Clause 5A</field>
+      <field name="contract_type">pump_ops</field>
+      <field name="sequence">55</field>
+      <field name="title">Clause 5A. Unauthorized Operational Changes</field>
+      <field name="body_html">
+&lt;p&gt;The Contractor shall not make, instruct, or permit any operational, technical, or process-related change in plant machinery, batching control systems, or any production parameters without prior written approval from Rach Infra’s authorized representative. Any such action, if done without approval, shall be deemed a breach of contract, and the Contractor shall be solely liable for all resultant losses, damages, and fuel or production costs arising therefrom.&lt;/p&gt;
+</field>
+    </record>
     <record id="clause_template_pump_ops_commercials" model="rmc.agreement.clause.template">
       <field name="name">Pump Ops - Clause 6</field>
       <field name="contract_type">pump_ops</field>

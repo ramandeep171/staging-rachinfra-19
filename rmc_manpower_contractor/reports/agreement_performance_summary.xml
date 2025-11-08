@@ -6,13 +6,13 @@
             <field name="name">Agreement Performance Summary</field>
             <field name="model">rmc.contract.agreement</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">rmc_manpower_contractor.report_agreement_performance_summary</field>
-            <field name="report_file">rmc_manpower_contractor.report_agreement_performance_summary</field>
+            <field name="report_name">rmc_manpower_contractor.report_agreement_performance</field>
+            <field name="report_file">rmc_mpc.report_agreement_performance</field>
             <field name="multi">True</field>
             <field name="binding_type">report</field>
         </record>
 
-        <template id="report_agreement_performance_summary">
+        <template id="report_agreement_performance">
             <t t-call="web.html_container">
                 <t t-foreach="docs" t-as="doc">
                     <t t-call="web.external_layout">
@@ -26,7 +26,11 @@
                                 &#160;•&#160; <strong>Type:</strong> <span t-esc="dict(doc._fields['contract_type'].selection).get(doc.contract_type)"/>
                             </div>
                             <div class="mb-3">
-                                <strong>Signature Status:</strong> <span t-esc="dict(doc._fields['sign_state'].selection).get(doc.sign_state) or 'n/a'"/>
+                                <strong>Signature Status:</strong>
+                                <span>
+                                    <t t-set="sign_state_selection" t-value="doc.fields_get(['sign_state']).get('sign_state', {}).get('selection', [])"/>
+                                    <t t-esc="dict(sign_state_selection or []).get(doc.sign_state) or 'n/a'"/>
+                                </span>
                                 &#160;•&#160; <strong>Valid From:</strong> <span t-esc="doc.validity_start or '-'"/>
                                 &#160;•&#160; <strong>Valid Until:</strong> <span t-esc="doc.validity_end or '-'"/>
                             </div>
@@ -44,7 +48,7 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td class="text-center"><span t-esc="'%0.2f %%' % (doc.performance_score or 0.0)"/></td>
+                                        <td class="text-center"><span t-esc="'{:.2f}%'.format(doc.performance_score or 0.0)"/></td>
                                         <td class="text-center"><span t-esc="doc.pending_items_count or 0"/></td>
                                         <td class="text-center"><span t-esc="doc.mgq_target or 0.0"/></td>
                                         <td class="text-end"><span t-esc="doc.currency_id.symbol"/> <span t-esc="('%0.2f' % (doc.part_a_fixed or 0.0))"/></td>
@@ -72,7 +76,7 @@
                                         <span t-esc="dict(item._fields['state'].selection).get(item.state)"/>
                                         <span t-if="item.signing_date">
                                             &#160;on&#160;
-                                            <span t-esc="format_date(doc.env, item.signing_date)"/>
+                                            <span t-esc="doc.env['ir.qweb.field.date'].value_to_html(item.signing_date, {'format': 'medium'})"/>
                                         </span>
                                     </li>
                                     <li t-if="not doc.sign_request_id.request_item_ids">

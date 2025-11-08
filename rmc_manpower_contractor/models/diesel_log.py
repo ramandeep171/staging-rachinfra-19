@@ -2,15 +2,20 @@
 """
 Diesel Log - Track fuel consumption and efficiency
 """
+import logging
+from datetime import timedelta
 
-from odoo import models, fields, api, _
+from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 class RmcDieselLog(models.Model):
     _name = 'rmc.diesel.log'
     _description = 'RMC Diesel Log'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'date desc, id desc'
+    _DIESEL_SYNC_PARAM = 'rmc.diesel.log.last_sync'
 
     name = fields.Char(
         string='Reference',
@@ -234,6 +239,125 @@ class RmcDieselLog(models.Model):
         """Reset to draft"""
         self.write({'state': 'draft'})
 
+    # ------------------------------------------------------------------
+    # Auto-sync helpers
+    # ------------------------------------------------------------------
+
+    @api.model
+    def _resolve_agreement_for_vehicle(self, vehicle):
+        if not vehicle:
+            return self.env['rmc.contract.agreement']
+        Agreement = self.env['rmc.contract.agreement'].sudo()
+        domain = [
+            '|',
+            ('vehicle_ids', 'in', vehicle.ids),
+            ('manpower_matrix_ids.vehicle_id', 'in', vehicle.ids)
+        ]
+        return Agreement.search(domain, limit=1)
+
+    @api.model
+    def _resolve_driver_employee(self, vehicle, agreement):
+        Employee = self.env['hr.employee'].sudo()
+        if not vehicle or not vehicle.driver_id:
+            return Employee
+        employee = Employee.search([
+            ('address_home_id', '=', vehicle.driver_id.id)
+        ], limit=1)
+        if employee and agreement.driver_ids and employee not in agreement.driver_ids:
+            return Employee.browse()
+        return employee
+
+    @api.model
+    def _extract_work_payload(self, log):
+        work_m3 = 0.0
+        work_km = 0.0
+        production_name = getattr(log, 'production_name', False)
+        if production_name:
+            try:
+                value = float(production_name)
+            except (TypeError, ValueError):
+                value = 0.0
+            if value > 0:
+                work_m3 = value
+        odometer_diff = getattr(log, 'odometer_difference', False)
+        if odometer_diff:
+            work_km = odometer_diff
+        elif getattr(log, 'current_odometer', False) and getattr(log, 'last_odometer', False):
+            work_km = (log.current_odometer or 0.0) - (log.last_odometer or 0.0)
+        return work_m3, work_km
+
+    @api.model
+    def _prepare_sync_vals(self, log, agreement):
+        work_m3, work_km = self._extract_work_payload(log)
+        date_value = fields.Date.to_date(log.date) if log.date else fields.Date.context_today(self)
+        vals = {
+            'agreement_id': agreement.id,
+            'date': date_value,
+            'vehicle_id': log.vehicle_id.id,
+            'opening_ltr': log.opening_diesel or 0.0,
+            'issued_ltr': (log.issue_diesel or log.quantity) or 0.0,
+            'closing_ltr': log.closing_diesel or 0.0,
+            'work_done_m3': work_m3,
+            'work_done_km': work_km,
+        }
+        driver = self._resolve_driver_employee(log.vehicle_id, agreement)
+        if driver:
+            vals['driver_id'] = driver.id
+        # Allow zero-quantity logs to sync as well so Operations view mirrors
+        # everything captured in the fleet module (some audit logs have Qty = 0).
+        return vals
+
+    def _upsert_from_diesel_log(self, log, agreement):
+        vals = self._prepare_sync_vals(log, agreement)
+        if not vals:
+            return False
+        sync_name = f"SYNC-DL-{log.id}"
+        record = self.search([('name', '=', sync_name)], limit=1)
+        if record:
+            record.write(vals)
+            return record
+        vals['name'] = sync_name
+        vals.setdefault('notes', _('Auto-synced from diesel log %s') % (log.name or log.id))
+        return self.create(vals)
+
+    @api.model
+    def cron_sync_from_fleet_issues(self):
+        """Mirror approved/done diesel.log entries into RMC diesel log."""
+        self = self.sudo()
+        DieselLog = self.env['diesel.log'].sudo()
+        ICP = self.env['ir.config_parameter'].sudo()
+        last_sync_str = ICP.get_param(self._DIESEL_SYNC_PARAM)
+        last_sync = fields.Datetime.from_string(last_sync_str) if last_sync_str else None
+        domain = [
+            ('log_type', '=', 'diesel'),
+            ('state', 'in', ('approved', 'done')),
+        ]
+        if last_sync:
+            domain.append(('write_date', '>', fields.Datetime.to_string(last_sync - timedelta(hours=1))))
+        else:
+            baseline = fields.Datetime.from_string(fields.Datetime.now())
+            domain.append(('create_date', '>=', fields.Datetime.to_string(baseline - timedelta(days=7))))
+        logs = DieselLog.search(domain, order='write_date asc, id asc')
+        if not logs:
+            return
+        latest = last_sync
+        processed = 0
+        for log in logs:
+            agreement = self._resolve_agreement_for_vehicle(log.vehicle_id)
+            if not agreement:
+                continue
+            record = self._upsert_from_diesel_log(log, agreement)
+            if record:
+                processed += 1
+                timestamp = fields.Datetime.from_string(log.write_date) if log.write_date else False
+                if not timestamp and log.create_date:
+                    timestamp = fields.Datetime.from_string(log.create_date)
+                if timestamp:
+                    latest = timestamp if not latest else max(latest, timestamp)
+        if latest:
+            ICP.set_param(self._DIESEL_SYNC_PARAM, fields.Datetime.to_string(latest))
+        _logger.info("Diesel auto-sync processed %s fleet issues.", processed)
+
     _sql_constraints = [
         (
             'rmc_diesel_closing_ltr_positive',
@@ -246,3 +370,28 @@ class RmcDieselLog(models.Model):
             'Issued liters must be non-negative.'
         ),
     ]
+
+
+class DieselLog(models.Model):
+    _inherit = 'diesel.log'
+
+    rmc_agreement_id = fields.Many2one(
+        'rmc.contract.agreement',
+        string='RMC Agreement',
+        compute='_compute_rmc_agreement',
+        store=True,
+        index=True,
+        help='Agreement inferred from the vehicle assignment.'
+    )
+
+    @api.depends('vehicle_id', 'vehicle_id.rmc_agreement_ids')
+    def _compute_rmc_agreement(self):
+        for log in self:
+            agreement = False
+            vehicle = log.vehicle_id
+            if vehicle and vehicle.rmc_agreement_ids:
+                agreements = vehicle.rmc_agreement_ids
+                preferred = agreements.filtered(lambda agr: agr.state not in ('cancelled', 'expired'))
+                target = (preferred or agreements).sorted(key=lambda agr: (agr.state != 'active', agr.id))[:1]
+                agreement = target.id if target else False
+            log.rmc_agreement_id = agreement

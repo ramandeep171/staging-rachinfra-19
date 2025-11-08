@@ -44,6 +44,14 @@
             <field name="key">rmc_score.min_payment_score</field>
             <field name="value">40</field>
         </record>
+        <record id="config_enforce_min_payment_score" model="ir.config_parameter">
+            <field name="key">rmc_score.enforce_min_payment_score</field>
+            <field name="value">0</field>
+        </record>
+        <record id="config_enforce_type_kpis" model="ir.config_parameter">
+            <field name="key">rmc_score.enforce_type_kpis</field>
+            <field name="value">1</field>
+        </record>
 
         <!-- Billing Bonus/Penalty Percentages -->
         <record id="config_bonus_5_star" model="ir.config_parameter">

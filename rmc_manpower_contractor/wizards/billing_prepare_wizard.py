@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
-from datetime import datetime
+from odoo.tools.misc import format_date
+from datetime import datetime, time
 import base64
 import logging
 
 _logger = logging.getLogger(__name__)
 
-class RmcBillingPrepareWizard(models.TransientModel):
+class RmcBillingPrepareWizard(models.Model):
     _name = 'rmc.billing.prepare.wizard'
     _description = 'RMC Monthly Billing Preparation Wizard'
+    _order = 'create_date desc'
 
     agreement_id = fields.Many2one('rmc.contract.agreement', string='Agreement', required=True, readonly=True)
     contractor_id = fields.Many2one(related='agreement_id.contractor_id', string='Contractor', readonly=True)
@@ -24,6 +26,16 @@ class RmcBillingPrepareWizard(models.TransientModel):
     mgq_target = fields.Float(related='agreement_id.mgq_target', string='MGQ Target', readonly=True)
     mgq_achievement_pct = fields.Float(string='MGQ Achievement %', compute='_compute_mgq', store=True, digits=(5, 2))
     part_b_amount = fields.Monetary(string='Part-B Variable', compute='_compute_billing_amounts', store=True, currency_field='currency_id')
+    prime_output_qty = fields.Float(
+        string='Prime Output (m³)',
+        digits='Product Unit of Measure',
+        help='Prime output booked against this agreement for the billing period.'
+    )
+    optimized_standby_qty = fields.Float(
+        string='Optimized Standby (m³)',
+        digits='Product Unit of Measure',
+        help='Standby delta corresponding to the billing period.'
+    )
     
     # Breakdown deductions (Clause 9)
     breakdown_deduction = fields.Monetary(string='Breakdown Deductions', compute='_compute_billing_amounts', store=True, currency_field='currency_id')
@@ -71,6 +83,21 @@ class RmcBillingPrepareWizard(models.TransientModel):
             else:
                 wizard.mgq_achievement_pct = 0.0
 
+    @api.onchange('agreement_id')
+    def _onchange_agreement_id(self):
+        for wizard in self:
+            wizard.prime_output_qty = wizard.agreement_id.prime_output_qty or 0.0
+            wizard.optimized_standby_qty = wizard.agreement_id.optimized_standby_qty or 0.0
+        self._sync_mgq_with_prime_output()
+
+    @api.onchange('prime_output_qty')
+    def _onchange_prime_output_qty(self):
+        self._sync_mgq_with_prime_output()
+
+    def _sync_mgq_with_prime_output(self):
+        for wizard in self:
+            wizard.mgq_achieved = wizard.prime_output_qty or 0.0
+
     @api.depends('performance_score', 'stars')
     def _compute_bonus_penalty(self):
         """
@@ -111,6 +138,8 @@ class RmcBillingPrepareWizard(models.TransientModel):
             # Part-B: Variable component based on MGQ achievement
             part_b_lines = wizard.agreement_id.manpower_matrix_ids.filtered(lambda x: x.remark == 'part_b')
             part_b_base = sum(part_b_lines.mapped('total_amount'))
+            if not part_b_base:
+                part_b_base = wizard.agreement_id.part_b_variable or wizard.agreement_id.manpower_part_b_amount or 0.0
             
             # Apply MGQ achievement factor (if MGQ < 100%, reduce Part-B proportionally)
             if wizard.mgq_achievement_pct >= 100:
@@ -158,10 +187,19 @@ class RmcBillingPrepareWizard(models.TransientModel):
                 raise ValidationError(_('Period end must be after period start.'))
 
     def action_compute(self):
-        """Recompute all amounts"""
+        """Recompute all amounts and reopen wizard in review mode."""
+        self.ensure_one()
+        self._sync_mgq_with_prime_output()
         self._compute_billing_amounts()
         self.state = 'review'
-        return {'type': 'ir.actions.act_window_close'}
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'new',
+            'context': self.env.context,
+        }
 
     def action_create_bill(self):
         """
@@ -169,6 +207,7 @@ class RmcBillingPrepareWizard(models.TransientModel):
         Apply multi-level approval chain
         """
         self.ensure_one()
+        self._sync_mgq_with_prime_output()
         
         # Pre-flight checks
         if self.agreement_id.payment_hold:
@@ -190,17 +229,25 @@ class RmcBillingPrepareWizard(models.TransientModel):
             'ref': f'{self.agreement_id.name} - {self.period_start.strftime("%B %Y")}',
             'narration': f'Monthly billing for period {self.period_start} to {self.period_end}\n{self.notes or ""}',
         }
+        if 'extract_state' in self.env['account.move']._fields:
+            bill_vals['extract_state'] = 'done'
         
         bill = self.env['account.move'].create(bill_vals)
-        
+
+        # Collect source records used for both attachments and log summary
+        source_records = self._collect_source_records()
+
         # Create invoice lines
         self._create_invoice_lines(bill)
-        
+
         # Attach supporting reports
-        self._attach_reports(bill)
-        
+        attachments = self._attach_reports(bill, source_records)
+
         # Reconcile inventory
         self._reconcile_inventory()
+
+        # Log snapshot
+        self._create_billing_log(bill, attachments, source_records)
         
         # Post message
         bill.message_post(
@@ -234,17 +281,196 @@ class RmcBillingPrepareWizard(models.TransientModel):
             'target': 'current',
         }
 
+    def _create_billing_log(self, bill, attachments, source_records):
+        """Persist a snapshot of the wizard data whenever a bill is created."""
+        self.ensure_one()
+        log_vals = {
+            'agreement_id': self.agreement_id.id,
+            'wizard_id': self.id,
+            'bill_id': bill.id,
+            'period_start': self.period_start,
+            'period_end': self.period_end,
+            'mgq_target': self.mgq_target,
+            'mgq_achieved': self.mgq_achieved,
+            'mgq_achievement_pct': self.mgq_achievement_pct,
+            'prime_output_qty': self.prime_output_qty,
+            'optimized_standby_qty': self.optimized_standby_qty,
+            'part_a_amount': self.part_a_amount,
+            'part_b_amount': self.part_b_amount,
+            'breakdown_deduction': self.breakdown_deduction,
+            'bonus_penalty_pct': self.bonus_penalty_pct,
+            'bonus_penalty_amount': self.bonus_penalty_amount,
+            'inventory_variance': self.inventory_variance,
+            'subtotal': self.subtotal,
+            'tds_amount': self.tds_amount,
+            'total_amount': self.total_amount,
+            'currency_id': self.currency_id.id,
+            'attach_attendance': self.attach_attendance,
+            'attach_diesel': self.attach_diesel,
+            'attach_maintenance': self.attach_maintenance,
+            'attach_breakdown': self.attach_breakdown,
+            'notes': self.notes,
+            'state': self.state,
+            'attachment_ids': [(6, 0, attachments.get('all').ids if attachments.get('all') else [])],
+            'attendance_attachment_id': attachments.get('attendance').id if attachments.get('attendance') else False,
+            'diesel_attachment_id': attachments.get('diesel').id if attachments.get('diesel') else False,
+            'maintenance_attachment_id': attachments.get('maintenance').id if attachments.get('maintenance') else False,
+            'breakdown_attachment_id': attachments.get('breakdown').id if attachments.get('breakdown') else False,
+            'attendance_record_ids': [(6, 0, source_records.get('attendance').ids if source_records.get('attendance') else [])],
+            'diesel_record_ids': [(6, 0, source_records.get('diesel').ids if source_records.get('diesel') else [])],
+            'maintenance_record_ids': [(6, 0, source_records.get('maintenance').ids if source_records.get('maintenance') else [])],
+            'breakdown_record_ids': [(6, 0, source_records.get('breakdown').ids if source_records.get('breakdown') else [])],
+            'attendance_preview_html': self._build_attendance_preview(source_records.get('attendance')),
+            'diesel_preview_html': self._build_diesel_preview(source_records.get('diesel')),
+            'maintenance_preview_html': self._build_maintenance_preview(source_records.get('maintenance')),
+            'breakdown_preview_html': self._build_breakdown_preview(source_records.get('breakdown')),
+        }
+        self.env['rmc.billing.prepare.log'].create(log_vals)
+
+    def _collect_source_records(self):
+        """Fetch datasets per type for the selected period."""
+        self.ensure_one()
+        attendance_data = self.env['rmc.attendance.compliance'].search([
+            ('agreement_id', '=', self.agreement_id.id),
+            ('date', '>=', self.period_start),
+            ('date', '<=', self.period_end),
+        ])
+
+        diesel_data = self.env['rmc.diesel.log'].search([
+            ('agreement_id', '=', self.agreement_id.id),
+            ('date', '>=', self.period_start),
+            ('date', '<=', self.period_end),
+        ])
+        if not diesel_data:
+            diesel_data = self._collect_fallback_diesel_logs()
+
+        maintenance_data = self.env['rmc.maintenance.check'].search([
+            ('agreement_id', '=', self.agreement_id.id),
+            ('date', '>=', self.period_start),
+            ('date', '<=', self.period_end),
+        ])
+
+        breakdown_data = self.env['rmc.breakdown.event'].search([
+            ('agreement_id', '=', self.agreement_id.id),
+            ('start_time', '>=', self.period_start),
+            ('start_time', '<=', self.period_end),
+        ])
+
+        return {
+            'attendance': attendance_data,
+            'diesel': diesel_data,
+            'maintenance': maintenance_data,
+            'breakdown': breakdown_data,
+        }
+
+    def _localize_datetime_to_date(self, dt_value):
+        if not dt_value:
+            return False
+        dt_obj = fields.Datetime.to_datetime(dt_value)
+        localized = fields.Datetime.context_timestamp(self, dt_obj)
+        return localized.date()
+
+    def _collect_fallback_diesel_logs(self):
+        DieselBase = self.env['diesel.log']
+        if 'rmc_agreement_id' not in DieselBase._fields:
+            return self.env['rmc.diesel.log'].browse()
+        start_dt = datetime.combine(self.period_start, time.min)
+        end_dt = datetime.combine(self.period_end, time.max)
+        domain = [
+            ('log_type', '=', 'diesel'),
+            ('state', 'in', ('approved', 'done')),
+            ('rmc_agreement_id', '=', self.agreement_id.id),
+            ('date', '>=', fields.Datetime.to_string(start_dt)),
+            ('date', '<=', fields.Datetime.to_string(end_dt)),
+        ]
+        logs = DieselBase.search(domain, order='date asc')
+        rmc_model = self.env['rmc.diesel.log']
+        fallback = rmc_model.browse()
+        for log in logs:
+            vals = {
+                'agreement_id': self.agreement_id.id,
+                'date': self._localize_datetime_to_date(log.date),
+                'vehicle_id': log.vehicle_id.id if log.vehicle_id else False,
+                'issued_ltr': (log.issue_diesel or log.quantity or 0.0),
+                'work_done_m3': 0.0,
+                'work_done_km': log.odometer_difference or 0.0,
+                'diesel_efficiency': log.fuel_efficiency or 0.0,
+                'efficiency_unit': log._get_odometer_unit_label() if hasattr(log, '_get_odometer_unit_label') else '',
+                'state': log.state,
+            }
+            fallback |= rmc_model.new(vals)
+        return fallback
+
+    @staticmethod
+    def _build_table(headers, rows):
+        if not rows:
+            return ''
+        head_html = ''.join(f'<th>{header}</th>' for header in headers)
+        body_html = ''.join(
+            '<tr>' + ''.join(f'<td>{(value or "")}</td>' for value in row) + '</tr>'
+            for row in rows
+        )
+        return (
+            '<table class="table table-condensed o_main_table">'
+            f'<thead><tr>{head_html}</tr></thead><tbody>{body_html}</tbody></table>'
+        )
+
+    def _build_attendance_preview(self, records):
+        if not records:
+            return '<p>No attendance records captured for this period.</p>'
+        rows = [
+            (rec.date, rec.headcount_present, rec.headcount_expected, f'{rec.compliance_percentage:.1f}%', rec.state)
+            for rec in records
+        ]
+        return self._build_table(['Date', 'Present', 'Expected', 'Compliance %', 'State'], rows)
+
+    def _build_diesel_preview(self, records):
+        if not records:
+            return '<p>No diesel logs captured for this period.</p>'
+        rows = [
+            (
+                rec.date,
+                rec.vehicle_id.display_name if rec.vehicle_id else '',
+                f'{rec.issued_ltr:.2f}',
+                rec.work_done_m3 or rec.work_done_km or 0.0,
+                rec.state
+            )
+            for rec in records
+        ]
+        return self._build_table(['Date', 'Vehicle', 'Issued (L)', 'Work Done', 'State'], rows)
+
+    def _build_maintenance_preview(self, records):
+        if not records:
+            return '<p>No maintenance checks captured for this period.</p>'
+        rows = [
+            (rec.date, rec.machine_id or '', f'{rec.checklist_ok:.1f}%', 'Yes' if rec.repaired else 'No', rec.state)
+            for rec in records
+        ]
+        return self._build_table(['Date', 'Machine', 'Checklist %', 'Repaired', 'State'], rows)
+
+    def _build_breakdown_preview(self, records):
+        if not records:
+            return '<p>No breakdown events captured for this period.</p>'
+        rows = [
+            (rec.name, rec.event_type, rec.start_time, rec.end_time, f'{rec.downtime_hr:.2f}', rec.state)
+            for rec in records
+        ]
+        return self._build_table(['Event', 'Type', 'Start', 'End', 'Downtime (hrs)', 'State'], rows)
+
     def _create_invoice_lines(self, bill):
         """Create detailed invoice lines"""
         InvoiceLine = self.env['account.move.line']
         
         # Get default expense account
-        expense_account = self.env['ir.property']._get('property_account_expense_categ_id', 'product.category')
+        property_model = self.env.get('ir.property')
+        expense_account = property_model._get('property_account_expense_categ_id', 'product.category') if property_model else False
         if not expense_account:
             expense_account = self.env['account.account'].search([
                 ('account_type', '=', 'expense'),
-                ('company_id', '=', bill.company_id.id)
             ], limit=1)
+        expense_account = expense_account or self.env['account.account'].search([], limit=1)
+        if not expense_account:
+            raise UserError(_('No expense account could be found to create vendor bill lines.'))
         
         # Part-A (Fixed)
         if self.part_a_amount > 0:
@@ -304,7 +530,6 @@ class RmcBillingPrepareWizard(models.TransientModel):
         if self.tds_amount > 0:
             tds_account = self.env['account.account'].search([
                 ('code', '=like', '2062%'),  # TDS Payable account
-                ('company_id', '=', bill.company_id.id)
             ], limit=1)
             if not tds_account:
                 tds_account = expense_account
@@ -317,99 +542,50 @@ class RmcBillingPrepareWizard(models.TransientModel):
                 'price_unit': -self.tds_amount,
             })
 
-    def _attach_reports(self, bill):
-        """Attach supporting PDF reports to the bill"""
-        Attachment = self.env['ir.attachment']
-        
-        # Attendance Report
-        if self.attach_attendance:
-            attendance_data = self.env['rmc.attendance.compliance'].search([
-                ('agreement_id', '=', self.agreement_id.id),
-                ('date', '>=', self.period_start),
-                ('date', '<=', self.period_end)
-            ])
-            if attendance_data:
-                # Generate simple HTML report
-                html_content = self._generate_attendance_html(attendance_data)
-                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
-                    [html_content],
-                    landscape=False
-                )
-                Attachment.create({
-                    'name': f'Attendance_Report_{self.period_start.strftime("%Y%m")}.pdf',
-                    'type': 'binary',
-                    'datas': base64.b64encode(pdf_content),
-                    'res_model': 'account.move',
-                    'res_id': bill.id,
-                    'mimetype': 'application/pdf'
-                })
-        
-        # Diesel Report
-        if self.attach_diesel:
-            diesel_data = self.env['rmc.diesel.log'].search([
-                ('agreement_id', '=', self.agreement_id.id),
-                ('date', '>=', self.period_start),
-                ('date', '<=', self.period_end)
-            ])
-            if diesel_data:
-                html_content = self._generate_diesel_html(diesel_data)
-                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
-                    [html_content],
-                    landscape=False
-                )
-                Attachment.create({
-                    'name': f'Diesel_Report_{self.period_start.strftime("%Y%m")}.pdf',
-                    'type': 'binary',
-                    'datas': base64.b64encode(pdf_content),
-                    'res_model': 'account.move',
-                    'res_id': bill.id,
-                    'mimetype': 'application/pdf'
-                })
-        
-        # Maintenance Report
-        if self.attach_maintenance:
-            maint_data = self.env['rmc.maintenance.check'].search([
-                ('agreement_id', '=', self.agreement_id.id),
-                ('date', '>=', self.period_start),
-                ('date', '<=', self.period_end)
-            ])
-            if maint_data:
-                html_content = self._generate_maintenance_html(maint_data)
-                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
-                    [html_content],
-                    landscape=False
-                )
-                Attachment.create({
-                    'name': f'Maintenance_Report_{self.period_start.strftime("%Y%m")}.pdf',
-                    'type': 'binary',
-                    'datas': base64.b64encode(pdf_content),
-                    'res_model': 'account.move',
-                    'res_id': bill.id,
-                    'mimetype': 'application/pdf'
-                })
-        
-        # Breakdown Report
-        if self.attach_breakdown:
-            breakdown_data = self.env['rmc.breakdown.event'].search([
-                ('agreement_id', '=', self.agreement_id.id),
-                ('start_time', '>=', self.period_start),
-                ('start_time', '<=', self.period_end)
-            ])
-            if breakdown_data:
-                html_content = self._generate_breakdown_html(breakdown_data)
-                pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf(
-                    [html_content],
-                    landscape=False
-                )
-                Attachment.create({
-                    'name': f'Breakdown_Report_{self.period_start.strftime("%Y%m")}.pdf',
-                    'type': 'binary',
-                    'datas': base64.b64encode(pdf_content),
-                    'res_model': 'account.move',
-                    'res_id': bill.id,
-                    'mimetype': 'application/pdf'
-                })
+    def _attach_reports(self, bill, source_records):
+        """Attach supporting PDF reports to the bill and return created attachments."""
+        Attachment = self.env['ir.attachment'].with_context(no_document=True)
+        attachments = {
+            'all': self.env['ir.attachment'],
+            'attendance': False,
+            'diesel': False,
+            'maintenance': False,
+            'breakdown': False,
+        }
+        sections = []
+        section_keys = []
 
+        if self.attach_attendance:
+            sections.append(self._generate_attendance_section(source_records.get('attendance')))
+            section_keys.append('attendance')
+        if self.attach_diesel:
+            sections.append(self._generate_diesel_section(source_records.get('diesel')))
+            section_keys.append('diesel')
+        if self.attach_maintenance:
+            sections.append(self._generate_maintenance_section(source_records.get('maintenance')))
+            section_keys.append('maintenance')
+        if self.attach_breakdown:
+            sections.append(self._generate_breakdown_section(source_records.get('breakdown')))
+            section_keys.append('breakdown')
+
+        if not sections:
+            return attachments
+
+        html_content = self._wrap_sections_html(sections, bill=bill)
+        pdf_content = self.env['ir.actions.report']._run_wkhtmltopdf([html_content], landscape=False)
+        combined_attachment = Attachment.create({
+            'name': f'Supporting_Report_{self.period_start.strftime("%Y%m")}.pdf',
+            'type': 'binary',
+            'datas': base64.b64encode(pdf_content),
+            'res_model': 'account.move',
+            'res_id': bill.id,
+            'mimetype': 'application/pdf'
+        })
+        attachments['all'] = combined_attachment
+        for key in section_keys:
+            attachments[key] = combined_attachment
+
+        return attachments
     def _reconcile_inventory(self):
         """Reconcile all inventory handovers for the period"""
         inventory_items = self.env['rmc.inventory.handover'].search([
@@ -425,74 +601,113 @@ class RmcBillingPrepareWizard(models.TransientModel):
         """Create multi-level approval activities"""
         # Supervisor approval
         supervisor_group = self.env.ref('rmc_manpower_contractor.group_rmc_supervisor', raise_if_not_found=False)
-        if supervisor_group and supervisor_group.users:
+        supervisor_users = getattr(supervisor_group, 'users', self.env['res.users']) if supervisor_group else self.env['res.users']
+        if supervisor_group and supervisor_users:
             bill.activity_schedule(
                 'mail.mail_activity_data_todo',
-                user_id=supervisor_group.users[0].id,
+                user_id=supervisor_users[0].id,
                 summary=_('Approve Monthly Bill - Supervisor'),
                 note=_('Please review and approve monthly contractor bill for %s') % self.agreement_id.name
             )
 
-    def _generate_attendance_html(self, data):
-        """Generate HTML for attendance report"""
-        html = f"""
-        <html>
-        <head><style>table{{width:100%;border-collapse:collapse;}}th,td{{border:1px solid black;padding:5px;}}</style></head>
-        <body>
-        <h2>Attendance Report - {self.agreement_id.name}</h2>
-        <p>Period: {self.period_start} to {self.period_end}</p>
-        <table>
-        <tr><th>Date</th><th>Expected</th><th>Present</th><th>Compliance %</th></tr>
-        """
-        for rec in data:
-            html += f"<tr><td>{rec.date}</td><td>{rec.headcount_expected}</td><td>{rec.headcount_present}</td><td>{rec.compliance_percentage:.1f}%</td></tr>"
-        html += "</table></body></html>"
-        return html
+    def _format_period_label(self):
+        start = format_date(self.env, self.period_start) if self.period_start else ''
+        end = format_date(self.env, self.period_end) if self.period_end else ''
+        return _('%(start)s to %(end)s') % {'start': start, 'end': end}
 
-    def _generate_diesel_html(self, data):
-        """Generate HTML for diesel report"""
-        html = f"""
-        <html>
-        <head><style>table{{width:100%;border-collapse:collapse;}}th,td{{border:1px solid black;padding:5px;}}</style></head>
-        <body>
-        <h2>Diesel Log Report - {self.agreement_id.name}</h2>
-        <p>Period: {self.period_start} to {self.period_end}</p>
-        <table>
-        <tr><th>Date</th><th>Issued (L)</th><th>Work Done</th><th>Efficiency</th></tr>
-        """
-        for rec in data:
-            html += f"<tr><td>{rec.date}</td><td>{rec.issued_ltr:.2f}</td><td>{rec.work_done_m3 or rec.work_done_km:.2f}</td><td>{rec.diesel_efficiency:.2f} {rec.efficiency_unit}</td></tr>"
-        html += "</table></body></html>"
-        return html
+    def _format_section(self, title, body):
+        return {
+            'title': title,
+            'agreement_name': self.agreement_id.name,
+            'period_label': self._format_period_label(),
+            'body_html': body,
+        }
 
-    def _generate_maintenance_html(self, data):
-        """Generate HTML for maintenance report"""
-        html = f"""
-        <html>
-        <head><style>table{{width:100%;border-collapse:collapse;}}th,td{{border:1px solid black;padding:5px;}}</style></head>
-        <body>
-        <h2>Maintenance Report - {self.agreement_id.name}</h2>
-        <p>Period: {self.period_start} to {self.period_end}</p>
-        <table>
-        <tr><th>Date</th><th>Machine</th><th>Checklist %</th><th>Repaired</th><th>Cost</th></tr>
-        """
-        for rec in data:
-            html += f"<tr><td>{rec.date}</td><td>{rec.machine_id}</td><td>{rec.checklist_ok:.1f}%</td><td>{'Yes' if rec.repaired else 'No'}</td><td>{rec.cost:.2f}</td></tr>"
-        html += "</table></body></html>"
-        return html
+    def _generate_attendance_section(self, data):
+        if data:
+            rows = [
+                (
+                    rec.date,
+                    rec.headcount_expected,
+                    rec.headcount_present,
+                    f'{rec.compliance_percentage:.1f}%',
+                    rec.state,
+                )
+                for rec in data.sorted('date')
+            ]
+            table = self._build_table(['Date', 'Expected', 'Present', 'Compliance %', 'State'], rows)
+        else:
+            table = '<p>No attendance records captured for this period.</p>'
+        return self._format_section('Attendance Report', table)
 
-    def _generate_breakdown_html(self, data):
-        """Generate HTML for breakdown report"""
-        html = f"""
-        <html>
-        <head><style>table{{width:100%;border-collapse:collapse;}}th,td{{border:1px solid black;padding:5px;}}</style></head>
-        <body>
-        <h2>Breakdown Events Report - {self.agreement_id.name}</h2>
-        <p>Period: {self.period_start} to {self.period_end}</p>
-        <table>
-        <tr><th>Event</th><th>Type</th><th>Downtime (hrs)</th><th>Responsibility</th><th>Deduction</th></tr>
-        """
-        for rec in data:
-            html += f"<tr><td>{rec.name}</td><td>{rec.event_type}</td><td>{rec.downtime_hr:.2f}</td><td>{rec.responsibility}</td><td>{rec.deduction_amount:.2f}</td></tr>"
-        html += "</table></body></html>"
-        return html
+    def _generate_diesel_section(self, data):
+        if data:
+            rows = [
+                (
+                    rec.date,
+                    rec.vehicle_id.display_name if rec.vehicle_id else '',
+                    f'{(rec.issued_ltr or 0.0):.2f}',
+                    f'{(rec.work_done_m3 or rec.work_done_km or 0.0):.2f}',
+                    f'{(rec.diesel_efficiency or 0.0):.2f} {rec.efficiency_unit or ""}',
+                    rec.state,
+                )
+                for rec in data.sorted('date')
+            ]
+            table = self._build_table(['Date', 'Vehicle', 'Issued (L)', 'Work Done', 'Efficiency', 'State'], rows)
+        else:
+            table = '<p>No diesel logs captured for this period.</p>'
+        return self._format_section('Diesel Log Report', table)
+
+    def _generate_maintenance_section(self, data):
+        if data:
+            rows = [
+                (
+                    rec.date,
+                    rec.machine_id.display_name if rec.machine_id else '',
+                    f'{rec.checklist_ok:.1f}%',
+                    'Yes' if rec.repaired else 'No',
+                    f'{rec.cost:.2f}',
+                )
+                for rec in data.sorted('date')
+            ]
+            table = self._build_table(['Date', 'Machine', 'Checklist %', 'Repaired', 'Cost'], rows)
+        else:
+            table = '<p>No maintenance checks captured for this period.</p>'
+        return self._format_section('Maintenance Report', table)
+
+    def _generate_breakdown_section(self, data):
+        if data:
+            rows = [
+                (
+                    rec.name,
+                    rec.event_type,
+                    f'{rec.downtime_hr:.2f}',
+                    rec.responsibility,
+                    f'{rec.deduction_amount:.2f}',
+                )
+                for rec in data.sorted('start_time')
+            ]
+            table = self._build_table(['Event', 'Type', 'Downtime (hrs)', 'Responsibility', 'Deduction'], rows)
+        else:
+            table = '<p>No breakdown events captured for this period.</p>'
+        return self._format_section('Breakdown Events Report', table)
+
+    def _wrap_sections_html(self, sections, bill=None):
+        company = (bill and bill.company_id) or self.agreement_id.company_id or self.env.company
+        doc = bill or self.agreement_id
+        values = {
+            'doc': doc,
+            'o': bill or doc,
+            'company': company,
+            'wizard': self,
+            'sections': sections,
+            'support_sections': sections,
+            'bill': bill,
+            'period_label': self._format_period_label(),
+            'generated_on': format_date(self.env, fields.Date.context_today(self)),
+            'lang': self.env.context.get('lang') or self.env.user.lang,
+            'proforma': False,
+        }
+        return self.env['ir.ui.view']._render_template(
+            'rmc_manpower_contractor.report_billing_support_sections', values
+        )

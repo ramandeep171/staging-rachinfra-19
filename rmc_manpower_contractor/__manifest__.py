@@ -18,6 +18,7 @@
     'website': 'https://www.smarterpeak.com',
     'depends': [
         'base',
+        'base_automation',
         'documents',
         'sign',
         'hr',
@@ -52,6 +53,7 @@
         'views/attendance_compliance_views.xml',
         'views/breakdown_event_views.xml',
         'views/inventory_handover_views.xml',
+        'views/billing_prepare_log_views.xml',
         'views/agreement_views.xml',
         'wizards/billing_prepare_wizard_views.xml',
         'wizards/agreement_send_preview_wizard_views.xml',
@@ -62,6 +64,7 @@
         'reports/performance_report.xml',
         'reports/agreement_report.xml',
         'reports/agreement_performance_summary.xml',
+        'reports/billing_support_report.xml',
         'reports/monthly_summary_templates.xml',
     ],
     'demo': [

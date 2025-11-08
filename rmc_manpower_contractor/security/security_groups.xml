@@ -31,6 +31,13 @@
             <field name="comment">Can validate records and approve at supervisor level</field>
         </record>
 
+        <record id="group_rmc_contractor_manager" model="res.groups">
+            <field name="name">Contractor Manager</field>
+            <field name="privilege_id" ref="privilege_rmc_contractor"/>
+            <field name="implied_ids" eval="[(4, ref('group_rmc_supervisor'))]"/>
+            <field name="comment">Contractor-side managers with full visibility on operational records</field>
+        </record>
+
         <record id="group_rmc_manager" model="res.groups">
             <field name="name">Manager</field>
             <field name="privilege_id" ref="privilege_rmc_contractor"/>

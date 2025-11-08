@@ -6,6 +6,7 @@ Manpower Matrix - Designation-wise wage structure
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
+
 class RmcManpowerMatrix(models.Model):
     _name = 'rmc.manpower.matrix'
     _description = 'RMC Manpower Matrix'
@@ -131,6 +132,29 @@ class RmcManpowerMatrix(models.Model):
                     _('Vehicle %s is already assigned on another manpower line.') %
                     record.vehicle_id.display_name
                 )
+
+    def _update_parent_agreements(self):
+        agreements = self.mapped('agreement_id')
+        if agreements:
+            agreements._update_manpower_totals_from_matrix()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._update_parent_agreements()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._update_parent_agreements()
+        return res
+
+    def unlink(self):
+        agreements = self.mapped('agreement_id')
+        res = super().unlink()
+        if agreements:
+            agreements._update_manpower_totals_from_matrix()
+        return res
 
     _sql_constraints = [
         (

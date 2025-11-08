@@ -5,6 +5,8 @@ Main model for contractor lifecycle management
 """
 
 import base64
+import hashlib
+import json
 import logging
 from datetime import datetime, timedelta, time
 
@@ -13,6 +15,7 @@ import pytz
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.safe_eval import safe_eval
+from odoo.tools.float_utils import float_compare, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -80,6 +83,19 @@ class RmcContractAgreement(models.Model):
         compute='_compute_is_signed',
         store=True
     )
+    preview_pdf = fields.Binary(
+        string='Cached Preview PDF',
+        attachment=True,
+        copy=False
+    )
+    preview_pdf_filename = fields.Char(
+        string='Preview Filename',
+        copy=False
+    )
+    preview_cache_key = fields.Char(
+        string='Preview Cache Key',
+        copy=False
+    )
 
     # Website/Portal
     dynamic_web_path = fields.Char(
@@ -115,6 +131,21 @@ class RmcContractAgreement(models.Model):
         inverse='_inverse_total_amount',
         store=True,
         help='Sum of Part-A fixed and Part-B variable components'
+    )
+    manpower_part_a_amount = fields.Monetary(
+        string='Manpower Part-A Total',
+        currency_field='currency_id',
+        help='Aggregated Part-A (fixed) wages from the manpower matrix.'
+    )
+    manpower_part_b_amount = fields.Monetary(
+        string='Manpower Part-B Total',
+        currency_field='currency_id',
+        help='Aggregated Part-B (variable) wages from the manpower matrix.'
+    )
+    manpower_matrix_total_amount = fields.Monetary(
+        string='Manpower Matrix Total',
+        currency_field='currency_id',
+        help='Total monthly wages from the manpower matrix.'
     )
     currency_id = fields.Many2one(
         'res.currency',
@@ -165,6 +196,18 @@ class RmcContractAgreement(models.Model):
         compute='_compute_attendance_kpi',
         store=True
     )
+    prime_output_qty = fields.Float(
+        string='Prime Output (m³)',
+        digits='Product Unit of Measure',
+        tracking=True,
+        help='Cumulative prime output achieved for this agreement.'
+    )
+    optimized_standby_qty = fields.Float(
+        string='Optimized Standby (m³)',
+        digits='Product Unit of Measure',
+        tracking=True,
+        help='Standby volume derived from MGQ vs achieved prime output.'
+    )
 
     @api.depends('part_a_fixed', 'part_b_variable')
     def _compute_total_amount(self):
@@ -177,6 +220,55 @@ class RmcContractAgreement(models.Model):
             part_a = agreement.part_a_fixed or 0.0
             part_b = total - part_a
             agreement.part_b_variable = part_b if part_b > 0 else 0.0
+
+    def _update_manpower_totals_from_matrix(self):
+        """
+        Synchronise stored manpower totals and Part-A fixed amount
+        based on the current manpower matrix lines.
+        """
+        for agreement in self:
+            part_a_total = 0.0
+            part_b_total = 0.0
+            has_part_b_lines = False
+            for line in agreement.manpower_matrix_ids:
+                subtotal = (line.headcount or 0.0) * (line.base_rate or 0.0)
+                if line.remark == 'part_b':
+                    part_b_total += subtotal
+                    has_part_b_lines = True
+                else:
+                    part_a_total += subtotal
+            overall_total = part_a_total + part_b_total
+            currency = agreement.currency_id
+            rounding = currency.rounding if currency else 0.01
+            updates = {}
+            if float_compare(part_a_total, agreement.manpower_part_a_amount or 0.0, precision_rounding=rounding):
+                updates['manpower_part_a_amount'] = part_a_total
+            if float_compare(part_b_total, agreement.manpower_part_b_amount or 0.0, precision_rounding=rounding):
+                updates['manpower_part_b_amount'] = part_b_total
+            if float_compare(overall_total, agreement.manpower_matrix_total_amount or 0.0, precision_rounding=rounding):
+                updates['manpower_matrix_total_amount'] = overall_total
+            if float_compare(part_a_total, agreement.part_a_fixed or 0.0, precision_rounding=rounding):
+                updates['part_a_fixed'] = part_a_total
+
+            prev_matrix_part_b_total = agreement.manpower_part_b_amount or 0.0
+            sync_part_b = has_part_b_lines or not float_is_zero(prev_matrix_part_b_total, precision_rounding=rounding)
+            if sync_part_b and float_compare(part_b_total, agreement.part_b_variable or 0.0, precision_rounding=rounding):
+                updates['part_b_variable'] = part_b_total
+
+            if updates:
+                super(RmcContractAgreement, agreement).write(updates)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        agreements = super().create(vals_list)
+        agreements._update_manpower_totals_from_matrix()
+        return agreements
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'manpower_matrix_ids' in vals:
+            self._update_manpower_totals_from_matrix()
+        return res
 
     # Pending Items
     pending_items_count = fields.Integer(
@@ -265,6 +357,15 @@ class RmcContractAgreement(models.Model):
     )
     employee_attendance_count = fields.Integer(
         string='Attendance Records',
+        compute='_compute_counts'
+    )
+    billing_prepare_log_ids = fields.One2many(
+        'rmc.billing.prepare.log',
+        'agreement_id',
+        string='Billing Logs'
+    )
+    billing_prepare_log_count = fields.Integer(
+        string='Billing Logs',
         compute='_compute_counts'
     )
     activity_start_date = fields.Date(
@@ -383,6 +484,70 @@ class RmcContractAgreement(models.Model):
         report = self.env.ref('rmc_manpower_contractor.action_report_agreement_contract')
         pdf_bytes, _ = report._render_qweb_pdf(report.report_name, res_ids=[self.id])
         filename = f"{self.name or 'agreement'}.pdf"
+        return pdf_bytes, filename
+
+    def _compute_preview_cache_key(self):
+        """Build a stable fingerprint representing the preview content."""
+        self.ensure_one()
+        payload = {
+            'agreement': {
+                'id': self.id,
+                'write_date': self.write_date,
+                'validity_start': self.validity_start,
+                'validity_end': self.validity_end,
+                'mgq_target': self.mgq_target,
+                'part_a_fixed': self.part_a_fixed,
+                'part_b_variable': self.part_b_variable,
+                'notes': self.notes,
+                'currency_id': self.currency_id.id,
+                'company_id': self.company_id.id,
+                'sign_template_id': self.sign_template_id.id,
+                'state': self.state,
+            },
+            'manpower_matrix': [
+                {
+                    'id': line.id,
+                    'write_date': line.write_date or line.create_date,
+                    'employee_id': line.employee_id.id,
+                    'vehicle_id': line.vehicle_id.id,
+                    'shift': line.shift,
+                    'remark': line.remark,
+                    'total_amount': line.total_amount,
+                }
+                for line in self.manpower_matrix_ids.sorted(key=lambda r: r.id)
+            ],
+            'clauses': [
+                {
+                    'id': clause.id,
+                    'write_date': clause.write_date or clause.create_date,
+                    'title': clause.title,
+                }
+                for clause in self.clause_ids.sorted(key=lambda r: r.id)
+            ],
+        }
+        serialized = json.dumps(payload, default=str, sort_keys=True)
+        return hashlib.sha1(serialized.encode('utf-8')).hexdigest()
+
+    def _store_preview_pdf(self, pdf_bytes, filename, cache_key=None):
+        """Persist the generated preview PDF for subsequent requests."""
+        self.ensure_one()
+        cache_key = cache_key or self._compute_preview_cache_key()
+        encoded = base64.b64encode(pdf_bytes).decode('utf-8')
+        self.write({
+            'preview_pdf': encoded,
+            'preview_pdf_filename': filename,
+            'preview_cache_key': cache_key,
+        })
+
+    def _get_cached_preview_pdf(self):
+        self.ensure_one()
+        self._update_manpower_totals_from_matrix()
+        cache_key = self._compute_preview_cache_key()
+        if self.preview_pdf and self.preview_cache_key == cache_key:
+            filename = self.preview_pdf_filename or f"{self.name or 'agreement'}.pdf"
+            return base64.b64decode(self.preview_pdf), filename
+        pdf_bytes, filename = self._generate_contract_pdf()
+        self._store_preview_pdf(pdf_bytes, filename, cache_key=cache_key)
         return pdf_bytes, filename
 
     def _refresh_sign_template(self, pdf_bytes, filename):
@@ -875,66 +1040,11 @@ class RmcContractAgreement(models.Model):
             else:
                 record.stars = '1'
 
-    @api.depends('is_agreement_signed', 'pending_items_count', 'contract_type',
-                 'diesel_log_ids.state', 'maintenance_check_ids.state',
-                 'attendance_compliance_ids.state')
     def _compute_payment_hold(self):
-        """
-        Determine if payment should be on hold
-        Hold conditions:
-        1. Agreement not signed
-        2. Type-based mandatory KPIs have pending items
-        3. Performance score below minimum threshold
-        """
-        ICP = self.env['ir.config_parameter'].sudo()
-        min_score = float(ICP.get_param('rmc_score.min_payment_score', 40))
-
+        """Override to disable payment hold logic entirely."""
         for record in self:
-            reasons = []
-            hold = False
-
-            # Check signature
-            if not record.is_signed():
-                hold = True
-                reasons.append('Agreement not signed')
-
-            # Check pending items
-            if record.pending_items_count > 0:
-                hold = True
-                reasons.append(
-                    f'{record.pending_items_count} pending/unvalidated entries'
-                )
-
-            # Check type-specific requirements
-            if record.contract_type == 'driver_transport':
-                if not record.diesel_log_ids.filtered(
-                    lambda x: x.state == 'validated'
-                ):
-                    hold = True
-                    reasons.append('No validated diesel logs')
-            elif record.contract_type == 'pump_ops':
-                if not record.maintenance_check_ids.filtered(
-                    lambda x: x.state == 'validated'
-                ):
-                    hold = True
-                    reasons.append('No validated maintenance checks')
-            elif record.contract_type == 'accounts_audit':
-                if not record.attendance_compliance_ids.filtered(
-                    lambda x: x.state == 'validated'
-                ):
-                    hold = True
-                    reasons.append('No validated attendance records')
-
-            # Check minimum performance
-            if record.performance_score < min_score:
-                hold = True
-                reasons.append(
-                    f'Performance score {record.performance_score:.1f}% '
-                    f'below minimum {min_score}%'
-                )
-
-            record.payment_hold = hold
-            record.payment_hold_reason = '\n'.join(reasons) if reasons else ''
+            record.payment_hold = False
+            record.payment_hold_reason = False
 
     @api.depends(
         'diesel_log_ids',
@@ -967,6 +1077,7 @@ class RmcContractAgreement(models.Model):
             record.equipment_count = len(record.equipment_ids)
             record.equipment_request_count = len(record.equipment_request_ids)
             record.employee_attendance_count = len(record.employee_attendance_ids)
+            record.billing_prepare_log_count = len(record.billing_prepare_log_ids)
 
     @api.model
     def _refresh_agreements_for_employees(self, employees):
@@ -1234,9 +1345,12 @@ class RmcContractAgreement(models.Model):
 
         # Create activity for Accounts if payment cleared
         if not self.payment_hold:
+            account_group = self.env.ref('account.group_account_invoice', raise_if_not_found=False)
+            account_users = getattr(account_group, 'users', self.env['res.users']) if account_group else self.env['res.users']
+            user_id = account_users[:1].id if account_users else self.env.user.id
             self.activity_schedule(
                 'mail.mail_activity_data_todo',
-                user_id=self.env.ref('account.group_account_invoice').users[0].id if self.env.ref('account.group_account_invoice').users else self.env.user.id,
+                user_id=user_id,
                 summary=_('Agreement ready for billing'),
                 note=_('Agreement %s is active and payment hold is cleared.') % self.name
             )
@@ -1309,22 +1423,41 @@ class RmcContractAgreement(models.Model):
             raise UserError(_('Diesel log action is missing.'))
         action = action.read()[0]
         start_dt = self._get_activity_start_datetime()
+        res_model = action.get('res_model')
         domain = []
-        if self.vehicle_ids:
-            domain.append(('vehicle_id', 'in', self.vehicle_ids.ids))
-        elif self.driver_ids:
-            domain.append(('driver_id', 'in', self.driver_ids.ids))
-        if 'date' in self.env['diesel.log']._fields:
-            domain += ['|', ('date', '=', False), ('date', '>=', start_dt.date())]
+        if res_model == 'diesel.log':
+            domain = [('log_type', '=', 'diesel')]
+            if 'rmc_agreement_id' in self.env['diesel.log']._fields:
+                domain.append(('rmc_agreement_id', '=', self.id))
+            elif self.vehicle_ids:
+                domain.append(('vehicle_id', 'in', self.vehicle_ids.ids))
+            elif self.driver_ids:
+                domain.append(('driver_id', 'in', self.driver_ids.ids))
+            if 'date' in self.env['diesel.log']._fields:
+                domain += ['|', ('date', '=', False), ('date', '>=', start_dt.date())]
+        else:
+            domain = [('agreement_id', '=', self.id)]
+            if 'date' in self.env['rmc.diesel.log']._fields:
+                domain += ['|', ('date', '=', False), ('date', '>=', start_dt.date())]
         action['domain'] = domain
         ctx = action.get('context') or {}
         if isinstance(ctx, str):
             ctx = safe_eval(ctx, {'active_id': self.id, 'active_model': self._name})
         context = dict(ctx)
-        if self.vehicle_ids:
-            context.setdefault('default_vehicle_id', self.vehicle_ids.ids[0])
-        if self.driver_ids:
-            context.setdefault('default_driver_id', self.driver_ids.ids[0])
+        if res_model == 'diesel.log':
+            context.setdefault('default_log_type', 'diesel')
+            if 'rmc_agreement_id' in self.env['diesel.log']._fields:
+                context.setdefault('default_rmc_agreement_id', self.id)
+            if self.vehicle_ids:
+                context.setdefault('default_vehicle_id', self.vehicle_ids.ids[0])
+            if self.driver_ids:
+                context.setdefault('default_driver_id', self.driver_ids.ids[0])
+        else:
+            context.setdefault('default_agreement_id', self.id)
+            if self.vehicle_ids:
+                context.setdefault('default_vehicle_id', self.vehicle_ids.ids[0])
+            if self.driver_ids:
+                context.setdefault('default_driver_id', self.driver_ids.ids[0])
         action['context'] = context
         return action
 
@@ -1507,14 +1640,52 @@ class RmcContractAgreement(models.Model):
             }
         }
 
+    def action_view_billing_prepare_logs(self):
+        """Open billing snapshot logs for this agreement."""
+        self.ensure_one()
+        action = self.env.ref('rmc_manpower_contractor.action_rmc_billing_prepare_log', raise_if_not_found=False)
+        if not action:
+            raise UserError(_('Billing log action is missing.'))
+        result = action.read()[0]
+        result['domain'] = [('agreement_id', '=', self.id)]
+        context = result.get('context') or {}
+        if isinstance(context, str):
+            try:
+                context = safe_eval(context)
+            except Exception:
+                context = {}
+        result['context'] = dict(context, default_agreement_id=self.id)
+        return result
+
+    def action_print_performance_summary(self):
+        """Print the PDF performance summary for this agreement."""
+        self.ensure_one()
+        report = self.env.ref(
+            'rmc_manpower_contractor.action_report_agreement_performance_summary',
+            raise_if_not_found=False,
+        )
+        if not report:
+            raise UserError(_('Performance summary report action is missing.'))
+        return report.report_action(self)
+
     def action_prepare_monthly_bill(self):
         """Open wizard to prepare monthly vendor bill"""
         self.ensure_one()
-        return {
+        wizard_model = self.env['rmc.billing.prepare.wizard']
+        existing_wizard = wizard_model.search([
+            ('agreement_id', '=', self.id),
+            ('state', 'in', ['prepare', 'review'])
+        ], limit=1, order='create_date desc')
+
+        action = {
             'type': 'ir.actions.act_window',
             'name': _('Prepare Monthly Bill'),
             'res_model': 'rmc.billing.prepare.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_agreement_id': self.id}
+            'context': {'default_agreement_id': self.id},
         }
+
+        if existing_wizard:
+            action['res_id'] = existing_wizard.id
+        return action

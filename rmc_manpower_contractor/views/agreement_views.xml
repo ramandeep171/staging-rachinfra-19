@@ -19,6 +19,9 @@
                             <button name="action_view_diesel_logs" type="object" class="oe_stat_button" icon="fa-tint">
                                 <field name="diesel_log_count" widget="statinfo" string="Diesel Logs"/>
                             </button>
+                            <button name="action_print_performance_summary" type="object" class="oe_stat_button" icon="fa-line-chart">
+                                <field name="performance_score" widget="statinfo" string="Performance"/>
+                            </button>
                             <button name="action_view_employee_attendance" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
                                 <field name="employee_attendance_count" widget="statinfo" string="HR Attendance"/>
                             </button>
@@ -37,6 +40,10 @@
                             <button name="action_view_vendor_bills" type="object" class="oe_stat_button" icon="fa-money">
                                 <field name="vendor_bill_count" widget="statinfo" string="Bills"/>
                             </button>
+                            <button name="action_view_billing_prepare_logs" type="object" class="oe_stat_button" icon="fa-list-alt">
+                                <field name="billing_prepare_log_count" widget="statinfo" string="Billing Logs"/>
+                            </button>
+                            
                             <button name="action_view_equipment" type="object" class="oe_stat_button" icon="fa-cogs">
                                 <field name="equipment_count" widget="statinfo" string="Equipment"/>
                             </button>
@@ -79,6 +86,8 @@
                             <field name="avg_diesel_efficiency"/>
                             <field name="maintenance_compliance" widget="progressbar"/>
                             <field name="attendance_compliance" widget="progressbar"/>
+                            <field name="prime_output_qty"/>
+                            <field name="optimized_standby_qty"/>
                             <field name="pending_items_count" widget="badge" decoration-danger="pending_items_count &gt; 0"/>
                             <field name="payment_hold" widget="boolean_toggle"/>
                             <field name="payment_hold_reason" widget="text" invisible="not payment_hold" colspan="4"/>
@@ -88,7 +97,7 @@
                         <group string="Financial Details">
                             <group>
                                 <field name="mgq_target"/>
-                                <field name="part_a_fixed"/>
+                                <field name="part_a_fixed" readonly="1"/>
                                 <field name="part_b_variable"/>
                                 <field name="total_amount" string="Total Monthly Amount"/>
                             </group>
@@ -103,10 +112,10 @@
                                 <field name="manpower_matrix_ids">
                                     <form>
                                         <group>
-                                            <group>
-                                                <field name="designation"/>
+                                            <group>                                                
                                                 <field name="employee_id"
                                                        options="{'no_quick_create': True}"/>
+                                                <field name="designation"/>
                                                 <field name="headcount"/>
                                                 <field name="shift"/>
                                             </group>

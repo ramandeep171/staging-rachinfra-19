@@ -40,9 +40,33 @@
 </list>
 </field>
 </record>
-<record id="action_diesel_log" model="ir.actions.act_window">
-<field name="name">Diesel Logs</field>
-<field name="res_model">rmc.diesel.log</field>
-<field name="view_mode">list,form</field>
-</record>
+        <record id="view_diesel_log_search_rmc" model="ir.ui.view">
+            <field name="name">diesel.log.search.rmc</field>
+            <field name="model">diesel.log</field>
+            <field name="arch" type="xml">
+                <search string="Diesel Logs">
+                    <field name="name"/>
+                    <field name="vehicle_id"/>
+                    <field name="driver_id"/>
+                    <field name="rmc_agreement_id"/>
+                    <field name="company_id"/>
+                    <field name="date"/>
+                    <filter name="rmc_today" string="Today" domain="[('date', '=', context_today)]"/>
+                    <filter name="rmc_linked" string="Linked Agreements" domain="[('rmc_agreement_id', '!=', False)]"/>
+                    <separator/>
+                    <filter name="rmc_group_by_date" string="Group by Date" context="{'group_by': 'date'}"/>
+                    <filter name="rmc_group_by_agreement" string="Group by Agreement" context="{'group_by': 'rmc_agreement_id'}"/>
+                    <filter name="rmc_group_by_vehicle" string="Group by Vehicle" context="{'group_by': 'vehicle_id'}"/>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_diesel_log" model="ir.actions.act_window">
+            <field name="name">Diesel Logs</field>
+            <field name="res_model">diesel.log</field>
+            <field name="view_mode">kanban,list,form,pivot,graph</field>
+            <field name="domain">[('log_type', '=', 'diesel'), ('rmc_agreement_id', '!=', False)]</field>
+            <field name="context">{'default_log_type': 'diesel', 'search_default_rmc_linked': 1, 'search_default_rmc_today': 1}</field>
+            <field name="search_view_id" ref="rmc_manpower_contractor.view_diesel_log_search_rmc"/>
+        </record>
 </data></odoo>

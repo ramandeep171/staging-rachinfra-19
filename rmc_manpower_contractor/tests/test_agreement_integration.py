@@ -200,3 +200,46 @@ class TestAgreementIntegration(TransactionCase):
         # Attempt to change contract type should fail
         with self.assertRaises(ValidationError):
             self.agreement.write({'contract_type': 'pump_ops'})
+
+    def test_11_part_b_manual_value_preserved_without_matrix_lines(self):
+        """Manual Part-B value should persist if no matrix lines use Part-B."""
+        Matrix = self.env['rmc.manpower.matrix']
+        Matrix.create({
+            'agreement_id': self.agreement.id,
+            'designation': 'Operator',
+            'headcount': 3,
+            'shift': 'day',
+            'base_rate': 12000,
+            'remark': 'part_a',
+        })
+
+        self.agreement.write({'part_b_variable': 2550.0})
+        self.agreement._update_manpower_totals_from_matrix()
+        self.assertEqual(
+            self.agreement.part_b_variable,
+            2550.0,
+            'Part-B should keep manual value when no Part-B lines exist.',
+        )
+
+    def test_12_part_b_resets_after_removing_matrix_lines(self):
+        """Part-B should follow matrix totals once Part-B lines existed."""
+        Matrix = self.env['rmc.manpower.matrix']
+        part_b_line = Matrix.create({
+            'agreement_id': self.agreement.id,
+            'designation': 'MGQ Bonus',
+            'headcount': 1,
+            'shift': 'general',
+            'base_rate': 2000.0,
+            'remark': 'part_b',
+        })
+
+        self.agreement._update_manpower_totals_from_matrix()
+        self.assertEqual(self.agreement.part_b_variable, 2000.0, 'Part-B should match matrix total.')
+
+        part_b_line.unlink()
+        self.agreement._update_manpower_totals_from_matrix()
+        self.assertEqual(
+            self.agreement.part_b_variable,
+            0.0,
+            'Removing all Part-B lines should reset the Part-B value.',
+        )

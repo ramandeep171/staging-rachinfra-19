@@ -17,6 +17,9 @@ access_rmc_inventory_user,rmc.inventory.handover.user,model_rmc_inventory_handov
 access_rmc_inventory_manager,rmc.inventory.handover.manager,model_rmc_inventory_handover,group_rmc_manager,1,1,1,1
 access_rmc_billing_wizard_user,rmc.billing.prepare.wizard.user,model_rmc_billing_prepare_wizard,group_rmc_contractor_user,1,1,1,1
 access_rmc_billing_wizard_account,rmc.billing.prepare.wizard.account,model_rmc_billing_prepare_wizard,account.group_account_invoice,1,1,1,1
+access_rmc_billing_log_user,rmc.billing.prepare.log.user,model_rmc_billing_prepare_log,group_rmc_contractor_user,1,0,1,0
+access_rmc_billing_log_manager,rmc.billing.prepare.log.manager,model_rmc_billing_prepare_log,group_rmc_manager,1,1,1,0
+access_rmc_billing_log_account,rmc.billing.prepare.log.account,model_rmc_billing_prepare_log,account.group_account_invoice,1,0,1,0
 access_rmc_agreement_signer_user,rmc.agreement.signer.user,model_rmc_agreement_signer,group_rmc_contractor_user,1,1,1,0
 access_rmc_agreement_signer_manager,rmc.agreement.signer.manager,model_rmc_agreement_signer,group_rmc_manager,1,1,1,1
 access_rmc_agreement_preview_wizard,rmc.agreement.send.preview.wizard,model_rmc_agreement_send_preview_wizard,base.group_user,1,1,1,1
