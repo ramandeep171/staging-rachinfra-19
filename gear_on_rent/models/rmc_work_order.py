@@ -62,6 +62,11 @@ class GearRmcMonthlyOrder(models.Model):
         tracking=True,
         help="Flag indicating the window falls inside the contract cooling period.",
     )
+    x_auto_email_daily = fields.Boolean(
+        string="Email Daily Reports",
+        default=True,
+        help="When checked, emailing a daily MO report will notify the customer automatically.",
+    )
     x_monthly_mgq_snapshot = fields.Float(
         string="Monthly MGQ Snapshot",
         digits=(16, 2),
@@ -356,6 +361,8 @@ class GearRmcMonthlyOrder(models.Model):
     def action_mark_done(self):
         for order in self:
             order.state = "done"
+            if order.so_id:
+                order.so_id.gear_generate_next_monthly_order()
 
     def _generate_daily_productions(self, until_date=False):
         Production = self.env["mrp.production"]
@@ -423,6 +430,29 @@ class GearRmcMonthlyOrder(models.Model):
             if cursor > generation_end:
                 continue
 
+            # Clean up productions and dockets that fall outside the monthly window
+            cleanup_productions = order.production_ids.filtered(lambda p: p.state not in ("done", "cancel"))
+            for production in cleanup_productions:
+                local_date = order._gear_datetime_to_local_date(production.date_start, user_tz)
+                if not local_date:
+                    continue
+                if local_date < order.date_start or local_date > order.date_end:
+                    if production.x_docket_ids:
+                        continue
+                    try:
+                        production.unlink()
+                    except Exception:
+                        _logger.exception("Failed to remove out-of-window production %s", production.display_name)
+
+            draft_dockets = order.docket_ids.filtered(lambda d: d.state == "draft" and d.date)
+            if draft_dockets:
+                before_start = draft_dockets.filtered(lambda d: d.date < order.date_start)
+                if before_start:
+                    before_start.write({"date": order.date_start})
+                after_end = draft_dockets.filtered(lambda d: d.date > order.date_end)
+                if after_end:
+                    after_end.write({"date": order.date_end})
+
             existing_map = {
                 order._gear_datetime_to_local_date(production.date_start, user_tz): production
                 for production in order.production_ids
@@ -474,6 +504,7 @@ class GearRmcMonthlyOrder(models.Model):
 
                 if production.state not in ("done", "cancel"):
                     self._gear_sync_production_workorders(production, workcenter, start_dt, end_dt)
+                    order._gear_ensure_daily_docket(production, start_dt, user_tz)
                 processed_order = True
                 cursor += timedelta(days=1)
 
@@ -544,6 +575,57 @@ class GearRmcMonthlyOrder(models.Model):
                     production.x_monthly_order_id = target.id
                 if production.x_is_cooling_period != target.x_is_cooling_period:
                     production.x_is_cooling_period = target.x_is_cooling_period
+    def _gear_ensure_daily_docket(self, production, start_dt, user_tz):
+        """Ensure a draft docket exists for the given production day."""
+        self.ensure_one()
+        if not production:
+            return
+        local_date = self._gear_datetime_to_local_date(start_dt, user_tz)
+        if not local_date:
+            return
+
+        Docket = self.env["gear.rmc.docket"]
+        existing = production.x_docket_ids[:1] or Docket.search(
+            [
+                ("production_id", "=", production.id),
+            ],
+            limit=1,
+        )
+
+        workorder = production.workorder_ids[:1]
+        target_workcenter = (
+            (workorder.workcenter_id if workorder else False)
+            or self.workcenter_id
+            or self.so_id.x_workcenter_id
+        )
+        updates = {}
+        docket = existing and existing[0] or False
+
+        if docket:
+            if docket.date != local_date:
+                updates["date"] = local_date
+            if workorder and docket.workorder_id != workorder:
+                updates["workorder_id"] = workorder.id
+            if target_workcenter and docket.workcenter_id != target_workcenter:
+                updates["workcenter_id"] = target_workcenter.id
+            if updates:
+                docket.write(updates)
+        else:
+            docket_vals = {
+                "so_id": self.so_id.id,
+                "production_id": production.id,
+                "workorder_id": workorder.id if workorder else False,
+                "workcenter_id": target_workcenter.id if target_workcenter else False,
+                "date": local_date,
+                "docket_no": f"{production.name}-{local_date.strftime('%Y%m%d')}",
+                "source": "cron",
+                "state": "draft",
+            }
+            docket = Docket.create(docket_vals)
+
+        if docket.source == "cron" and docket.state != "draft":
+            docket.write({"state": "draft"})
+
     def _gear_get_user_tz(self):
         self.ensure_one()
         tz_name = self.env.context.get("tz") or self.env.user.tz or "UTC"
@@ -612,7 +694,7 @@ class GearRmcMonthlyOrder(models.Model):
         return records
 
     def _gear_sync_production_workorders(self, production, workcenter, start_dt, end_dt):
-        """Ensure work orders exist with max chunk of 7 m³ per work order."""
+        """Ensure only the current chunk work order exists while queueing the remaining ones."""
         Workorder = self.env["mrp.workorder"]
         param = self.env["ir.config_parameter"].sudo().get_param("gear_on_rent.workorder_max_qty", "7.0")
         try:
@@ -625,39 +707,83 @@ class GearRmcMonthlyOrder(models.Model):
         total_qty = float(production.product_qty or 0.0)
         chunks = self._gear_split_quantity(total_qty, max_chunk)
 
-        existing = production.workorder_ids.sorted("id")
-        workorders = list(existing)
         base_name = f"{production.name} / {workcenter.display_name}"
 
-        # Create or update required work orders
+        entries = []
         for idx, qty in enumerate(chunks):
-            name = base_name if len(chunks) == 1 else f"{base_name} ({idx + 1})"
+            seq = idx + 1
+            entries.append(
+                {
+                    "seq": seq,
+                    "qty": qty,
+                    "name": base_name if len(chunks) == 1 else f"{base_name} ({seq})",
+                    "date_start": fields.Datetime.to_string(start_dt) if start_dt else False,
+                    "date_finished": fields.Datetime.to_string(end_dt) if end_dt else False,
+                }
+            )
+
+        max_seq = entries[-1]["seq"] if entries else 0
+        done_workorders = production.workorder_ids.filtered(lambda wo: wo.state == "done")
+        known_sequences = sorted(seq for seq in done_workorders.mapped("gear_chunk_sequence") if seq)
+        if known_sequences:
+            next_seq = known_sequences[-1] + 1
+        else:
+            next_seq = len(done_workorders) + 1
+
+        current_entry = (
+            next((entry for entry in entries if entry["seq"] == next_seq), None)
+            if next_seq and next_seq <= max_seq
+            else None
+        )
+        pending_entries = [entry for entry in entries if current_entry and entry["seq"] > current_entry["seq"]]
+        production.x_pending_workorder_chunks = pending_entries
+
+        active_candidates = production.workorder_ids.filtered(lambda wo: wo.state not in ("done", "cancel"))
+        active = (
+            active_candidates.filtered(lambda wo: wo.gear_chunk_sequence == next_seq) if current_entry else self.env["mrp.workorder"]
+        )
+        extras = (active_candidates - active) if active else active_candidates
+
+        if current_entry:
             vals = {
-                "name": name,
+                "name": current_entry["name"],
                 "production_id": production.id,
                 "workcenter_id": workcenter.id,
-                "qty_production": qty,
+                "qty_production": current_entry["qty"],
                 "date_start": start_dt,
                 "date_finished": end_dt,
+                "sequence": current_entry["seq"],
+                "gear_chunk_sequence": current_entry["seq"],
+                "gear_qty_planned": current_entry["qty"],
             }
-            if idx < len(workorders):
-                if workorders[idx].state not in ("done", "cancel"):
-                    workorders[idx].write(vals)
+            if active:
+                target = active[:1]
+                if target.state == "progress":
+                    safe_vals = dict(vals)
+                    safe_vals.pop("date_start", None)
+                    safe_vals.pop("date_finished", None)
+                    target.write(safe_vals)
+                elif target.state not in ("done", "cancel"):
+                    target.write(vals)
             else:
-                workorder = Workorder.create(vals)
-                workorders.append(workorder)
+                Workorder.create(vals)
 
-        # Remove any extra draft workorders without dockets
-        extras = workorders[len(chunks) :]
         for wo in extras:
-            if wo.state in ("done", "cancel"):
+            if wo.state in ("done", "cancel", "progress"):
                 continue
             if wo.gear_docket_ids:
-                continue
+                try:
+                    wo.gear_docket_ids.unlink()
+                except Exception:
+                    _logger.info(
+                        "Skipping removal of work order %s due to linked dockets.",
+                        wo.display_name,
+                    )
+                    continue
             try:
                 wo.unlink()
             except Exception:
-                pass
+                _logger.info("Failed to remove surplus work order %s", wo.display_name)
 
     @staticmethod
     def _gear_split_quantity(total_qty, max_chunk):

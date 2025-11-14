@@ -398,7 +398,8 @@
 
                   <div class="form-group">
                     <label for="equipmentType"><i class="fas fa-tools"></i> Equipment Type</label>
-                    <t t-set="gear_on_rent_category" t-value="request.env['product.public.category'].sudo().search([('name', '==', 'rental')], limit=1)"/>
+                    <t t-set="has_public_category" t-value="'product.public.category' in request.env.registry.models"/>
+                    <t t-set="gear_on_rent_category" t-value="has_public_category and request.env['product.public.category'].sudo().search([('name', '=', 'rental')], limit=1)"/>
                     <t t-set="gear_on_rent_products" t-value="gear_on_rent_category and request.env['product.template'].sudo().search([('website_published', '=', True), ('sale_ok', '=', True), ('public_categ_ids', 'child_of', gear_on_rent_category.ids)], order='name') or request.env['product.template'].sudo().browse([])"/>
                     <select id="equipmentType" class="form-control">
                       <option value="">-- Select Equipment --</option>

@@ -50,5 +50,17 @@
             <field name="nextcall" eval="(DateTime.now() + relativedelta(hour=2, minute=15, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
         </record>
 
+        <!-- Retention release -->
+        <record id="cron_retention_auto_release" model="ir.cron">
+            <field name="name">RMC: Release Retentions</field>
+            <field name="model_id" ref="model_rmc_agreement_retention"/>
+            <field name="state">code</field>
+            <field name="code">model.cron_release_due_entries()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+            <field name="nextcall" eval="(DateTime.now() + relativedelta(hour=3, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+        </record>
+
     </data>
 </odoo>

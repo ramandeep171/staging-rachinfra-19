@@ -1,3 +1,4 @@
+from datetime import datetime, time
 from math import ceil
 import random
 import re
@@ -252,12 +253,11 @@ class GearRmcDocket(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
-        if any(
-            key in vals
-            for key in ["production_id", "workorder_id", "so_id", "date", "payload_timestamp"]
-        ):
+        relevant_keys = {"production_id", "workorder_id", "so_id", "date", "payload_timestamp", "qty_m3"}
+        if relevant_keys.intersection(vals):
             for docket in self:
                 docket._gear_backfill_links(vals)
+                docket._gear_sync_workorder_quantities()
         if "recipe_id" in vals:
             self._apply_recipe_lines()
         if "current_capacity" in vals or "quantity_ordered" in vals:
@@ -278,11 +278,53 @@ class GearRmcDocket(models.Model):
             self.production_id = self.workorder_id.production_id
         if not self.workcenter_id and self.workorder_id:
             self.workcenter_id = self.workorder_id.workcenter_id
-        if not self.payload_timestamp and initial_vals.get("date"):
-            self.payload_timestamp = fields.Datetime.to_datetime(f"{initial_vals['date']} 12:00:00")
+        if self.workorder_id and self.workorder_id.date_start:
+            wo_start = fields.Datetime.to_datetime(self.workorder_id.date_start)
+            current_ts = fields.Datetime.to_datetime(self.payload_timestamp) if self.payload_timestamp else False
+            if current_ts != wo_start:
+                self.payload_timestamp = wo_start
+            target_date = False
+            monthly_order = self.monthly_order_id or (self.production_id and self.production_id.x_monthly_order_id)
+            if monthly_order:
+                try:
+                    user_tz = monthly_order._gear_get_user_tz()
+                    target_date = monthly_order._gear_datetime_to_local_date(wo_start, user_tz)
+                except Exception:
+                    target_date = False
+            if not target_date:
+                local_dt = fields.Datetime.context_timestamp(self.workorder_id, wo_start)
+                target_date = local_dt.date() if local_dt else fields.Date.context_today(self)
+            if target_date and self.date != target_date:
+                self.date = target_date
+        if not self.payload_timestamp:
+            timestamp = False
+            wo_start = self.workorder_id.date_start if self.workorder_id else False
+            if wo_start:
+                timestamp = wo_start
+            elif initial_vals.get("payload_timestamp"):
+                timestamp = initial_vals["payload_timestamp"]
+            elif initial_vals.get("date"):
+                date_value = fields.Date.to_date(initial_vals["date"])
+                if date_value:
+                    timestamp = datetime.combine(date_value, time.min)
+            if timestamp:
+                self.payload_timestamp = timestamp
         if not self.quantity_ordered and self.so_id:
             qty = sum(self.so_id.order_line.filtered(lambda l: not l.display_type).mapped("product_uom_qty"))
             self.quantity_ordered = qty
+
+    def _gear_sync_workorder_quantities(self):
+        self.ensure_one()
+        if not self.workorder_id:
+            return
+        produced = sum(
+            self.workorder_id.gear_docket_ids.filtered(lambda d: d.state != "cancel").mapped("qty_m3")
+        )
+        candidate_qty = produced or sum(
+            self.workorder_id.gear_docket_ids.filtered(lambda d: d.state != "cancel").mapped("quantity_produced")
+        ) or 0.0
+        if candidate_qty and self.workorder_id.qty_produced != candidate_qty:
+            self.workorder_id.write({"qty_produced": candidate_qty})
 
     def _apply_recipe_lines(self):
         for docket in self:
@@ -461,13 +503,25 @@ class GearRmcDocket(models.Model):
         docket_no = payload.get("docket_no") or f"{workorder.id}-{date_value}"
 
         docket = self.search([("workorder_id", "=", workorder.id), ("docket_no", "=", docket_no)], limit=1)
+        monthly_order = workorder.production_id.x_monthly_order_id if workorder.production_id else False
+        if monthly_order and monthly_order.date_start and monthly_order.date_end:
+            try:
+                parsed_date = fields.Date.from_string(date_value)
+            except Exception:
+                parsed_date = monthly_order.date_start
+            if parsed_date < monthly_order.date_start:
+                parsed_date = monthly_order.date_start
+            elif parsed_date > monthly_order.date_end:
+                parsed_date = monthly_order.date_end
+            date_value = fields.Date.to_string(parsed_date)
+
         vals = {
             "so_id": payload.get("so_id") or workorder.production_id.x_sale_order_id.id,
             "production_id": payload.get("production_id") or workorder.production_id.id,
             "workorder_id": workorder.id,
             "workcenter_id": workorder.workcenter_id.id,
             "docket_no": docket_no,
-            "date": payload.get("date") or fields.Date.to_string(fields.Date.context_today(self)),
+            "date": date_value,
             "payload_timestamp": payload.get("payload_timestamp"),
             "qty_m3": payload.get("qty_m3", 0.0),
             "slump": payload.get("slump"),

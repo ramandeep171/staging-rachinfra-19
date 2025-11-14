@@ -1,6 +1,11 @@
 from datetime import timedelta
+import base64
+import logging
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.tools import format_date, format_datetime
+
+_logger = logging.getLogger(__name__)
 
 
 class MrpProduction(models.Model):
@@ -90,6 +95,11 @@ class MrpProduction(models.Model):
         store=True,
         digits=(16, 2),
     )
+    x_pending_workorder_chunks = fields.Json(
+        string="Queued Work Order Chunks",
+        default=list,
+        help="Remaining work order payloads (quantity/date) to instantiate after the current chunk completes.",
+    )
 
     _sql_constraints = [
         (
@@ -158,6 +168,44 @@ class MrpProduction(models.Model):
                 production.x_waveoff_hours_chargeable or 0.0
             ) + chargeable_hours
 
+    def action_print_daily_report(self):
+        """Open the daily MO report for this production order and log it on the monthly order."""
+        self.ensure_one()
+        report = self.env.ref("gear_on_rent.action_report_daily_mo", raise_if_not_found=False)
+        if not report:
+            raise UserError(_("Daily MO report configuration is missing."))
+
+        attachment = False
+        try:
+            pdf_content, report_type = report._render_qweb_pdf(report.id, res_ids=self.ids)
+        except Exception:
+            pdf_content = False
+        if pdf_content:
+            filename = "%s - Daily MO.pdf" % (self.name or _("MO"))
+            attachment_vals = {
+                "name": filename.replace("/", "_"),
+                "type": "binary",
+                "datas": base64.b64encode(pdf_content),
+                "mimetype": "application/pdf",
+                "res_model": self._name,
+                "res_id": self.id,
+            }
+            attachment = self.env["ir.attachment"].create(attachment_vals)
+
+        monthly = self.x_monthly_order_id
+        template = self.env.ref("gear_on_rent.mail_template_daily_mo_report", raise_if_not_found=False)
+        if template and (not monthly or monthly.x_auto_email_daily):
+            email_values = {}
+            if attachment:
+                email_values["attachment_ids"] = [(4, attachment.id)]
+            template.send_mail(self.id, force_send=True, email_values=email_values)
+
+        if monthly:
+            message = _("Daily report generated for %(mo)s.") % {"mo": self.display_name}
+            monthly.message_post(body=message, attachment_ids=attachment and [attachment.id] or False)
+
+        return report.report_action(self)
+
     def _gear_hours_to_qty(self, hours):
         self.ensure_one()
         target = self.x_daily_target_qty or 0.0
@@ -165,6 +213,192 @@ class MrpProduction(models.Model):
             return 0.0
         # Assume uniform production across the day; convert hours to MGQ relief.
         return target * (hours / 24.0)
+
+    def _gear_get_daily_report_payload(self):
+        """Return a payload compatible with the month-end template for a single MO."""
+        self.ensure_one()
+        start_dt = False
+        if self.date_start:
+            start_dt = fields.Datetime.context_timestamp(self, self.date_start)
+        start_date = start_dt.date() if start_dt else fields.Date.context_today(self)
+
+        monthly_order = self.x_monthly_order_id
+        if not monthly_order and self.x_sale_order_id and start_date:
+            monthly_order = (
+                self.env["gear.rmc.monthly.order"]
+                .search(
+                    [
+                        ("so_id", "=", self.x_sale_order_id.id),
+                        ("date_start", "<=", start_date),
+                        ("date_end", ">=", start_date),
+                    ],
+                    limit=1,
+                )
+            )
+
+        contract = self.x_sale_order_id or (monthly_order and monthly_order.so_id)
+        customer = contract.partner_id if contract else False
+
+        target_qty = self.x_daily_target_qty or self.product_qty or 0.0
+        adjusted_qty = self.x_adjusted_target_qty or target_qty
+        workorder_output = sum(self.workorder_ids.mapped("qty_produced"))
+        prime_output = self.x_prime_output_qty or workorder_output or (self.qty_produced or 0.0)
+        is_cooling = bool(self.x_is_cooling_period or (monthly_order and monthly_order.x_is_cooling_period))
+        standby_qty = self.x_optimized_standby_qty or max(adjusted_qty - prime_output, 0.0)
+        if is_cooling:
+            standby_qty = 0.0
+        ngt_hours = self.x_ngt_hours or 0.0
+        relief_qty = self.x_relief_qty or 0.0
+        waveoff_applied = self.x_waveoff_hours_applied or 0.0
+        waveoff_chargeable = self.x_waveoff_hours_chargeable or 0.0
+        total_waveoff = waveoff_applied + waveoff_chargeable
+        monthly_target_qty = monthly_order.monthly_target_qty if monthly_order else contract.x_monthly_mgq if contract else 0.0
+        monthly_adjusted = monthly_order.adjusted_target_qty if monthly_order else monthly_target_qty
+        cumulative_prime = monthly_order.prime_output_qty if monthly_order else prime_output
+        cumulative_standby = monthly_order.optimized_standby_qty if monthly_order else standby_qty
+        cumulative_ngt = monthly_order.downtime_relief_qty if monthly_order else relief_qty
+        cumulative_ngt_hours = monthly_order.ngt_hours if monthly_order else ngt_hours
+        cumulative_waveoff = monthly_order.waveoff_hours_applied if monthly_order else waveoff_applied
+        cumulative_waveoff_chargeable = monthly_order.waveoff_hours_chargeable if monthly_order else waveoff_chargeable
+
+        cooling_totals = {
+            "target_qty": 0.0,
+            "adjusted_target_qty": 0.0,
+            "prime_output_qty": 0.0,
+            "standby_qty": 0.0,
+            "ngt_m3": 0.0,
+            "ngt_hours": 0.0,
+            "waveoff_applied_hours": 0.0,
+            "waveoff_chargeable_hours": 0.0,
+        }
+        normal_totals = {
+            "target_qty": 0.0,
+            "adjusted_target_qty": 0.0,
+            "prime_output_qty": 0.0,
+            "standby_qty": 0.0,
+            "ngt_m3": 0.0,
+            "ngt_hours": 0.0,
+            "waveoff_applied_hours": 0.0,
+            "waveoff_chargeable_hours": 0.0,
+        }
+
+        bucket_data = cooling_totals if is_cooling else normal_totals
+        bucket_data.update(
+            {
+                "target_qty": target_qty,
+                "adjusted_target_qty": adjusted_qty,
+                "prime_output_qty": prime_output,
+                "standby_qty": 0.0 if is_cooling else standby_qty,
+                "ngt_m3": relief_qty,
+                "ngt_hours": ngt_hours,
+                "waveoff_applied_hours": waveoff_applied,
+                "waveoff_chargeable_hours": waveoff_chargeable,
+            }
+        )
+
+        docket_records = self.x_docket_ids.sorted(key=lambda d: (d.date or fields.Date.today(), d.id))
+        docket_rows = [
+            {
+                "docket_no": docket.docket_no,
+                "date": format_date(self.env, docket.date),
+                "timestamp": format_datetime(self.env, docket.payload_timestamp) if docket.payload_timestamp else "",
+                "qty_m3": docket.qty_m3,
+                "workcenter": docket.workcenter_id.display_name,
+                "runtime_minutes": docket.runtime_minutes,
+                "idle_minutes": docket.idle_minutes,
+                "slump": docket.slump,
+                "alarms": ", ".join(docket.alarm_codes or []),
+                "notes": docket.notes,
+            }
+            for docket in docket_records
+        ]
+
+        if not docket_rows:
+            fallback_workorders = self.workorder_ids.sorted(
+                key=lambda wo: (wo.date_start or fields.Datetime.now(), wo.id)
+            )
+            for workorder in fallback_workorders:
+                qty = workorder.qty_produced or 0.0
+                duration = workorder.duration or 0.0
+                if not qty and not duration:
+                    continue
+                date_display = ""
+                if workorder.date_start:
+                    local_start = fields.Datetime.context_timestamp(self, workorder.date_start)
+                    date_display = format_date(self.env, local_start.date())
+                timestamp_dt = workorder.date_finished or workorder.date_start
+                timestamp_display = ""
+                if timestamp_dt:
+                    timestamp_display = format_datetime(self.env, timestamp_dt)
+                docket_rows.append(
+                    {
+                        "docket_no": workorder.name,
+                        "date": date_display,
+                        "timestamp": timestamp_display,
+                        "qty_m3": qty,
+                        "workcenter": workorder.workcenter_id.display_name,
+                        "runtime_minutes": duration,
+                        "idle_minutes": 0.0,
+                        "slump": "",
+                        "alarms": "",
+                        "notes": "",
+                    }
+                )
+
+        manufacturing_orders = [
+            {
+                "date_start": format_datetime(self.env, self.date_start) if self.date_start else "",
+                "reference": self.name,
+                "is_cooling": is_cooling,
+                "daily_mgq": target_qty,
+                "adjusted_mgq": adjusted_qty,
+                "prime_output": prime_output,
+                "optimized_standby": standby_qty,
+                "ngt_hours": ngt_hours,
+                "loto_hours": waveoff_chargeable,
+            }
+        ]
+
+        show_normal_totals = any(
+            normal_totals.get(key)
+            for key in ("target_qty", "adjusted_target_qty", "prime_output_qty", "standby_qty", "ngt_m3")
+        )
+
+        payload = {
+            "invoice_name": self.name,
+            "month_label": format_date(self.env, start_date, date_format="d MMMM yyyy"),
+            "version_label": _("Daily Summary"),
+            "contract_name": contract.name if contract else "",
+            "customer_name": customer.display_name if customer else "",
+            "loto_total_hours": total_waveoff,
+            "waveoff_allowance": contract.x_loto_waveoff_hours if contract else 0.0,
+            "waveoff_applied": waveoff_applied,
+            "loto_chargeable_hours": waveoff_chargeable,
+            "target_qty": target_qty,
+            "adjusted_target_qty": adjusted_qty,
+            "ngt_hours": ngt_hours,
+            "ngt_qty": relief_qty,
+            "prime_output_qty": prime_output,
+            "optimized_standby": standby_qty,
+            "show_cooling_totals": is_cooling,
+            "show_normal_totals": show_normal_totals,
+            "monthly_target_qty": monthly_target_qty,
+            "monthly_adjusted_qty": monthly_adjusted,
+            "monthly_prime_output_qty": cumulative_prime,
+            "monthly_standby_qty": cumulative_standby,
+            "monthly_ngt_qty": cumulative_ngt,
+            "monthly_ngt_hours": cumulative_ngt_hours,
+            "monthly_waveoff_applied": cumulative_waveoff,
+            "monthly_waveoff_chargeable": cumulative_waveoff_chargeable,
+            "cooling_totals": cooling_totals,
+            "normal_totals": normal_totals,
+            "materials_shortage": contract.gear_materials_shortage_note if contract else "",
+            "manpower_notes": contract.gear_manpower_note if contract else "",
+            "asset_notes": contract.gear_asset_note if contract else "",
+            "dockets": docket_rows,
+            "manufacturing_orders": manufacturing_orders,
+        }
+        return payload
 
     @api.model
     def gear_find_mo_for_datetime(self, workcenter, timestamp):
@@ -238,6 +472,15 @@ class MrpWorkorder(models.Model):
         string="Aggregated Batches",
         help="All batches captured on dockets linked to this work order.",
     )
+    gear_chunk_sequence = fields.Integer(
+        string="Gear Chunk Sequence",
+        help="Sequential index used to release work orders one at a time.",
+    )
+    gear_qty_planned = fields.Float(
+        string="Gear Planned Quantity",
+        digits=(16, 2),
+        help="Target quantity (m³) allocated to this work order chunk.",
+    )
 
     @api.depends("gear_docket_ids.qty_m3")
     def _compute_prime_output_qty(self):
@@ -271,14 +514,29 @@ class MrpWorkorder(models.Model):
         if self.gear_recipe_id and self.gear_recipe_id.product_tmpl_id != self.gear_recipe_product_id.product_tmpl_id:
             self.gear_recipe_id = False
 
-    def button_start(self, raise_on_invalid_state=False):
-        res = super().button_start(raise_on_invalid_state=raise_on_invalid_state)
+    def button_start(self, raise_on_invalid_state=False, bypass=False):
+        res = super().button_start(raise_on_invalid_state=raise_on_invalid_state, bypass=bypass)
         self._gear_update_docket_states(target_state="in_production")
         return res
 
     def button_finish(self):
         res = super().button_finish()
         self._gear_finalize_dockets()
+        return res
+
+    def write(self, vals):
+        next_release_candidates = self.env["mrp.workorder"]
+        if vals.get("state") == "done":
+            next_release_candidates = self.filtered(lambda wo: wo.state != "done")
+        res = super().write(vals)
+        if any(key in vals for key in ["date_start", "workcenter_id"]):
+            for workorder in self:
+                if not workorder.gear_docket_ids:
+                    continue
+                for docket in workorder.gear_docket_ids:
+                    docket._gear_backfill_links()
+        if vals.get("state") == "done":
+            next_release_candidates._gear_release_next_workorder()
         return res
 
     def action_cancel(self):
@@ -307,7 +565,20 @@ class MrpWorkorder(models.Model):
             while docket_model.search_count([("so_id", "=", sale_order.id), ("docket_no", "=", docket_no)]):
                 suffix += 1
                 docket_no = f"{base_no}-{suffix}"
-            date_value = fields.Date.to_date(workorder.date_start) if workorder.date_start else fields.Date.context_today(workorder)
+            monthly_order = getattr(production, "x_monthly_order_id", False)
+            if workorder.date_start:
+                date_value = False
+                if monthly_order:
+                    try:
+                        user_tz = monthly_order._gear_get_user_tz()
+                        date_value = monthly_order._gear_datetime_to_local_date(workorder.date_start, user_tz)
+                    except Exception:
+                        date_value = False
+                if not date_value:
+                    local_dt = fields.Datetime.context_timestamp(workorder, workorder.date_start)
+                    date_value = local_dt.date() if local_dt else fields.Date.context_today(workorder)
+            else:
+                date_value = fields.Date.context_today(workorder)
             docket_vals = {
                 "so_id": sale_order.id,
                 "production_id": production.id,
@@ -318,7 +589,8 @@ class MrpWorkorder(models.Model):
                 "date": date_value,
                 "source": "manual",
                 "state": "draft",
-                "quantity_ordered": workorder.qty_production or production.product_qty,
+                "quantity_ordered": workorder.gear_qty_planned or workorder.qty_production or production.product_qty,
+                "payload_timestamp": workorder.date_start,
             }
             docket_model.create(docket_vals)
 
@@ -343,7 +615,12 @@ class MrpWorkorder(models.Model):
             dockets = workorder.gear_docket_ids
             if not dockets:
                 continue
-            produced_qty = workorder.qty_produced or workorder.qty_production or 0.0
+            produced_qty = (
+                workorder.qty_produced
+                or workorder.gear_qty_planned
+                or workorder.qty_production
+                or 0.0
+            )
             runtime_minutes = workorder.duration or 0.0
 
             # Only auto-allocate quantities for dockets that haven't been filled yet
@@ -457,11 +734,11 @@ class MrpWorkorder(models.Model):
         docket = self.env["gear.rmc.docket"].gear_create_from_workorder(self, docket_payload)
         self.invalidate_model(
             [
-                "gear_prime_output_qty",
-                "gear_runtime_minutes",
-                "gear_idle_minutes",
-            ]
-        )
+                    "gear_prime_output_qty",
+                    "gear_runtime_minutes",
+                    "gear_idle_minutes",
+                ]
+            )
         if self.production_id:
             self.production_id.invalidate_model(
                 [
@@ -471,3 +748,79 @@ class MrpWorkorder(models.Model):
                 ]
             )
         return docket
+
+    def _gear_release_next_workorder(self):
+        Workorder = self.env["mrp.workorder"]
+        for workorder in self:
+            production = workorder.production_id
+            if not production:
+                continue
+            if production.workorder_ids.filtered(lambda wo: wo.state == "progress"):
+                continue
+            pending_entries = list(production.x_pending_workorder_chunks or [])
+            next_candidate = production.workorder_ids.filtered(
+                lambda wo: wo.state in ("ready", "blocked") and wo.id != workorder.id
+            ).sorted(lambda wo: (wo.gear_chunk_sequence or wo.sequence, wo.id))[:1]
+            created = False
+            if not next_candidate and pending_entries:
+                payload = pending_entries.pop(0)
+                qty = payload.get("qty") or 0.0
+                if qty > 0:
+                    seq = payload.get("seq")
+                    workcenter = workorder.workcenter_id or production.workorder_ids[:1].workcenter_id
+                    if not workcenter:
+                        _logger.info(
+                            "Cannot auto-create next work order for %s due to missing workcenter.",
+                            production.display_name,
+                        )
+                        production.x_pending_workorder_chunks = pending_entries
+                        continue
+                    name = payload.get("name") or (
+                        f"{production.name} / {workcenter.display_name}"
+                        if seq == 1
+                        else f"{production.name} / {workcenter.display_name} ({seq})"
+                    )
+                    start_dt_str = payload.get("date_start")
+                    end_dt_str = payload.get("date_finished")
+                    if start_dt_str:
+                        start_dt = fields.Datetime.from_string(start_dt_str)
+                    else:
+                        start_dt = workorder.date_finished or fields.Datetime.now()
+                    if end_dt_str:
+                        end_dt = fields.Datetime.from_string(end_dt_str)
+                    else:
+                        end_dt = start_dt
+                    vals = {
+                        "name": name,
+                        "production_id": production.id,
+                        "workcenter_id": workcenter.id,
+                        "qty_production": qty,
+                        "date_start": start_dt,
+                        "date_finished": end_dt,
+                        "sequence": seq,
+                        "gear_chunk_sequence": seq,
+                        "gear_qty_planned": qty,
+                    }
+                    next_candidate = Workorder.create(vals)
+                    created = True
+                else:
+                    _logger.info(
+                        "Skipping automatic creation of next work order for %s due to zero-quantity chunk.",
+                        production.display_name,
+                    )
+            production.x_pending_workorder_chunks = pending_entries
+            if not next_candidate:
+                continue
+            candidate = next_candidate[:1]
+            if candidate.state in ("done", "cancel"):
+                continue
+            if candidate.state == "progress":
+                continue
+            if candidate.state == "blocked" and not created:
+                continue
+            if candidate.state != "ready":
+                try:
+                    candidate.write({"state": "ready"})
+                except Exception:
+                    # ignore if compute-driven or forbidden; manual intervention needed
+                    pass

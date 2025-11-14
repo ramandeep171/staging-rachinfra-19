@@ -26,3 +26,6 @@ access_rmc_agreement_preview_wizard,rmc.agreement.send.preview.wizard,model_rmc_
 access_rmc_agreement_clause_manager,rmc.agreement.clause.manager,model_rmc_agreement_clause,group_rmc_manager,1,1,1,1
 access_rmc_agreement_clause_user,rmc.agreement.clause.user,model_rmc_agreement_clause,group_rmc_contractor_user,1,1,1,0
 access_rmc_agreement_clause_template_manager,rmc.agreement.clause.template.manager,model_rmc_agreement_clause_template,group_rmc_manager,1,1,1,1
+access_rmc_agreement_retention_user,rmc.agreement.retention.user,model_rmc_agreement_retention,group_rmc_contractor_user,1,0,0,0
+access_rmc_agreement_retention_manager,rmc.agreement.retention.manager,model_rmc_agreement_retention,group_rmc_manager,1,1,1,0
+access_rmc_agreement_retention_account,rmc.agreement.retention.account,model_rmc_agreement_retention,account.group_account_invoice,1,1,1,0

@@ -130,12 +130,14 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             month_start = today.replace(day=1)
         last_day = monthrange(month_start.year, month_start.month)[1]
         month_end = month_start.replace(day=last_day)
+        period_start = monthly.date_start or month_start
+        period_end = monthly.date_end or month_end
 
         month_orders = self.env["gear.rmc.monthly.order"].search(
             [
                 ("so_id", "=", order.id),
-                ("date_start", ">=", month_start),
-                ("date_start", "<=", month_end),
+                ("date_start", ">=", period_start),
+                ("date_start", "<=", period_end),
             ]
         )
         if not month_orders:
@@ -176,8 +178,8 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             "gear_waveoff_allowance_hours": order.x_loto_waveoff_hours,
         }
 
-        period_start_label = fields.Date.to_string(month_start)
-        period_end_label = fields.Date.to_string(month_end)
+        period_start_label = fields.Date.to_string(period_start)
+        period_end_label = fields.Date.to_string(period_end)
 
         line_commands = []
         if prime_output > 0:

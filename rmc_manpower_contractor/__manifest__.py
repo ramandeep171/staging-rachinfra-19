@@ -73,6 +73,8 @@
     'assets': {
         'web.assets_backend': [
             'rmc_manpower_contractor/static/src/js/sign_request_documents_dropdown_patch.js',
+            'rmc_manpower_contractor/static/src/js/selection_field_patch.js',
+            'rmc_manpower_contractor/static/src/scss/billing_dashboard.scss',
         ],
         'web.assets_frontend': [
             'rmc_manpower_contractor/static/src/scss/manpower_partner.scss',

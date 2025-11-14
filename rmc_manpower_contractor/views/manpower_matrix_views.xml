@@ -15,6 +15,11 @@
                     <field name="shift"/>
                     <field name="base_rate"/>
                     <field name="remark"/>
+                    <field name="attendance_present_days" optional="show"/>
+                    <field name="attendance_total_days" optional="show"/>
+                    <field name="attendance_ratio" optional="show"/>
+                    <field name="attendance_prorated_amount" optional="show"/>
+                    <field name="attendance_deduction_amount" optional="show"/>
                     <field name="total_amount" sum="Total"/>
                 </list>
             </field>

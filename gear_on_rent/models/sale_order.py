@@ -88,7 +88,7 @@ class SaleOrder(models.Model):
         rmc_orders = self.filtered(lambda o: o.x_billing_category == "rmc")
         if rmc_orders:
             rmc_orders._gear_sync_production_defaults()
-            rmc_orders.gear_generate_monthly_orders()
+            rmc_orders.gear_generate_monthly_orders(limit=1)
         return res
 
     @api.onchange("order_line")
@@ -104,9 +104,46 @@ class SaleOrder(models.Model):
             line = self.order_line.filtered(lambda l: not l.display_type)[:1]
         return line.product_id
 
-    def gear_generate_monthly_orders(self):
+    def _gear_get_timezone(self):
+        self.ensure_one()
+        tz_name = self.env.context.get("tz") or self.env.user.tz or "UTC"
+        try:
+            return pytz.timezone(tz_name)
+        except Exception:
+            return pytz.utc
+
+    def _gear_localize_day(self, day, is_end=False, tz=None):
+        tz = tz or self._gear_get_timezone()
+        boundary = time(23, 59, 59) if is_end else time.min
+        return tz.localize(datetime.combine(day, boundary))
+
+    def _gear_db_to_local(self, dt, tz=None):
+        tz = tz or self._gear_get_timezone()
+        if not dt:
+            return False
+        if dt.tzinfo:
+            return dt.astimezone(tz)
+        return pytz.utc.localize(dt).astimezone(tz)
+
+    @staticmethod
+    def _gear_local_to_utc(dt):
+        if not dt:
+            return False
+        return dt.astimezone(pytz.utc).replace(tzinfo=None)
+
+    def gear_generate_monthly_orders(self, date_start=None, date_end=None, limit=None):
         """Ensure monthly orders and daily MOs exist for the contract window."""
         MonthlyOrder = self.env["gear.rmc.monthly.order"]
+        try:
+            limit = int(limit) if limit is not None else None
+        except (TypeError, ValueError):
+            limit = None
+        if limit is not None and limit <= 0:
+            limit = None
+
+        date_start = fields.Date.to_date(date_start) if date_start else None
+        date_end = fields.Date.to_date(date_end) if date_end else None
+
         for order in self.filtered(lambda s: s.x_billing_category == "rmc"):
             if not order.x_contract_start or not order.x_contract_end:
                 continue
@@ -120,8 +157,22 @@ class SaleOrder(models.Model):
                 )
                 continue
             windows = order._gear_iter_monthly_windows(order.x_contract_start, order.x_contract_end)
+            if date_start or date_end:
+                filtered_windows = [
+                    window
+                    for window in windows
+                    if not (date_end and window["date_start"] > date_end)
+                    and not (date_start and window["date_end"] < date_start)
+                ]
+            else:
+                filtered_windows = list(windows)
+
+            if not filtered_windows:
+                continue
+            if limit is not None:
+                filtered_windows = filtered_windows[:limit]
             managed_orders = self.env["gear.rmc.monthly.order"]
-            for window in windows:
+            for window in filtered_windows:
                 monthly = MonthlyOrder.search(
                     [
                         ("so_id", "=", order.id),
@@ -177,6 +228,74 @@ class SaleOrder(models.Model):
                 if monthly.state != "done" and not has_locked_mo and not has_locked_wo:
                     monthly.action_schedule_orders(until_date=today)
 
+    def gear_generate_next_monthly_order(self, horizon_days=1):
+        """Create the next missing monthly order when the window is imminent or previous is done."""
+        MonthlyOrder = self.env["gear.rmc.monthly.order"]
+        today = fields.Date.context_today(self)
+        try:
+            horizon_days = int(horizon_days)
+        except (TypeError, ValueError):
+            horizon_days = 0
+        if horizon_days < 0:
+            horizon_days = 0
+        horizon_date = today + timedelta(days=horizon_days)
+
+        for order in self.filtered(lambda s: s.x_billing_category == "rmc"):
+            if not order.x_contract_start or not order.x_contract_end:
+                continue
+
+            windows = order._gear_iter_monthly_windows(order.x_contract_start, order.x_contract_end)
+            if not windows:
+                continue
+
+            existing_orders = MonthlyOrder.search([("so_id", "=", order.id)])
+            existing_by_start = {monthly.date_start: monthly for monthly in existing_orders}
+
+            for idx, window in enumerate(windows):
+                start_date = window["date_start"]
+                if start_date in existing_by_start:
+                    continue
+
+                prev_window = windows[idx - 1] if idx > 0 else None
+                prev_order = existing_by_start.get(prev_window["date_start"]) if prev_window else None
+
+                should_create = False
+                if prev_order and prev_order.state == "done":
+                    should_create = True
+                if start_date and start_date <= today:
+                    should_create = True
+                if start_date and start_date <= horizon_date:
+                    should_create = True
+
+                if should_create:
+                    order.gear_generate_monthly_orders(
+                        date_start=start_date,
+                        date_end=window["date_end"],
+                        limit=1,
+                    )
+                    new_monthly = MonthlyOrder.search(
+                        [
+                            ("so_id", "=", order.id),
+                            ("date_start", "=", start_date),
+                        ],
+                        limit=1,
+                    )
+                    if new_monthly:
+                        existing_by_start[start_date] = new_monthly
+
+    @api.model
+    def _cron_generate_next_monthly_orders(self):
+        """Nightly job to ensure the upcoming monthly WMO exists."""
+        domain = [
+            ("state", "in", ["sale", "done"]),
+            ("x_billing_category", "=", "rmc"),
+            ("x_contract_start", "!=", False),
+            ("x_contract_end", "!=", False),
+        ]
+        orders = self.search(domain)
+        if orders:
+            orders.gear_generate_next_monthly_order()
+
     def _gear_iter_monthly_windows(self, start_date, end_date):
         """Return dictionaries describing each monthly window, splitting on cooling transitions."""
         self.ensure_one()
@@ -185,6 +304,9 @@ class SaleOrder(models.Model):
 
         contract_start_dt = self._gear_get_contract_start_datetime()
         cooling_end_dt = self.x_cooling_end
+        tz = self._gear_get_timezone()
+        contract_start_local = self._gear_db_to_local(contract_start_dt, tz)
+        cooling_end_local = self._gear_db_to_local(cooling_end_dt, tz)
         current = start_date.replace(day=1)
         limit = end_date
         windows = []
@@ -205,41 +327,41 @@ class SaleOrder(models.Model):
                 current = (current + relativedelta(months=1)).replace(day=1)
                 continue
 
-            month_start_dt = datetime.combine(month_start, time.min)
-            month_end_dt = datetime.combine(month_end, time(23, 59, 59))
-            month_hours = compute_hours(month_start_dt, month_end_dt)
+            month_start_local = self._gear_localize_day(month_start, tz=tz)
+            month_end_local = self._gear_localize_day(month_end, is_end=True, tz=tz)
+            month_hours = compute_hours(month_start_local, month_end_local)
 
-            start_dt = (
-                contract_start_dt
-                if contract_start_dt and window_start == start_date
-                else datetime.combine(window_start, time.min)
-            )
-            end_dt = datetime.combine(window_end, time(23, 59, 59))
+            midnight_start_local = self._gear_localize_day(window_start, tz=tz)
+            if contract_start_local and contract_start_local.date() == window_start:
+                start_local = min(midnight_start_local, contract_start_local)
+            else:
+                start_local = midnight_start_local
+            end_local = self._gear_localize_day(window_end, is_end=True, tz=tz)
             default_span_days = (window_end - window_start).days + 1
 
-            if cooling_end_dt and start_dt <= cooling_end_dt <= end_dt:
-                first_end_dt = min(cooling_end_dt, end_dt)
-                first_end_date = min(window_end, first_end_dt.date())
+            if cooling_end_local and start_local <= cooling_end_local <= end_local:
+                first_end_local = min(cooling_end_local, end_local)
+                first_end_date = min(window_end, first_end_local.date())
                 if first_end_date >= window_start:
                     first_span_days = (first_end_date - window_start).days + 1
                     windows.append(
                         {
                             "date_start": window_start,
                             "date_end": first_end_date,
-                            "window_start": start_dt,
-                            "window_end": first_end_dt,
+                            "window_start": self._gear_local_to_utc(start_local),
+                            "window_end": self._gear_local_to_utc(first_end_local),
                             "is_cooling": True,
                             "month_days": month_days,
                             "span_days": first_span_days,
                             "month_hours": month_hours,
-                            "window_hours": compute_hours(start_dt, first_end_dt),
+                            "window_hours": compute_hours(start_local, first_end_local),
                         }
                     )
                 after_cooling_date = first_end_date + timedelta(days=1)
                 if after_cooling_date <= window_end:
-                    second_start_dt = max(
-                        cooling_end_dt + timedelta(seconds=1),
-                        datetime.combine(after_cooling_date, time.min),
+                    second_start_local = max(
+                        cooling_end_local + timedelta(seconds=1),
+                        self._gear_localize_day(after_cooling_date, tz=tz),
                     )
                     second_span_days = (window_end - after_cooling_date).days + 1
                     if second_span_days > 0:
@@ -247,28 +369,28 @@ class SaleOrder(models.Model):
                             {
                                 "date_start": after_cooling_date,
                                 "date_end": window_end,
-                                "window_start": second_start_dt,
-                                "window_end": end_dt,
+                                "window_start": self._gear_local_to_utc(second_start_local),
+                                "window_end": self._gear_local_to_utc(end_local),
                                 "is_cooling": False,
                                 "month_days": month_days,
                                 "span_days": second_span_days,
                                 "month_hours": month_hours,
-                                "window_hours": compute_hours(second_start_dt, end_dt),
+                                "window_hours": compute_hours(second_start_local, end_local),
                             }
                         )
             else:
-                is_cooling = bool(cooling_end_dt and end_dt <= cooling_end_dt)
+                is_cooling = bool(cooling_end_local and end_local <= cooling_end_local)
                 windows.append(
                     {
                         "date_start": window_start,
                         "date_end": window_end,
-                        "window_start": start_dt,
-                        "window_end": end_dt,
+                        "window_start": self._gear_local_to_utc(start_local),
+                        "window_end": self._gear_local_to_utc(end_local),
                         "is_cooling": is_cooling,
                         "month_days": month_days,
                         "span_days": default_span_days,
                         "month_hours": month_hours,
-                        "window_hours": compute_hours(start_dt, end_dt),
+                        "window_hours": compute_hours(start_local, end_local),
                     }
                 )
 

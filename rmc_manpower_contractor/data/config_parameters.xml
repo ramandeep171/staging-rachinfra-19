@@ -74,6 +74,12 @@
             <field name="value">-10.0</field>
         </record>
 
+        <!-- Retention grouping -->
+        <record id="config_retention_grouping" model="ir.config_parameter">
+            <field name="key">rmc_manpower_contractor.group_retention_release_by_agreement</field>
+            <field name="value">0</field>
+        </record>
+
         <!-- Sequences -->
         <record id="seq_rmc_agreement" model="ir.sequence">
             <field name="name">RMC Agreement</field>

@@ -8,14 +8,17 @@ import base64
 import hashlib
 import json
 import logging
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, date
 
 import pytz
+from dateutil.relativedelta import relativedelta
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.safe_eval import safe_eval
 from odoo.tools.float_utils import float_compare, float_is_zero
+
+from . import retention_common
 
 _logger = logging.getLogger(__name__)
 
@@ -41,6 +44,14 @@ class RmcContractAgreement(models.Model):
         required=True,
         # domain="[('supplier_rank', '>', 0)]",
         tracking=True
+    )
+    vendor_id = fields.Many2one(
+        'res.partner',
+        string='Vendor',
+        related='contractor_id',
+        store=True,
+        readonly=False,
+        help='Alias to contractor for integrations expecting a vendor_id field.'
     )
     contract_type = fields.Selection([
         ('driver_transport', 'Transport/Driver Contract'),
@@ -107,6 +118,20 @@ class RmcContractAgreement(models.Model):
     # Validity Period
     validity_start = fields.Date(string='Valid From', tracking=True)
     validity_end = fields.Date(string='Valid Until', tracking=True)
+    start_date = fields.Date(
+        string='Start Date',
+        related='validity_start',
+        store=True,
+        readonly=False,
+        required=True
+    )
+    end_date = fields.Date(
+        string='End Date',
+        related='validity_end',
+        store=True,
+        readonly=False,
+        required=True
+    )
 
     # Financial Fields - Wage Matrix
     mgq_target = fields.Float(
@@ -152,6 +177,66 @@ class RmcContractAgreement(models.Model):
         string='Currency',
         default=lambda self: self.env.company.currency_id
     )
+    retention_rate = fields.Float(
+        string='Retention %',
+        default=2.0,
+        tracking=True,
+        help='Retention percentage held from the configured base.'
+    )
+    retention_duration = fields.Selection(
+        retention_common.RETENTION_DURATION_SELECTION,
+        string='Retention Duration',
+        required=True,
+        default='90_days',
+        help='How long the retention amount stays on hold before release.'
+    )
+    retention_base = fields.Selection(
+        retention_common.RETENTION_BASE_SELECTION,
+        string='Retention Base',
+        required=True,
+        default='untaxed',
+        help='Select whether retention is computed over untaxed or total invoice amount.'
+    )
+    auto_apply = fields.Boolean(
+        string='Auto Apply Retention',
+        default=True,
+        help='Automatically book retention holds on linked vendor bills.'
+    )
+    retention_entry_ids = fields.One2many(
+        'rmc.agreement.retention',
+        'agreement_id',
+        string='Retention Holds',
+        copy=False
+    )
+    retention_balance = fields.Monetary(
+        string='Retention Balance',
+        currency_field='currency_id',
+        compute='_compute_retention_amounts',
+        store=True
+    )
+    retention_released_amount = fields.Monetary(
+        string='Retention Released',
+        currency_field='currency_id',
+        compute='_compute_retention_amounts',
+        store=True
+    )
+
+    @api.depends('retention_entry_ids.retention_amount', 'retention_entry_ids.release_state')
+    def _compute_retention_amounts(self):
+        company_currency = self.env.company.currency_id
+        for agreement in self:
+            balance = 0.0
+            released = 0.0
+            for entry in agreement.retention_entry_ids:
+                amount = entry.retention_amount or 0.0
+                if entry.release_state == 'released':
+                    released += amount
+                elif entry.release_state != 'cancelled':
+                    balance += amount
+            currency = agreement.currency_id or company_currency
+            rounding = currency.rounding if currency else 0.01
+            agreement.retention_balance = currency.round(balance) if currency else balance
+            agreement.retention_released_amount = currency.round(released) if currency else released
 
     # Manpower Matrix (One2many)
     manpower_matrix_ids = fields.One2many(
@@ -258,17 +343,77 @@ class RmcContractAgreement(models.Model):
             if updates:
                 super(RmcContractAgreement, agreement).write(updates)
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        agreements = super().create(vals_list)
-        agreements._update_manpower_totals_from_matrix()
-        return agreements
+    @staticmethod
+    def _dates_overlap(start_a, end_a, start_b, end_b):
+        start_a = start_a or date.min
+        start_b = start_b or date.min
+        end_a = end_a or date.max
+        end_b = end_b or date.max
+        return start_a <= end_b and start_b <= end_a
 
-    def write(self, vals):
-        res = super().write(vals)
-        if 'manpower_matrix_ids' in vals:
-            self._update_manpower_totals_from_matrix()
-        return res
+    def _get_retention_base_amount_from_bill(self, bill):
+        self.ensure_one()
+        if self.retention_base == 'total':
+            base_amount = bill.amount_total
+        else:
+            base_amount = bill.amount_untaxed
+        return abs(base_amount or 0.0)
+
+    def _get_retention_release_date(self, bill):
+        self.ensure_one()
+        reference_date = bill.invoice_date_due or bill.invoice_date or fields.Date.context_today(self)
+        duration = self.retention_duration or '90_days'
+        if duration == '90_days':
+            return reference_date + timedelta(days=90)
+        if duration == '6_months':
+            return reference_date + relativedelta(months=6)
+        if duration == '1_year':
+            return reference_date + relativedelta(years=1)
+        # over_period
+        return self.end_date or self.validity_end or reference_date
+
+    def _prepare_retention_entry_vals(self, bill):
+        self.ensure_one()
+        if not self.auto_apply or not self.retention_rate or bill.move_type != 'in_invoice':
+            return False
+        currency = bill.currency_id or self.currency_id
+        if not currency:
+            return False
+        base_amount = self._get_retention_base_amount_from_bill(bill)
+        retention_amount = currency.round(base_amount * (self.retention_rate / 100.0))
+        if float_is_zero(retention_amount, precision_rounding=currency.rounding):
+            return False
+        release_date = self._get_retention_release_date(bill)
+        company = self.company_id or bill.company_id or self.env.company
+        return {
+            'agreement_id': self.id,
+            'move_id': bill.id,
+            'company_id': company.id,
+            'currency_id': currency.id,
+            'base_amount': base_amount,
+            'retention_amount': retention_amount,
+            'retention_rate': self.retention_rate,
+            'retention_base': self.retention_base,
+            'retention_duration': self.retention_duration,
+            'scheduled_release_date': release_date,
+        }
+
+    def _create_retention_entry_from_bill(self, bill):
+        self.ensure_one()
+        vals = self._prepare_retention_entry_vals(bill)
+        if not vals:
+            return False
+        existing = bill.retention_entry_ids.filtered(lambda r: r.release_state == 'pending')
+        if existing:
+            existing.unlink()
+        retention = self.env['rmc.agreement.retention'].create(vals)
+        bill.write({
+            'retention_amount': vals['retention_amount'],
+            'retention_base_amount': vals['base_amount'],
+            'retention_release_date': vals['scheduled_release_date'],
+            'release_due_date': vals['scheduled_release_date'],
+        })
+        return retention
 
     # Pending Items
     pending_items_count = fields.Integer(
@@ -878,13 +1023,17 @@ class RmcContractAgreement(models.Model):
                 ) or _('New')
         agreements = super(RmcContractAgreement, self).create(vals_list)
         agreements._ensure_clause_defaults()
+        agreements._update_manpower_totals_from_matrix()
         return agreements
 
     def write(self, vals):
         contract_type_changed = 'contract_type' in vals
+        matrix_updated = 'manpower_matrix_ids' in vals
         res = super().write(vals)
         if contract_type_changed:
             self._ensure_clause_defaults()
+        if matrix_updated:
+            self._update_manpower_totals_from_matrix()
         return res
 
     @api.depends('sign_request_id', 'sign_request_id.state')
@@ -1102,6 +1251,44 @@ class RmcContractAgreement(models.Model):
                 if record.validity_end < record.validity_start:
                     raise ValidationError(
                         _('Validity end date must be after start date.')
+                    )
+
+    @api.constrains('retention_rate')
+    def _check_retention_rate(self):
+        for record in self:
+            if record.retention_rate is not None and record.retention_rate < 0.0:
+                raise ValidationError(_('Retention rate cannot be negative.'))
+
+    @api.constrains('contractor_id', 'analytic_account_id', 'company_id', 'state', 'validity_start', 'validity_end')
+    def _check_active_overlap(self):
+        """Allow only one active agreement per vendor/analytic/company on overlapping dates."""
+        for record in self:
+            if record.state != 'active':
+                continue
+            if not record.contractor_id:
+                continue
+            domain = [
+                ('id', '!=', record.id),
+                ('contractor_id', '=', record.contractor_id.id),
+                ('company_id', '=', record.company_id.id if record.company_id else self.env.company.id),
+                ('state', '=', 'active'),
+            ]
+            if record.analytic_account_id:
+                domain.append(('analytic_account_id', '=', record.analytic_account_id.id))
+            else:
+                domain.append(('analytic_account_id', '=', False))
+            others = self.search(domain)
+            for other in others:
+                if self._dates_overlap(record.validity_start, record.validity_end, other.validity_start, other.validity_end):
+                    analytic_name = record.analytic_account_id.display_name if record.analytic_account_id else _('No Analytic')
+                    raise ValidationError(
+                        _('Vendor %(vendor)s already has an active agreement for %(analytic)s in %(company)s overlapping %(start)s - %(end)s.') % {
+                            'vendor': record.contractor_id.display_name,
+                            'analytic': analytic_name,
+                            'company': (record.company_id or self.env.company).name,
+                            'start': record.validity_start,
+                            'end': record.validity_end,
+                        }
                     )
 
     @api.constrains('contract_type')
@@ -1643,6 +1830,8 @@ class RmcContractAgreement(models.Model):
     def action_view_billing_prepare_logs(self):
         """Open billing snapshot logs for this agreement."""
         self.ensure_one()
+        log_model = self.env['rmc.billing.prepare.log']
+        log_model.ensure_current_month_log(self.id)
         action = self.env.ref('rmc_manpower_contractor.action_rmc_billing_prepare_log', raise_if_not_found=False)
         if not action:
             raise UserError(_('Billing log action is missing.'))
@@ -1654,8 +1843,19 @@ class RmcContractAgreement(models.Model):
                 context = safe_eval(context)
             except Exception:
                 context = {}
-        result['context'] = dict(context, default_agreement_id=self.id)
+        result['context'] = dict(context, default_agreement_id=self.id, active_agreement_id=self.id)
         return result
+
+    def action_view_monthly_report(self):
+        self.ensure_one()
+        log = self.env['rmc.billing.prepare.log'].ensure_current_month_log(self.id)
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'rmc.billing.prepare.log',
+            'view_mode': 'form',
+            'res_id': log.id,
+            'target': 'current',
+        }
 
     def action_print_performance_summary(self):
         """Print the PDF performance summary for this agreement."""

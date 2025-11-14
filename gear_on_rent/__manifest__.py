@@ -32,6 +32,8 @@
         "views/rmc_work_order_views.xml",
         "views/menu.xml",
         "views/wizard_views.xml",
+        "data/mail_templates.xml",
+        "reports/qweb/report_daily_mo.xml",
         "reports/qweb/report_month_end.xml",
         "reports/qweb/report_invoice_templates.xml",
     ],

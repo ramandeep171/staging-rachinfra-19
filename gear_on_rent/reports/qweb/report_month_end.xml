@@ -30,10 +30,9 @@
               .gor-metric-table.gor-metric-table--left td{text-align:left;}
               .gor-metric-table.gor-metric-table--plain th,
               .gor-metric-table.gor-metric-table--plain td{border:none;}
-              .gor-two-col{width:100%;border-collapse:collapse;margin-top:16px;}
-              .gor-two-col td{width:50%;vertical-align:top;padding:0;}
-              .gor-two-col td:first-child{padding-right:12px;}
-              .gor-two-col td:last-child{padding-left:12px;}
+              .gor-two-col{width:100%;margin-top:16px;display:flex;flex-wrap:wrap;gap:24px 0;}
+              .gor-two-col__col{flex:1 1 50%;padding:0 12px 0 0;}
+              .gor-two-col__col:last-child{padding-left:12px;padding-right:0;}
               @page{
                 margin:20mm 15mm 25mm 15mm;
                 @bottom-right{
@@ -78,84 +77,82 @@
               </div>
             </div>
 
-            <table class="gor-two-col">
-              <tr>
-                <td>
-                  <h3>LOTO Wave-Off Summary</h3>
-                  <table class="gor-metric-table">
-                    <tbody>
-                      <tr>
-                        <th>Total LOTO Approved Hours</th>
-                        <td>
-                          <t t-esc="payload.get('loto_total_hours', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Wave-Off Allowance</th>
-                        <td>
-                          <t t-esc="payload.get('waveoff_allowance', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Wave-Off Applied This Month</th>
-                        <td style="color:#198754;">
-                          <t t-esc="payload.get('waveoff_applied', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Chargeable LOTO Hours</th>
-                        <td style="color:#ba1b1b;">
-                          <t t-esc="payload.get('loto_chargeable_hours', 0.0)"/>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-                <td>
-                  <h4>Operational Metrics</h4>
-                  <table class="gor-metric-table">
-                    <tbody>
-                      <tr>
-                        <th>Monthly MGQ Target</th>
-                        <td>
-                          <t t-esc="payload.get('target_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Adjusted MGQ</th>
-                        <td>
-                          <t t-esc="payload.get('adjusted_target_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>NGT Hours</th>
-                        <td>
-                          <t t-esc="payload.get('ngt_hours', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>NGT Relief (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('ngt_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Prime Output Production (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('prime_output_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Optimized Standby</th>
-                        <td>
-                          <t t-esc="payload.get('optimized_standby', 0.0)"/>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            </table>
+            <div class="gor-two-col">
+              <div class="gor-two-col__col">
+                <h3>LOTO Wave-Off Summary</h3>
+                <table class="gor-metric-table">
+                  <tbody>
+                    <tr>
+                      <th>Total LOTO Approved Hours</th>
+                      <td>
+                        <t t-esc="payload.get('loto_total_hours', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Wave-Off Allowance</th>
+                      <td>
+                        <t t-esc="payload.get('waveoff_allowance', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Wave-Off Applied This Month</th>
+                      <td style="color:#198754;">
+                        <t t-esc="payload.get('waveoff_applied', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Chargeable LOTO Hours</th>
+                      <td style="color:#ba1b1b;">
+                        <t t-esc="payload.get('loto_chargeable_hours', 0.0)"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="gor-two-col__col">
+                <h4>Operational Metrics</h4>
+                <table class="gor-metric-table">
+                  <tbody>
+                    <tr>
+                      <th>Monthly MGQ Target</th>
+                      <td>
+                        <t t-esc="payload.get('target_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Adjusted MGQ</th>
+                      <td>
+                        <t t-esc="payload.get('adjusted_target_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>NGT Hours</th>
+                      <td>
+                        <t t-esc="payload.get('ngt_hours', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>NGT Relief (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('ngt_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Prime Output Production (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('prime_output_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Optimized Standby</th>
+                      <td>
+                        <t t-esc="payload.get('optimized_standby', 0.0)"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             <h4 class="mt-3">Exceptions &amp; Notes</h4>
             <table class="gor-metric-table gor-metric-table--left">
@@ -181,66 +178,64 @@
               </tbody>
             </table>
 
-            <table class="gor-two-col">
-              <tr>
-                <td>
-                  <h5>Cooling Windows</h5>
-                  <table class="gor-metric-table gor-inline-table">
-                    <tbody>
-                      <tr>
-                        <th>Prorated MGQ</th>
-                        <td>
-                          <t t-esc="payload.get('cooling_totals', {}).get('target_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Prime Output (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('cooling_totals', {}).get('prime_output_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>NGT Billed (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('cooling_totals', {}).get('ngt_m3', 0.0)"/>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-                <td>
-                  <h5>Normal Windows</h5>
-                  <table class="gor-metric-table gor-inline-table">
-                    <tbody>
-                      <tr>
-                        <th>Monthly MGQ</th>
-                        <td>
-                          <t t-esc="payload.get('normal_totals', {}).get('target_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Prime Output (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('normal_totals', {}).get('prime_output_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Standby (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('normal_totals', {}).get('standby_qty', 0.0)"/>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>NGT from Approvals (m^3)</th>
-                        <td>
-                          <t t-esc="payload.get('normal_totals', {}).get('ngt_m3', 0.0)"/>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            </table>
+            <div class="gor-two-col">
+              <div class="gor-two-col__col">
+                <h5>Cooling Windows</h5>
+                <table class="gor-metric-table gor-inline-table">
+                  <tbody>
+                    <tr>
+                      <th>Prorated MGQ</th>
+                      <td>
+                        <t t-esc="payload.get('cooling_totals', {}).get('target_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Prime Output (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('cooling_totals', {}).get('prime_output_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>NGT Billed (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('cooling_totals', {}).get('ngt_m3', 0.0)"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="gor-two-col__col">
+                <h5>Normal Windows</h5>
+                <table class="gor-metric-table gor-inline-table">
+                  <tbody>
+                    <tr>
+                      <th>Monthly MGQ</th>
+                      <td>
+                        <t t-esc="payload.get('normal_totals', {}).get('target_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Prime Output (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('normal_totals', {}).get('prime_output_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Standby (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('normal_totals', {}).get('standby_qty', 0.0)"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>NGT from Approvals (m^3)</th>
+                      <td>
+                        <t t-esc="payload.get('normal_totals', {}).get('ngt_m3', 0.0)"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             <h4 class="mt-4">Manufacturing Orders</h4>
             <table class="gor-full-table">

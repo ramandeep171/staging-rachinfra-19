@@ -61,6 +61,39 @@ class RmcManpowerMatrix(models.Model):
         ('part_a', 'Part-A (Fixed)'),
         ('part_b', 'Part-B (Variable - MGQ linked)')
     ], string='Payment Component', default='part_a', required=True)
+    attendance_present_days = fields.Float(
+        string='Present Days',
+        digits=(6, 2),
+        default=0.0,
+        help='Actual working days captured for this designation during the billing period.'
+    )
+    attendance_total_days = fields.Float(
+        string='Scheduled Days',
+        digits=(6, 2),
+        default=0.0,
+        help='Total workable days considered for attendance proration.'
+    )
+    attendance_ratio = fields.Float(
+        string='Attendance Ratio',
+        digits=(6, 4),
+        compute='_compute_attendance_proration',
+        store=True,
+        help='Auto-computed present/total ratio (capped between 0% and 100%).'
+    )
+    attendance_prorated_amount = fields.Monetary(
+        string='Prorated Part-A Amount',
+        currency_field='currency_id',
+        compute='_compute_attendance_proration',
+        store=True,
+        help='Part-A payout after applying the attendance ratio.'
+    )
+    attendance_deduction_amount = fields.Monetary(
+        string='Attendance Deduction',
+        currency_field='currency_id',
+        compute='_compute_attendance_proration',
+        store=True,
+        help='Difference between the base Part-A amount and the attendance-prorated amount.'
+    )
     
     currency_id = fields.Many2one(
         related='agreement_id.currency_id',
@@ -155,6 +188,40 @@ class RmcManpowerMatrix(models.Model):
         if agreements:
             agreements._update_manpower_totals_from_matrix()
         return res
+
+    @api.depends(
+        'attendance_present_days',
+        'attendance_total_days',
+        'total_amount',
+        'remark',
+        'currency_id'
+    )
+    def _compute_attendance_proration(self):
+        """Compute attendance ratio and related monetary adjustments."""
+        for record in self:
+            ratio = 0.0
+            prorated = 0.0
+            deduction = 0.0
+            if record.remark == 'part_a':
+                total_days = record.attendance_total_days or 0.0
+                present_days = record.attendance_present_days or 0.0
+                if total_days > 0:
+                    ratio = present_days / total_days if total_days else 0.0
+                else:
+                    # When total days not provided, keep full Part-A amount
+                    ratio = 1.0
+                ratio = max(0.0, min(ratio, 1.0))
+                base_amount = record.total_amount or 0.0
+                prorated = base_amount * ratio
+                currency = record.currency_id
+                if currency:
+                    prorated = currency.round(prorated)
+                    deduction = currency.round(base_amount - prorated)
+                else:
+                    deduction = base_amount - prorated
+            record.attendance_ratio = ratio
+            record.attendance_prorated_amount = prorated
+            record.attendance_deduction_amount = deduction
 
     _sql_constraints = [
         (

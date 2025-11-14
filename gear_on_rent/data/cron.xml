@@ -13,5 +13,17 @@
       <field name="priority">5</field>
       <field name="nextcall">1970-01-01 00:30:00</field>
     </record>
+    <record id="cron_generate_next_rmc_orders" model="ir.cron">
+      <field name="name">Gear RMC: Prepare Upcoming Monthly Orders</field>
+      <field name="model_id" ref="sale.model_sale_order"/>
+      <field name="state">code</field>
+      <field name="code">model._cron_generate_next_monthly_orders()</field>
+      <field name="user_id" ref="base.user_root"/>
+      <field name="interval_type">days</field>
+      <field name="interval_number">1</field>
+      <field name="active">True</field>
+      <field name="priority">5</field>
+      <field name="nextcall">1970-01-01 01:00:00</field>
+    </record>
   </data>
 </odoo>

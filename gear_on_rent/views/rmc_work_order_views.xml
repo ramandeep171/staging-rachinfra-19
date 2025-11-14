@@ -64,6 +64,7 @@
                             <field name="x_window_start" modifiers="{'readonly': [['state', '!=', 'draft']]}"/>
                             <field name="x_window_end" modifiers="{'readonly': [['state', '!=', 'draft']]}"/>
                             <field name="x_is_cooling_period"/>
+                            <field name="x_auto_email_daily"/>
                         </group>
                         <group>
                             <field name="x_monthly_mgq_snapshot" readonly="1"/>
@@ -75,7 +76,6 @@
                             <field name="ngt_hours" readonly="1"/>
                             <field name="loto_hours" readonly="1"/>
                             <field name="waveoff_hours_chargeable" readonly="1" modifiers="{'invisible': [('loto_hours', '&lt;=', 48.0)]}"/>
-                           
                         </group>
                     </group>
                     <notebook>
@@ -83,6 +83,12 @@
                             <field name="production_ids">
                         <list editable="bottom">
                             <field name="name"/>
+                            <button name="action_print_daily_report"
+                                    type="object"
+                                    icon="fa-print"
+                                    string="PDF"
+                                    class="btn-link"
+                                    context="{'download': True}"/>
                             <field name="date_start"/>
                             <field name="x_daily_target_qty" sum="Total"/>
                             <field name="x_adjusted_target_qty" sum="Total"/>
@@ -108,6 +114,7 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

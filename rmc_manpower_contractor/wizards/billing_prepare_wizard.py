@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import format_date
 from datetime import datetime, time
+from collections import defaultdict
 import base64
 import logging
 
@@ -20,6 +21,20 @@ class RmcBillingPrepareWizard(models.Model):
     
     # Part-A (Fixed)
     part_a_amount = fields.Monetary(string='Part-A Fixed', compute='_compute_billing_amounts', store=True, currency_field='currency_id')
+    part_a_raw_total = fields.Monetary(
+        string='Part-A Raw Total',
+        compute='_compute_billing_amounts',
+        store=True,
+        currency_field='currency_id',
+        help='Straight sum of Part-A manpower line amounts before attendance proration.'
+    )
+    part_a_attendance_adjusted = fields.Monetary(
+        string='Part-A Attendance Adjusted',
+        compute='_compute_billing_amounts',
+        store=True,
+        currency_field='currency_id',
+        help='Total Part-A amount after applying attendance proration on each manpower line.'
+    )
     
     # Part-B (Variable)
     mgq_achieved = fields.Float(string='MGQ Achieved (m³)', digits='Product Unit of Measure')
@@ -53,8 +68,14 @@ class RmcBillingPrepareWizard(models.Model):
     subtotal = fields.Monetary(string='Subtotal (before TDS)', compute='_compute_billing_amounts', store=True, currency_field='currency_id')
     tds_amount = fields.Monetary(string='TDS 194C (2%)', compute='_compute_billing_amounts', store=True, currency_field='currency_id')
     total_amount = fields.Monetary(string='Net Payable', compute='_compute_billing_amounts', store=True, currency_field='currency_id')
-    
+
     currency_id = fields.Many2one(related='agreement_id.currency_id', string='Currency', readonly=True)
+    attendance_breakdown_html = fields.Html(
+        string='Attendance Breakdown',
+        compute='_compute_billing_amounts',
+        sanitize=False,
+        help='Rendered table summarising attendance proration inputs for each manpower line.'
+    )
     
     # Supporting reports
     attach_attendance = fields.Boolean(string='Attach Attendance Report', default=True)
@@ -85,7 +106,12 @@ class RmcBillingPrepareWizard(models.Model):
 
     @api.onchange('agreement_id')
     def _onchange_agreement_id(self):
+        from_log_id = self.env.context.get('from_log_id')
         for wizard in self:
+            if not wizard.agreement_id:
+                continue
+            if from_log_id:
+                continue
             wizard.prime_output_qty = wizard.agreement_id.prime_output_qty or 0.0
             wizard.optimized_standby_qty = wizard.agreement_id.optimized_standby_qty or 0.0
         self._sync_mgq_with_prime_output()
@@ -96,7 +122,9 @@ class RmcBillingPrepareWizard(models.Model):
 
     def _sync_mgq_with_prime_output(self):
         for wizard in self:
-            wizard.mgq_achieved = wizard.prime_output_qty or 0.0
+            prime = wizard.prime_output_qty or 0.0
+            standby = wizard.optimized_standby_qty or 0.0
+            wizard.mgq_achieved = prime + standby
 
     @api.depends('performance_score', 'stars')
     def _compute_bonus_penalty(self):
@@ -128,13 +156,85 @@ class RmcBillingPrepareWizard(models.Model):
             else:
                 wizard.bonus_penalty_pct = 0.0
 
-    @api.depends('agreement_id.manpower_matrix_ids', 'mgq_achievement_pct', 'bonus_penalty_pct', 'period_start', 'period_end')
+    def _apply_attendance_proration(self):
+        """Populate attendance days on manpower lines based on compliance records."""
+        self.ensure_one()
+        if not self.agreement_id or not self.period_start or not self.period_end:
+            return
+        part_a_lines = self.agreement_id.manpower_matrix_ids.filtered(lambda x: x.remark == 'part_a')
+        if not part_a_lines:
+            return
+        start_date = fields.Date.to_date(self.period_start)
+        end_date = fields.Date.to_date(self.period_end)
+        if not start_date or not end_date or end_date < start_date:
+            return
+        scheduled_days = (end_date - start_date).days + 1
+        Attendance = self.env['rmc.attendance.compliance']
+        attendance_records = Attendance.search([
+            ('agreement_id', '=', self.agreement_id.id),
+            ('date', '>=', start_date),
+            ('date', '<=', end_date),
+        ])
+        employee_present_days = defaultdict(float)
+        total_man_days = 0.0
+        for record in attendance_records:
+            if not record.date:
+                continue
+            total_man_days += record.headcount_present or 0.0
+            for employee in record.employee_ids:
+                employee_present_days[employee.id] += 1.0
+        total_part_a_headcount = sum(part_a_lines.mapped('headcount')) or 0.0
+        expected_man_days = total_part_a_headcount * scheduled_days
+        if attendance_records and expected_man_days:
+            fallback_ratio = total_man_days / expected_man_days
+        else:
+            fallback_ratio = 1.0
+        fallback_ratio = max(0.0, min(fallback_ratio, 1.0))
+
+        for line in part_a_lines:
+            total_days = float(scheduled_days) if scheduled_days > 0 else 0.0
+            if not total_days:
+                present_days = 0.0
+            elif line.employee_id:
+                present_days = min(employee_present_days.get(line.employee_id.id, 0.0), total_days)
+            else:
+                present_days = total_days * fallback_ratio
+            vals = {
+                'attendance_total_days': total_days,
+                'attendance_present_days': present_days,
+            }
+            # Avoid unnecessary writes when values already in sync
+            if (
+                line.attendance_total_days != vals['attendance_total_days'] or
+                line.attendance_present_days != vals['attendance_present_days']
+            ):
+                line.with_context(rmc_attendance_proration=True).write(vals)
+
+    @api.depends(
+        'agreement_id.manpower_matrix_ids.remark',
+        'agreement_id.manpower_matrix_ids.total_amount',
+        'agreement_id.manpower_matrix_ids.attendance_prorated_amount',
+        'agreement_id.manpower_matrix_ids.attendance_present_days',
+        'agreement_id.manpower_matrix_ids.attendance_total_days',
+        'mgq_achievement_pct',
+        'bonus_penalty_pct',
+        'period_start',
+        'period_end'
+    )
     def _compute_billing_amounts(self):
         for wizard in self:
             # Part-A: Sum of all Part-A entries in manpower matrix
             part_a_lines = wizard.agreement_id.manpower_matrix_ids.filtered(lambda x: x.remark == 'part_a')
-            wizard.part_a_amount = sum(part_a_lines.mapped('total_amount'))
-            
+            raw_part_a = sum(part_a_lines.mapped('total_amount'))
+            prorated_part_a = sum(part_a_lines.mapped('attendance_prorated_amount'))
+            if not part_a_lines:
+                fallback = wizard.agreement_id.part_a_fixed or wizard.agreement_id.manpower_part_a_amount or 0.0
+                raw_part_a = fallback
+                prorated_part_a = fallback
+            wizard.part_a_raw_total = raw_part_a
+            wizard.part_a_attendance_adjusted = prorated_part_a
+            wizard.part_a_amount = prorated_part_a
+
             # Part-B: Variable component based on MGQ achievement
             part_b_lines = wizard.agreement_id.manpower_matrix_ids.filtered(lambda x: x.remark == 'part_b')
             part_b_base = sum(part_b_lines.mapped('total_amount'))
@@ -168,7 +268,7 @@ class RmcBillingPrepareWizard(models.Model):
             # Bonus/Penalty
             base_for_bonus = wizard.part_a_amount + wizard.part_b_amount
             wizard.bonus_penalty_amount = base_for_bonus * (wizard.bonus_penalty_pct / 100.0)
-            
+
             # Subtotal
             wizard.subtotal = (wizard.part_a_amount + wizard.part_b_amount - 
                               wizard.breakdown_deduction + wizard.bonus_penalty_amount + 
@@ -179,6 +279,7 @@ class RmcBillingPrepareWizard(models.Model):
             
             # Total
             wizard.total_amount = wizard.subtotal - wizard.tds_amount
+            wizard.attendance_breakdown_html = wizard._build_attendance_breakdown(part_a_lines, with_summary=True)
 
     @api.constrains('period_start', 'period_end')
     def _check_periods(self):
@@ -190,6 +291,7 @@ class RmcBillingPrepareWizard(models.Model):
         """Recompute all amounts and reopen wizard in review mode."""
         self.ensure_one()
         self._sync_mgq_with_prime_output()
+        self._apply_attendance_proration()
         self._compute_billing_amounts()
         self.state = 'review'
         return {
@@ -208,6 +310,8 @@ class RmcBillingPrepareWizard(models.Model):
         """
         self.ensure_one()
         self._sync_mgq_with_prime_output()
+        self._apply_attendance_proration()
+        self._compute_billing_amounts()
         
         # Pre-flight checks
         if self.agreement_id.payment_hold:
@@ -284,10 +388,12 @@ class RmcBillingPrepareWizard(models.Model):
     def _create_billing_log(self, bill, attachments, source_records):
         """Persist a snapshot of the wizard data whenever a bill is created."""
         self.ensure_one()
+        diesel_records = source_records.get('diesel') if source_records else self.env['rmc.diesel.log']
+        _, total_issued, total_consumption = self._prepare_diesel_rows(diesel_records) if diesel_records else ([], 0.0, 0.0)
         log_vals = {
             'agreement_id': self.agreement_id.id,
             'wizard_id': self.id,
-            'bill_id': bill.id,
+            'bill_id': bill.id if bill else False,
             'period_start': self.period_start,
             'period_end': self.period_end,
             'mgq_target': self.mgq_target,
@@ -295,6 +401,8 @@ class RmcBillingPrepareWizard(models.Model):
             'mgq_achievement_pct': self.mgq_achievement_pct,
             'prime_output_qty': self.prime_output_qty,
             'optimized_standby_qty': self.optimized_standby_qty,
+            'part_a_raw_total': self.part_a_raw_total,
+            'part_a_attendance_adjusted': self.part_a_attendance_adjusted,
             'part_a_amount': self.part_a_amount,
             'part_b_amount': self.part_b_amount,
             'breakdown_deduction': self.breakdown_deduction,
@@ -310,22 +418,48 @@ class RmcBillingPrepareWizard(models.Model):
             'attach_maintenance': self.attach_maintenance,
             'attach_breakdown': self.attach_breakdown,
             'notes': self.notes,
-            'state': self.state,
-            'attachment_ids': [(6, 0, attachments.get('all').ids if attachments.get('all') else [])],
-            'attendance_attachment_id': attachments.get('attendance').id if attachments.get('attendance') else False,
-            'diesel_attachment_id': attachments.get('diesel').id if attachments.get('diesel') else False,
-            'maintenance_attachment_id': attachments.get('maintenance').id if attachments.get('maintenance') else False,
-            'breakdown_attachment_id': attachments.get('breakdown').id if attachments.get('breakdown') else False,
-            'attendance_record_ids': [(6, 0, source_records.get('attendance').ids if source_records.get('attendance') else [])],
-            'diesel_record_ids': [(6, 0, source_records.get('diesel').ids if source_records.get('diesel') else [])],
-            'maintenance_record_ids': [(6, 0, source_records.get('maintenance').ids if source_records.get('maintenance') else [])],
-            'breakdown_record_ids': [(6, 0, source_records.get('breakdown').ids if source_records.get('breakdown') else [])],
-            'attendance_preview_html': self._build_attendance_preview(source_records.get('attendance')),
-            'diesel_preview_html': self._build_diesel_preview(source_records.get('diesel')),
-            'maintenance_preview_html': self._build_maintenance_preview(source_records.get('maintenance')),
-            'breakdown_preview_html': self._build_breakdown_preview(source_records.get('breakdown')),
+            'diesel_total_issued': total_issued,
+            'diesel_total_fuel': total_consumption,
         }
-        self.env['rmc.billing.prepare.log'].create(log_vals)
+        if not self.env.context.get('rmc_skip_log_autorefresh'):
+            log_state = 'draft' if self.state == 'prepare' else self.state
+            log_vals['state'] = log_state
+        else:
+            log_vals.pop('wizard_id', None)
+        if source_records:
+            log_vals.update({
+                'attendance_record_ids': [(6, 0, source_records.get('attendance').ids if source_records.get('attendance') else [])],
+                'diesel_record_ids': [(6, 0, source_records.get('diesel').ids if source_records.get('diesel') else [])],
+                'maintenance_record_ids': [(6, 0, source_records.get('maintenance').ids if source_records.get('maintenance') else [])],
+                'breakdown_record_ids': [(6, 0, source_records.get('breakdown').ids if source_records.get('breakdown') else [])],
+                'attendance_preview_html': self._build_attendance_preview(source_records.get('attendance')),
+                'attendance_breakdown_html': self.attendance_breakdown_html,
+                'diesel_preview_html': self._build_diesel_preview(source_records.get('diesel')),
+                'maintenance_preview_html': self._build_maintenance_preview(source_records.get('maintenance')),
+                'breakdown_preview_html': self._build_breakdown_preview(source_records.get('breakdown')),
+            })
+        if attachments:
+            log_vals.update({
+                'attachment_ids': [(6, 0, attachments.get('all').ids if attachments.get('all') else [])],
+                'attendance_attachment_id': attachments.get('attendance').id if attachments.get('attendance') else False,
+                'diesel_attachment_id': attachments.get('diesel').id if attachments.get('diesel') else False,
+                'maintenance_attachment_id': attachments.get('maintenance').id if attachments.get('maintenance') else False,
+                'breakdown_attachment_id': attachments.get('breakdown').id if attachments.get('breakdown') else False,
+            })
+        from_log_id = self.env.context.get('from_log_id')
+        log_model = self.env['rmc.billing.prepare.log']
+        log = None
+        if from_log_id:
+            log = log_model.browse(from_log_id)
+            if log and log.exists():
+                log.with_context(rmc_skip_log_autorefresh=True).write(log_vals)
+        if not log or not log.exists():
+            log = log_model.create(log_vals)
+        if not self.env.context.get('rmc_skip_log_autorefresh'):
+            log.state = 'done'
+        if attachments:
+            log._sync_supporting_attachments(attachments, source_bill=bill)
+        return log
 
     def _collect_source_records(self):
         """Fetch datasets per type for the selected period."""
@@ -387,11 +521,16 @@ class RmcBillingPrepareWizard(models.Model):
         rmc_model = self.env['rmc.diesel.log']
         fallback = rmc_model.browse()
         for log in logs:
+            opening = log.opening_diesel or 0.0
+            issued = (getattr(log, 'issue_diesel', False) or log.quantity or 0.0)
+            closing = log.closing_diesel or 0.0
             vals = {
                 'agreement_id': self.agreement_id.id,
                 'date': self._localize_datetime_to_date(log.date),
                 'vehicle_id': log.vehicle_id.id if log.vehicle_id else False,
-                'issued_ltr': (log.issue_diesel or log.quantity or 0.0),
+                'opening_ltr': opening,
+                'issued_ltr': issued,
+                'closing_ltr': closing,
                 'work_done_m3': 0.0,
                 'work_done_km': log.odometer_difference or 0.0,
                 'diesel_efficiency': log.fuel_efficiency or 0.0,
@@ -415,6 +554,58 @@ class RmcBillingPrepareWizard(models.Model):
             f'<thead><tr>{head_html}</tr></thead><tbody>{body_html}</tbody></table>'
         )
 
+    def _build_attendance_breakdown(self, lines, with_summary=False):
+        if not lines:
+            base_html = '<p>No Part-A manpower lines configured.</p>'
+            if with_summary:
+                summary_headers = [_('Metric'), _('Amount')]
+                summary_rows = [
+                    (_('Raw Part-A Total'), '0.00'),
+                    (_('Attendance Adjusted Part-A'), '0.00'),
+                    (_('Attendance Deduction'), '0.00'),
+                ]
+                summary_table = self._build_table(summary_headers, summary_rows)
+                base_html = f"{base_html}<br/>{summary_table}"
+            return base_html
+        rows = []
+        for line in lines:
+            ratio_pct = (line.attendance_ratio or 0.0) * 100.0
+            label = line.designation or line.job_position_name or line.employee_id.display_name or _('Line')
+            present_days = line.attendance_present_days or 0.0
+            total_days = line.attendance_total_days or 0.0
+            rows.append((
+                label,
+                f'{present_days:.2f}',
+                f'{total_days:.2f}',
+                f'{ratio_pct:.1f}%',
+                line.total_amount,
+                line.attendance_prorated_amount,
+                line.attendance_deduction_amount,
+            ))
+        headers = [
+            _('Designation/Employee'),
+            _('Present Days'),
+            _('Scheduled Days'),
+            _('Attendance %'),
+            _('Base Part-A'),
+            _('Prorated Part-A'),
+            _('Deduction'),
+        ]
+        table_html = self._build_table(headers, rows)
+        if with_summary:
+            raw_total = self.part_a_raw_total or 0.0
+            adjusted_total = self.part_a_attendance_adjusted or 0.0
+            deduction_total = raw_total - adjusted_total
+            summary_headers = [_('Metric'), _('Amount')]
+            summary_rows = [
+                (_('Raw Part-A Total'), f'{raw_total:.2f}'),
+                (_('Attendance Adjusted Part-A'), f'{adjusted_total:.2f}'),
+                (_('Attendance Deduction'), f'{deduction_total:.2f}'),
+            ]
+            summary_table = self._build_table(summary_headers, summary_rows)
+            return f"{table_html}<br/>{summary_table}"
+        return table_html
+
     def _build_attendance_preview(self, records):
         if not records:
             return '<p>No attendance records captured for this period.</p>'
@@ -424,20 +615,48 @@ class RmcBillingPrepareWizard(models.Model):
         ]
         return self._build_table(['Date', 'Present', 'Expected', 'Compliance %', 'State'], rows)
 
+    def _prepare_diesel_rows(self, records):
+        rows = []
+        total_issued = 0.0
+        total_consumption = 0.0
+        for rec in records:
+            issued = getattr(rec, 'issued_ltr', None)
+            if issued is None:
+                issued = getattr(rec, 'issue_diesel', 0.0)
+            opening = getattr(rec, 'opening_ltr', 0.0)
+            closing = getattr(rec, 'closing_ltr', 0.0)
+            fuel_consumption = getattr(rec, 'fuel_consumption', None)
+            if fuel_consumption in (None, False):
+                fuel_consumption = (opening or 0.0) + (issued or 0.0) - (closing or 0.0)
+            total_issued += issued or 0.0
+            total_consumption += fuel_consumption or 0.0
+            rows.append((
+                rec.date,
+                rec.vehicle_id.display_name if rec.vehicle_id else '',
+                f'{(issued or 0.0):.2f}',
+                f'{(fuel_consumption or 0.0):.2f}',
+                rec.state,
+            ))
+        return rows, total_issued, total_consumption
+
     def _build_diesel_preview(self, records):
         if not records:
             return '<p>No diesel logs captured for this period.</p>'
-        rows = [
-            (
-                rec.date,
-                rec.vehicle_id.display_name if rec.vehicle_id else '',
-                f'{rec.issued_ltr:.2f}',
-                rec.work_done_m3 or rec.work_done_km or 0.0,
-                rec.state
-            )
-            for rec in records
-        ]
-        return self._build_table(['Date', 'Vehicle', 'Issued (L)', 'Work Done', 'State'], rows)
+        rows, total_issued, total_consumption = self._prepare_diesel_rows(records)
+        rows.append((
+            '<strong>Total</strong>',
+            '',
+            f'<strong>{total_issued:.2f}</strong>',
+            f'<strong>{total_consumption:.2f}</strong>',
+            ''
+        ))
+        return self._build_table([
+            'Date',
+            'Vehicle',
+            'Issued (L)',
+            'Fuel Consumption (L)',
+            'State'
+        ], rows)
 
     def _build_maintenance_preview(self, records):
         if not records:
@@ -473,13 +692,13 @@ class RmcBillingPrepareWizard(models.Model):
             raise UserError(_('No expense account could be found to create vendor bill lines.'))
         
         # Part-A (Fixed)
-        if self.part_a_amount > 0:
+        if self.part_a_attendance_adjusted > 0:
             InvoiceLine.with_context(check_move_validity=False).create({
                 'move_id': bill.id,
                 'name': f'Part-A Fixed Manpower Cost ({self.period_start.strftime("%B %Y")})',
                 'account_id': expense_account.id,
                 'quantity': 1,
-                'price_unit': self.part_a_amount,
+                'price_unit': self.part_a_attendance_adjusted,
                 'analytic_distribution': {self.agreement_id.analytic_account_id.id: 100} if self.agreement_id.analytic_account_id else False,
             })
         
@@ -624,6 +843,7 @@ class RmcBillingPrepareWizard(models.Model):
         }
 
     def _generate_attendance_section(self, data):
+        part_a_lines = self.agreement_id.manpower_matrix_ids.filtered(lambda x: x.remark == 'part_a')
         if data:
             rows = [
                 (
@@ -638,7 +858,16 @@ class RmcBillingPrepareWizard(models.Model):
             table = self._build_table(['Date', 'Expected', 'Present', 'Compliance %', 'State'], rows)
         else:
             table = '<p>No attendance records captured for this period.</p>'
-        return self._format_section('Attendance Report', table)
+        proration_html = self.attendance_breakdown_html or self._build_attendance_breakdown(part_a_lines, with_summary=True)
+        body = (
+            '<h4>%s</h4>%s<br/><h4>%s</h4>%s' % (
+                _('Daily Attendance Compliance'),
+                table,
+                _('Part-A Attendance Proration'),
+                proration_html,
+            )
+        )
+        return self._format_section('Attendance Report', body)
 
     def _generate_diesel_section(self, data):
         if data:
@@ -660,16 +889,17 @@ class RmcBillingPrepareWizard(models.Model):
 
     def _generate_maintenance_section(self, data):
         if data:
-            rows = [
-                (
+            rows = []
+            for rec in data.sorted('date'):
+                machine = rec.machine_id
+                machine_label = machine.display_name if machine and hasattr(machine, 'display_name') else (machine or '')
+                rows.append((
                     rec.date,
-                    rec.machine_id.display_name if rec.machine_id else '',
+                    machine_label,
                     f'{rec.checklist_ok:.1f}%',
                     'Yes' if rec.repaired else 'No',
                     f'{rec.cost:.2f}',
-                )
-                for rec in data.sorted('date')
-            ]
+                ))
             table = self._build_table(['Date', 'Machine', 'Checklist %', 'Repaired', 'Cost'], rows)
         else:
             table = '<p>No maintenance checks captured for this period.</p>'

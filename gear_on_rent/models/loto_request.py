@@ -147,7 +147,10 @@ class GearLotoRequest(models.Model):
                 raise UserError(_("Only submitted requests can be approved."))
             if not request.hours_total:
                 raise UserError(_("Cannot approve a LOTO request without duration."))
-            request.so_id.gear_generate_monthly_orders()
+            request.so_id.gear_generate_monthly_orders(
+                date_start=fields.Date.to_date(request.date_start),
+                date_end=fields.Date.to_date(request.date_end),
+            )
             waveoff_applied, chargeable = request.so_id.gear_register_loto(request)
             waveoff_applied = round(waveoff_applied, 2)
             chargeable = round(chargeable, 2)

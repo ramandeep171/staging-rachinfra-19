@@ -11,10 +11,12 @@
                     <header>
                         <button name="action_preview_and_send" string="Preview &amp; Send" type="object" class="btn-secondary" invisible="state not in ['draft', 'offer', 'negotiation', 'verification']"/>
                         <button name="action_send_for_sign" string="Send for Signature" type="object" class="oe_highlight" invisible="state not in ['draft', 'offer', 'negotiation', 'verification']"/>
-                        <button name="action_prepare_monthly_bill" string="Prepare Monthly Bill" type="object" class="oe_highlight" invisible="state != 'active'"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,offer,sign_pending,active"/>
                     </header>
                     <sheet>
+                        <div class="oe_button_box" name="agreement_primary_actions">
+                            <button name="action_view_monthly_report" string="View Monthly Report" type="object" class="oe_highlight" invisible="state != 'active'"/>
+                        </div>
                         <div class="oe_button_box" name="button_box">
                             <button name="action_view_diesel_logs" type="object" class="oe_stat_button" icon="fa-tint">
                                 <field name="diesel_log_count" widget="statinfo" string="Diesel Logs"/>
@@ -65,10 +67,10 @@
                         
                         <group>
                             <group>
-                                <field name="contractor_id" options="{'no_create': True}"/>
+                                <field name="contractor_id" string="Contractor" options="{'no_create': True}" required="1"/>
                                 <field name="contract_type" readonly="is_agreement_signed"/>
-                                <field name="validity_start"/>
-                                <field name="validity_end"/>
+                                <field name="start_date"/>
+                                <field name="end_date"/>
                             </group>
                             <group>
                                 <field name="sign_template_id"/>
@@ -127,6 +129,13 @@
                                                 <field name="total_amount"/>
                                                 <field name="currency_id" invisible="1"/>
                                             </group>
+                                            <group string="Attendance Proration">
+                                                <field name="attendance_present_days"/>
+                                                <field name="attendance_total_days"/>
+                                                <field name="attendance_ratio" readonly="1"/>
+                                                <field name="attendance_prorated_amount" readonly="1"/>
+                                                <field name="attendance_deduction_amount" readonly="1"/>
+                                            </group>
                                         </group>
                                     </form>
                                     <list editable="bottom">
@@ -137,6 +146,11 @@
                                         <field name="shift"/>
                                         <field name="base_rate"/>
                                         <field name="remark"/>
+                                        <field name="attendance_present_days" optional="show"/>
+                                        <field name="attendance_total_days" optional="show"/>
+                                        <field name="attendance_ratio" optional="show"/>
+                                        <field name="attendance_prorated_amount" optional="show"/>
+                                        <field name="attendance_deduction_amount" optional="show"/>
                                         <field name="total_amount" sum="Total"/>
                                         <field name="currency_id" column_invisible="1"/>
                                     </list>
@@ -160,6 +174,24 @@
                                 <field name="inventory_handover_ids"
                                        domain="['|', ('date', '=', False), ('date', '>=', activity_start_date)]"
                                        context="{'default_agreement_id': id, 'default_contractor_id': contractor_id}"/>
+                            </page>
+                            <page string="Retention">
+                                <group>
+                                    <group>
+                                        <field name="auto_apply"/>
+                                        <field name="retention_rate"/>
+                                        <field name="retention_base"/>
+                                    </group>
+                                    <group>
+                                        <field name="retention_duration"/>
+                                        <field name="retention_balance" readonly="1"/>
+                                        <field name="retention_released_amount" readonly="1"/>
+                                    </group>
+                                </group>
+                                <field name="retention_entry_ids"
+                                       context="{'default_agreement_id': id}"
+                                       options="{'no_create': True, 'no_create_edit': True}"
+                                       views="[(ref('rmc_manpower_contractor.view_rmc_agreement_retention_tree'), 'list'), (ref('rmc_manpower_contractor.view_rmc_agreement_retention_form'), 'form')]"/>
                             </page>
                             <page string="Signers">
                                 <field name="signer_ids"/>
@@ -205,6 +237,60 @@
                             <field name="sequence"/>
                         </group>
                         <field name="body_html" widget="html" class="o_rmc_clause_body"/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_rmc_agreement_retention_tree" model="ir.ui.view">
+            <field name="name">rmc.agreement.retention.tree</field>
+            <field name="model">rmc.agreement.retention</field>
+            <field name="arch" type="xml">
+                <list string="Retention Holds" create="0" edit="0" delete="0">
+                    <field name="name"/>
+                    <field name="move_id"/>
+                    <field name="retention_rate"/>
+                    <field name="retention_base"/>
+                    <field name="base_amount"/>
+                    <field name="retention_amount"/>
+                    <field name="scheduled_release_date"/>
+                    <field name="release_state" widget="badge"/>
+                    <field name="released_date"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_rmc_agreement_retention_form" model="ir.ui.view">
+            <field name="name">rmc.agreement.retention.form</field>
+            <field name="model">rmc.agreement.retention</field>
+            <field name="arch" type="xml">
+                <form string="Retention Hold">
+                    <header>
+                        <button name="action_release" string="Release" type="object" class="oe_highlight" modifiers="{'invisible': [('release_state', '!=', 'pending')]}"/>
+                        <button name="action_cancel" string="Cancel" type="object" modifiers="{'invisible': [('release_state', '!=', 'pending')]}"/>
+                        <field name="release_state" widget="statusbar" statusbar_visible="pending,released,cancelled"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="agreement_id" readonly="1"/>
+                                <field name="move_id" readonly="1"/>
+                                <field name="vendor_id" readonly="1"/>
+                                <field name="retention_duration" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="retention_rate" readonly="1"/>
+                                <field name="retention_base" readonly="1"/>
+                                <field name="base_amount" readonly="1"/>
+                                <field name="retention_amount" readonly="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="scheduled_release_date" readonly="1"/>
+                            <field name="released_date" readonly="1"/>
+                            <field name="auto_release"/>
+                        </group>
+                        <field name="notes"/>
                     </sheet>
                 </form>
             </field>

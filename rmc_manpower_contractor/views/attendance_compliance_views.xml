@@ -31,14 +31,37 @@
                                 <field name="last_check_out" readonly="1"/>
                             </group>
                         </group>
-                        <group>
-                            <field name="employee_ids" widget="many2many_tags"
-                                   domain="[('id', 'in', agreement_id.driver_ids.ids if agreement_id else [])]"/>
-                        </group>
+                        <notebook>
+                            <page string="Present Employees">
+                                <field name="employee_ids" widget="many2many_tags"
+                                       domain="[('id', 'in', agreement_id.driver_ids.ids if agreement_id else [])]"/>
+                            </page>
+                            <page string="Attendance Logs">
+                                <field name="attendance_entry_ids"
+                                       widget="many2many"
+                                       readonly="1"
+                                       nolabel="1"
+                                       context="{'tree_view_ref': 'rmc_manpower_contractor.view_hr_attendance_log_list'}"
+                                       options="{'no_create': True, 'no_create_edit': True, 'no_edit': True, 'no_open': True}"/>
+                            </page>
+                        </notebook>
                         <field name="notes"/>
                     </sheet>
                     <chatter/>
                 </form>
+            </field>
+        </record>
+
+        <record id="view_hr_attendance_log_list" model="ir.ui.view">
+            <field name="name">hr.attendance.log.list</field>
+            <field name="model">hr.attendance</field>
+            <field name="arch" type="xml">
+                <list string="Attendance Logs" create="false" edit="false">
+                    <field name="employee_id"/>
+                    <field name="check_in"/>
+                    <field name="check_out"/>
+                    <field name="worked_hours"/>
+                </list>
             </field>
         </record>
 

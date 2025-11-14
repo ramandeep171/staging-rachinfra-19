@@ -37,6 +37,13 @@ class RmcAttendanceCompliance(models.Model):
         string='Present Employees',
         help='Employees who were present for this agreement on the selected date.'
     )
+    attendance_entry_ids = fields.Many2many(
+        'hr.attendance',
+        string='Attendance Logs',
+        compute='_compute_attendance_entries',
+        readonly=True,
+        help='Detailed attendance entries for the present employees on this day.'
+    )
     notes = fields.Text(string='Notes')
     company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.company)
 
@@ -349,3 +356,22 @@ class RmcAttendanceCompliance(models.Model):
             'Present headcount must be non-negative.'
         ),
     ]
+
+    @api.depends('employee_ids', 'date')
+    def _compute_attendance_entries(self):
+        Attendance = self.env['hr.attendance']
+        for record in self:
+            record.attendance_entry_ids = Attendance.browse()
+            if not record.date or not record.employee_ids:
+                continue
+            domain = expression.AND([
+                [('employee_id', 'in', record.employee_ids.ids)],
+                self._attendance_domain(record.date, record.date),
+            ])
+            attendances = Attendance.search(domain, order='employee_id,check_in')
+            target_date = record.date
+            if attendances and target_date:
+                attendances = attendances.filtered(
+                    lambda att: record._localize_attendance_date(att.check_in or att.check_out) == target_date
+                )
+            record.attendance_entry_ids = attendances
