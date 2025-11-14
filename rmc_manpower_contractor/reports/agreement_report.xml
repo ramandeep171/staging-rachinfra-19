@@ -47,14 +47,10 @@
                 flex-direction: column;
             }
             .agreement-page .agreement-signatures {
-                margin-top: auto !important;
+                margin-top: auto;
                 margin-bottom: 0;
                 padding-bottom: 8mm;
                 flex-shrink: 0;
-                page-break-before: always;
-                break-before: page;
-                page-break-inside: avoid;
-                break-inside: avoid-page;
             }
             .agreement-page .agreement-signatures .signature-box {
                 border: 1px solid #bbb;
@@ -64,6 +60,12 @@
                 align-items: center;
                 justify-content: flex-start;
                 padding: 4px;
+            }
+            .signature-page-body {
+                flex: 1 1 auto;
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
             }
         </style>
         <div class="page agreement-page">
@@ -567,7 +569,10 @@
                             </t>
                         </div>
                     </t>
+                </div>
 
+                <div class="page agreement-page signature-page">
+                    <div class="signature-page-body">
                     <div class="agreement-signatures">
                     <h4>Signatures</h4>
                     <table class="table table-sm mt-4" style="margin-bottom: 0;">
@@ -633,9 +638,10 @@
                         </tr>
                     </table>
                     </div>
+                    </div>
+                </div>
 
                     
-                    </div>
                     </t>
                 </t>
             </t>
