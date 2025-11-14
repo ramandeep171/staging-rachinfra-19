@@ -34,45 +34,8 @@
             <t t-set="contractor_phone" t-value="contractor.phone or contractor_company_partner and contractor_company_partner.phone"/>
             <t t-set="contractor_email" t-value="contractor.email or contractor_company_partner and contractor_company_partner.email"/>
             <t t-call="web.external_layout">
-        <style>
-            .agreement-page {
-                min-height: 297mm;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-            .agreement-page .agreement-body {
-                flex: 1 1 auto;
-                display: flex;
-                flex-direction: column;
-            }
-            .agreement-page .agreement-signatures {
-                margin-top: auto;
-                margin-bottom: 0;
-                padding-bottom: 8mm;
-                flex-shrink: 0;
-            }
-            .agreement-page .agreement-signatures .signature-box {
-                border: 1px solid #bbb;
-                height: 60px;
-                margin-top: 6px;
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                padding: 4px;
-            }
-            .signature-page-body {
-                flex: 1 1 auto;
-                min-height: 260mm;
-                display: flex;
-                flex-direction: column;
-            }
-            .signature-page-body .signature-spacer {
-                flex: 1 1 auto;
-            }
-        </style>
-        <div class="page agreement-page">
-                    <div class="agreement-body">
+        <div class="page" style="display: flex; flex-direction: column; min-height: 260mm; height: auto;">
+                    <div class="agreement-body" style="flex: 1 1 auto; display: flex; flex-direction: column;">
                     <div class="text-center mb-3">
                         <h2 class="mb-1">
                             <span t-esc="company.name or 'Company'"/> – Contractor Agreement
@@ -572,14 +535,10 @@
                             </t>
                         </div>
                     </t>
-                </div>
 
-                <div class="page agreement-page signature-page">
-                    <div class="signature-page-body">
-                    <div class="signature-spacer"></div>
-                    <div class="agreement-signatures">
+                    <div class="agreement-signatures mt-4" style="margin-top: auto; margin-bottom: 0; padding-bottom: 0; flex-shrink: 0;">
                     <h4>Signatures</h4>
-                    <table class="table table-sm mt-4" style="margin-bottom: 5;">
+                    <table class="table table-sm mt-4" style="margin-bottom: 0;">
                         <tr>
                             <td class="w-50">
                                 <strong>For <span t-esc="company.name"/></strong>
@@ -603,7 +562,7 @@
                                 <div class="mt-2">
                                     <span class="fw-semibold">Signature:</span>
                                 </div>
-                                <div class="signature-box">
+                                <div style="border: 1px solid #bbb; height: 60px; margin-top: 6px; display: flex; align-items: center; justify-content: flex-start; padding: 4px;">
                                     <img t-if="company_sign_item and company_sign_item.signature"
                                          t-att-alt="'Signature of %s' % (company_sign_partner.name if company_sign_partner else company.name)"
                                          t-att-src="'data:image/png;base64,%s' % company_sign_item.signature"
@@ -632,7 +591,7 @@
                                 <div class="mt-2">
                                     <span class="fw-semibold">Signature:</span>
                                 </div>
-                                <div class="signature-box">
+                                <div style="border: 1px solid #bbb; height: 60px; margin-top: 6px; display: flex; align-items: center; justify-content: flex-start; padding: 4px;">
                                     <img t-if="contractor_sign_item and contractor_sign_item.signature"
                                          t-att-alt="'Signature of %s' % ((contractor_sign_partner and contractor_sign_partner.name) or (contractor.name or 'Contractor'))"
                                          t-att-src="'data:image/png;base64,%s' % contractor_sign_item.signature"
@@ -642,10 +601,9 @@
                         </tr>
                     </table>
                     </div>
-                    </div>
-                </div>
 
                     
+                    </div>
                     </t>
                 </t>
             </t>
