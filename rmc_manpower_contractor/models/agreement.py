@@ -908,11 +908,11 @@ class RmcContractAgreement(models.Model):
                     sign_items_sudo |= new_item
 
             # company block (left column)
-            _ensure_field(company_role, date_type, _('Company Sign Date'), 0.12, 0.84, 0.24, 0.05)
-            _ensure_field(company_role, signature_type, _('Company Signature'), 0.12, 0.90, 0.30, 0.08)
+            _ensure_field(company_role, date_type, _('Company Sign Date'), 0.12, 0.70, 0.20, 0.04)
+            _ensure_field(company_role, signature_type, _('Company Signature'), 0.12, 0.76, 0.30, 0.08)
             # contractor block (right column)
-            _ensure_field(contractor_role, date_type, _('Contractor Sign Date'), 0.56, 0.84, 0.24, 0.05)
-            _ensure_field(contractor_role, signature_type, _('Contractor Signature'), 0.56, 0.90, 0.30, 0.08)
+            _ensure_field(contractor_role, date_type, _('Contractor Sign Date'), 0.56, 0.70, 0.20, 0.04)
+            _ensure_field(contractor_role, signature_type, _('Contractor Signature'), 0.56, 0.76, 0.30, 0.08)
             template_sudo._invalidate_cache(fnames=['sign_item_ids'])
 
     def _ensure_sign_template(self):
