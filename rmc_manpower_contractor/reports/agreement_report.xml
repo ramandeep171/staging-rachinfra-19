@@ -63,9 +63,12 @@
             }
             .signature-page-body {
                 flex: 1 1 auto;
+                min-height: 260mm;
                 display: flex;
                 flex-direction: column;
-                justify-content: flex-end;
+            }
+            .signature-page-body .signature-spacer {
+                flex: 1 1 auto;
             }
         </style>
         <div class="page agreement-page">
@@ -573,9 +576,10 @@
 
                 <div class="page agreement-page signature-page">
                     <div class="signature-page-body">
+                    <div class="signature-spacer"></div>
                     <div class="agreement-signatures">
                     <h4>Signatures</h4>
-                    <table class="table table-sm mt-4" style="margin-bottom: 0;">
+                    <table class="table table-sm mt-4" style="margin-bottom: 5;">
                         <tr>
                             <td class="w-50">
                                 <strong>For <span t-esc="company.name"/></strong>
