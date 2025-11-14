@@ -51,7 +51,6 @@
                 margin-bottom: 0;
                 padding-bottom: 8mm;
                 flex-shrink: 0;
-                padding-top: 16px;
             }
             .agreement-page .agreement-signatures .signature-box {
                 border: 1px solid #bbb;
@@ -61,9 +60,6 @@
                 align-items: center;
                 justify-content: flex-start;
                 padding: 4px;
-            }
-            .agreement-page .agreement-signatures .signature-placeholder {
-                height: 35mm;
             }
         </style>
         <div class="page agreement-page">
@@ -570,7 +566,6 @@
 
                     <div class="agreement-signatures">
                     <h4>Signatures</h4>
-                    <div class="signature-placeholder"></div>
                     <table class="table table-sm mt-4" style="margin-bottom: 0;">
                         <tr>
                             <td class="w-50">
