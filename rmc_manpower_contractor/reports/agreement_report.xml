@@ -549,7 +549,7 @@
                         </div>
                     </t>
 
-                    <div class="signature-page" style="page-break-before: always; min-height: 260mm; display: flex; flex-direction: column; justify-content: flex-end;">
+                    <div style="flex-grow: 1;"></div>
                     <div class="agreement-signatures mt-4" style="margin-top: auto; margin-bottom: 15px; padding-bottom: 0; flex-shrink: 0; page-break-inside: avoid; break-inside: avoid;">
                     <h4>Signatures</h4>
                     <table class="table table-sm mt-4" style="margin-bottom: 0;">
@@ -614,7 +614,6 @@
                             </td>
                         </tr>
                     </table>
-                    </div>
                     </div>
 
                     
