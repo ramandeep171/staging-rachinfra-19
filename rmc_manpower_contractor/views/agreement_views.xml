@@ -129,13 +129,7 @@
                                                 <field name="total_amount"/>
                                                 <field name="currency_id" invisible="1"/>
                                             </group>
-                                            <group string="Attendance Proration">
-                                                <field name="attendance_present_days"/>
-                                                <field name="attendance_total_days"/>
-                                                <field name="attendance_ratio" readonly="1"/>
-                                                <field name="attendance_prorated_amount" readonly="1"/>
-                                                <field name="attendance_deduction_amount" readonly="1"/>
-                                            </group>
+                                          
                                         </group>
                                     </form>
                                     <list editable="bottom">
@@ -146,11 +140,6 @@
                                         <field name="shift"/>
                                         <field name="base_rate"/>
                                         <field name="remark"/>
-                                        <field name="attendance_present_days" optional="show"/>
-                                        <field name="attendance_total_days" optional="show"/>
-                                        <field name="attendance_ratio" optional="show"/>
-                                        <field name="attendance_prorated_amount" optional="show"/>
-                                        <field name="attendance_deduction_amount" optional="show"/>
                                         <field name="total_amount" sum="Total"/>
                                         <field name="currency_id" column_invisible="1"/>
                                     </list>

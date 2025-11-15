@@ -455,7 +455,8 @@ class RmcBillingPrepareWizard(models.Model):
                 log.with_context(rmc_skip_log_autorefresh=True).write(log_vals)
         if not log or not log.exists():
             log = log_model.create(log_vals)
-        if not self.env.context.get('rmc_skip_log_autorefresh'):
+        has_bill = bool(bill and bill.exists())
+        if not self.env.context.get('rmc_skip_log_autorefresh') and has_bill:
             log.state = 'done'
         if attachments:
             log._sync_supporting_attachments(attachments, source_bill=bill)
