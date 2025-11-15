@@ -202,7 +202,8 @@
                                 <t t-set="part_b_variable_amount" t-value="doc.part_b_variable or 0.0"/>
                                 <t t-set="monthly_total_amount" t-value="doc.total_amount if doc.total_amount not in (False, None) else (part_a_fixed_amount + part_b_variable_amount)"/>
 
-                                <h3 class="mt-0">
+                                <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                    <h3 class="mt-0">
                                     <t t-esc="annex_a_clause.title or 'Annexure A – Manpower Matrix (Illustrative)'"/>
                                 </h3>
                                 <t t-if="annex_a_clause and annex_a_clause.body_html and 'table table-sm border' not in (annex_a_clause.body_html or '')">
@@ -330,7 +331,9 @@
                                         </tfoot>
                                     </table>
                                 </t>
-                                <h3 class="mt-5">
+                                </div>
+                                <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                    <h3 class="mt-5">
                                     <t t-esc="annex_b_clause.title or 'Annexure B – MGQ &amp; Variable Rate'"/>
                                 </h3>
                                 <t t-if="annex_b_clause and annex_b_clause.body_html">
@@ -359,8 +362,10 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                </div>
 
-                                <h3 class="mt-5">
+                                <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                    <h3 class="mt-5">
                                     <t t-esc="annex_c_clause.title or 'Annexure C – Documents Checklist'"/>
                                 </h3>
                                 <t t-if="annex_c_clause and annex_c_clause.body_html">
@@ -373,8 +378,10 @@
                                         <li>Updated employee KYC dossier including Aadhaar, PAN, photograph, bank proof, and police verification where applicable.</li>
                                     </ul>
                                 </t>
+                                </div>
 
-                                <h3 class="mt-5">
+                                <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                    <h3 class="mt-5">
                                     <t t-esc="annex_d_clause.title or 'Annexure D – Contacts &amp; Notices'"/>
                                 </h3>
                                 <table class="table table-sm border">
@@ -420,8 +427,10 @@
                                         </tr>
                                     </tbody>
                                 </table>
+                                </div>
 
-                                <h3 class="mt-5">
+                                <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                    <h3 class="mt-5">
                                     <t t-esc="annex_e_clause.title or 'Annexure E – Plant Tools &amp; Inventory'"/>
                                 </h3>
                                 <t t-if="annex_e_clause and annex_e_clause.body_html">
@@ -516,20 +525,25 @@
                                         </tfoot>
                                     </table>
                                 </t>
+                                </div>
                                 <t t-if="additional_annexes">
                                     <t t-foreach="additional_annexes" t-as="annex_extra">
-                                        <h3 class="mt-5" t-esc="annex_extra.title"/>
-                                        <div t-if="annex_extra.body_html" t-raw="annex_extra.body_html"/>
-                                        <t t-else="">
-                                            <p class="text-muted"><em>No content provided.</em></p>
-                                        </t>
+                                        <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                            <h3 class="mt-5" t-esc="annex_extra.title"/>
+                                            <div t-if="annex_extra.body_html" t-raw="annex_extra.body_html"/>
+                                            <t t-else="">
+                                                <p class="text-muted"><em>No content provided.</em></p>
+                                            </t>
+                                        </div>
                                     </t>
                                 </t>
                             </t>
                             <t t-else="">
                                 <t t-foreach="annex_clauses" t-as="annex">
-                                    <h3 t-esc="annex.title"/>
-                                    <div t-if="annex.body_html" t-raw="annex.body_html"/>
+                                    <div class="annex-block" style="page-break-inside: avoid; break-inside: avoid;">
+                                        <h3 class="mt-5" t-esc="annex.title"/>
+                                        <div t-if="annex.body_html" t-raw="annex.body_html"/>
+                                    </div>
                                 </t>
                             </t>
                         </div>
