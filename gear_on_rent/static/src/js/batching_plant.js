@@ -20,32 +20,42 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     // Smooth Scrolling for Anchor Links
     // ========================================
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            const rawSelector = this.getAttribute('href') || '';
-            const selector = rawSelector.trim();
-            if (!selector || selector === '#' || selector.length <= 1) {
-                return;
-            }
-            e.preventDefault();
+    // Smooth scroll for only real anchors
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
 
-            // Only scroll when we have a real in-page anchor id.
-            const targetId = selector.replace(/^#+/, '').trim();
-            if (!targetId) {
-                return;
-            }
-            const target = document.getElementById(targetId);
-            if (!target) {
-                return;
-            }
+        let href = (this.getAttribute('href') || '').trim();
 
-            const offsetTop = target.offsetTop - 80;
-            window.scrollTo({
-                top: offsetTop,
-                behavior: 'smooth'
-            });
+        // Skip empty, "#" only, or malformed references
+        if (!href || href === '#' || href === '# ' || href.length <= 1) {
+            return; // Don't scroll, don't error
+        }
+
+        // Clean href → remove all leading #
+        let targetId = href.replace(/^#+/, '').trim();
+
+        if (!targetId) {
+            return;
+        }
+
+        // Prevent default browser jump
+        e.preventDefault();
+
+        // Safe query
+        let target = document.getElementById(targetId);
+        if (!target) {
+            return;
+        }
+
+        // Smooth scroll
+        const offsetTop = target.offsetTop - 80;
+        window.scrollTo({
+            top: offsetTop,
+            behavior: 'smooth'
         });
     });
+});
+
 
     // ========================================
     // Plant Capacity Selector
