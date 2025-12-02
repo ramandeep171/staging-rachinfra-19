@@ -3,6 +3,20 @@
 // Interactive JavaScript
 // ========================================
 
+document.addEventListener('click', function (e) {
+    const a = e.target.closest('a');
+    if (!a) return;
+
+    let href = (a.getAttribute('href') || '').trim();
+
+    if (href === '#' || href === '' || href === '# ' || href === '##') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+    }
+}, true);
+
+
 document.addEventListener('DOMContentLoaded', function () {
 
     // ========================================
@@ -20,21 +34,20 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     // Smooth Scrolling for Anchor Links
     // ========================================
-// Smooth scroll for only real anchors (Safe + Odoo override)
+// Smooth scroll for only real anchors (Safe version)
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
 
         let href = (this.getAttribute('href') || '').trim();
 
-        // Skip empty, "#", "##", "# ", or malformed anchors
+        // Skip malformed/empty anchors → prevent Odoo's bad handler
         if (!href || href === '#' || href === '# ' || href === '##' || href.length <= 1) {
-            // Stop Odoo's internal scroll handler → prevents querySelector('#') crash
             e.preventDefault();
             e.stopImmediatePropagation();
             return false;
         }
 
-        // Clean href → remove all leading #
+        // Clean href → remove leading "#"
         let targetId = href.replace(/^#+/, '').trim();
         if (!targetId) {
             e.preventDefault();
@@ -42,7 +55,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             return false;
         }
 
-        // Find target element safely
+        // Safe element lookup
         let target = document.getElementById(targetId);
         if (!target) {
             e.preventDefault();
@@ -50,7 +63,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             return false;
         }
 
-        // Smooth scroll safely
+        // Execute smooth scroll
         e.preventDefault();
         e.stopImmediatePropagation();
 
