@@ -3,18 +3,26 @@
 // Interactive JavaScript
 // ========================================
 
+// GLOBAL FIX: Block invalid "#" anchors except NAVBAR dropdowns
 document.addEventListener('click', function (e) {
     const a = e.target.closest('a');
     if (!a) return;
 
     let href = (a.getAttribute('href') || '').trim();
 
+    // Allow navbar dropdown toggles (they use href="#")
+    if (a.classList.contains('dropdown-toggle')) {
+        return; // do NOT block navbar dropdowns
+    }
+
+    // Block only real in-page "#" links
     if (href === '#' || href === '' || href === '# ' || href === '##') {
         e.preventDefault();
         e.stopImmediatePropagation();
         return false;
     }
 }, true);
+
 
 
 document.addEventListener('DOMContentLoaded', function () {
