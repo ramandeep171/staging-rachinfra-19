@@ -22,12 +22,28 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
-            const selector = this.getAttribute('href') || '';
-            if (!selector || selector === '#' || selector.trim().length <= 1) {
+            const rawSelector = this.getAttribute('href') || '';
+            const selector = rawSelector.trim();
+            if (!selector || selector === '#' || selector.length <= 1) {
                 return;
             }
             e.preventDefault();
-            const target = document.querySelector(selector);
+
+            let target;
+            if (selector.startsWith('#')) {
+                const targetId = selector.slice(1);
+                if (!targetId) {
+                    return;
+                }
+                target = document.getElementById(targetId);
+            } else {
+                try {
+                    target = document.querySelector(selector);
+                } catch (err) {
+                    console.warn('Invalid anchor selector skipped:', selector, err);
+                    return;
+                }
+            }
 
             if (target) {
                 const offsetTop = target.offsetTop - 80;
