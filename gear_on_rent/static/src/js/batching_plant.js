@@ -20,34 +20,40 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     // Smooth Scrolling for Anchor Links
     // ========================================
-    // Smooth scroll for only real anchors
+// Smooth scroll for only real anchors (Safe + Odoo override)
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
 
         let href = (this.getAttribute('href') || '').trim();
 
-        // Skip empty, "#" only, or malformed references
-        if (!href || href === '#' || href === '# ' || href.length <= 1) {
-            return; // Don't scroll, don't error
+        // Skip empty, "#", "##", "# ", or malformed anchors
+        if (!href || href === '#' || href === '# ' || href === '##' || href.length <= 1) {
+            // Stop Odoo's internal scroll handler → prevents querySelector('#') crash
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
         }
 
         // Clean href → remove all leading #
         let targetId = href.replace(/^#+/, '').trim();
-
         if (!targetId) {
-            return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
         }
 
-        // Prevent default browser jump
-        e.preventDefault();
-
-        // Safe query
+        // Find target element safely
         let target = document.getElementById(targetId);
         if (!target) {
-            return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            return false;
         }
 
-        // Smooth scroll
+        // Smooth scroll safely
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
         const offsetTop = target.offsetTop - 80;
         window.scrollTo({
             top: offsetTop,
