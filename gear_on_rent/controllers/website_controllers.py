@@ -264,4 +264,21 @@ class GearOnRentWebsite(http.Controller):
         page = page.sudo()
         if request.env.user._is_public() and not page.is_visible:
             raise NotFound()
-        return page._get_response(request)
+        page_get_response = getattr(page, '_get_response', None)
+        if callable(page_get_response):
+            return page_get_response(request)
+
+        page_generate_response = getattr(page, '_generate_response', None)
+        if callable(page_generate_response):
+            try:
+                return page_generate_response(request)
+            except TypeError:
+                return page_generate_response()
+
+        # As a last resort, render the underlying view so the page still works
+        # even if neither of the helper methods exists on this Odoo version.
+        view = page.view_id
+        if view:
+            template = view.key or view.id
+            return request.render(template, {'main_object': page})
+        raise NotFound()

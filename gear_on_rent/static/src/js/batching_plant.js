@@ -22,8 +22,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
+            const selector = this.getAttribute('href') || '';
+            if (!selector || selector === '#' || selector.trim().length <= 1) {
+                return;
+            }
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
+            const target = document.querySelector(selector);
 
             if (target) {
                 const offsetTop = target.offsetTop - 80;
