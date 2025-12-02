@@ -16,7 +16,11 @@
           <meta name="description" content="Rent modern construction equipment with IoT tracking. Production basis or hourly/daily rates. 50+ machines, pan-India delivery, 98% on-time record."/>
           <t t-call="gear_on_rent.gear_on_rent_assets"/>
         </t>
-        <div class="gear-on-rent-page">
+        <div id="wrap"
+             class="gear-on-rent-page oe_structure"
+             t-att-data-oe-model="'website.page'"
+             t-att-data-oe-id="main_object.id if main_object else False"
+             data-oe-field="arch">
           <section class="hero" id="home">
             <div class="hero-overlay"></div>
             <div class="container hero-container">

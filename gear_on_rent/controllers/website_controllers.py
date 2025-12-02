@@ -2,6 +2,8 @@
 import base64
 import logging
 
+from werkzeug.exceptions import NotFound
+
 from odoo import http
 from odoo.http import request
 
@@ -25,8 +27,7 @@ class GearOnRentWebsite(http.Controller):
         except Exception as e:
             # Log error but don't break the page
             pass
-        
-        return request.render('gear_on_rent.gear_on_rent_website_page')
+        return self._render_page_response('gear_on_rent.gear_on_rent_landing_page')
 
     @http.route(['/batching-plant'], type='http', auth='public', website=True)
     def batching_plant_page(self, **kwargs):
@@ -59,6 +60,7 @@ class GearOnRentWebsite(http.Controller):
             'material_areas': material_model.search([('active', '=', True)], order='name'),
         }
 
+        values.update(self._page_render_context('gear_on_rent.website_page_batching_plant'))
         return request.render('gear_on_rent.batching_plant_website_page', values)
 
     @http.route('/batching-plant/submit', type='json', auth='public', website=True)
@@ -241,3 +243,25 @@ class GearOnRentWebsite(http.Controller):
             'pdf_filename': pdf_filename,
             'pdf_content': pdf_base64,
         }
+
+    @staticmethod
+    def _page_render_context(xml_id):
+        """Return qcontext data so the website builder keeps publish/edit tools."""
+        page = request.env.ref(xml_id, raise_if_not_found=False)
+        if not page:
+            return {}
+        page = page.sudo()
+        if request.env.user._is_public() and not page.is_visible:
+            raise NotFound()
+        return {'main_object': page}
+
+    @staticmethod
+    def _render_page_response(xml_id):
+        """Render the website.page via the standard engine for full editability."""
+        page = request.env.ref(xml_id, raise_if_not_found=False)
+        if not page:
+            raise NotFound()
+        page = page.sudo()
+        if request.env.user._is_public() and not page.is_visible:
+            raise NotFound()
+        return page._get_response(request)
