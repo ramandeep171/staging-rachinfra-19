@@ -29,29 +29,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             e.preventDefault();
 
-            let target;
-            if (selector.startsWith('#')) {
-                const targetId = selector.slice(1);
-                if (!targetId) {
-                    return;
-                }
-                target = document.getElementById(targetId);
-            } else {
-                try {
-                    target = document.querySelector(selector);
-                } catch (err) {
-                    console.warn('Invalid anchor selector skipped:', selector, err);
-                    return;
-                }
+            // Only scroll when we have a real in-page anchor id.
+            const targetId = selector.replace(/^#+/, '').trim();
+            if (!targetId) {
+                return;
+            }
+            const target = document.getElementById(targetId);
+            if (!target) {
+                return;
             }
 
-            if (target) {
-                const offsetTop = target.offsetTop - 80;
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
-            }
+            const offsetTop = target.offsetTop - 80;
+            window.scrollTo({
+                top: offsetTop,
+                behavior: 'smooth'
+            });
         });
     });
 
