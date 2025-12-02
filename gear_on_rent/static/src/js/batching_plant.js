@@ -3,29 +3,29 @@
 // Interactive JavaScript
 // ========================================
 
-// GLOBAL FIX: Block invalid "#" anchors except NAVBAR dropdowns
-document.addEventListener('click', function (e) {
-    const a = e.target.closest('a');
-    if (!a) return;
-
-    let href = (a.getAttribute('href') || '').trim();
-
-    // Allow navbar dropdown toggles (they use href="#")
-    if (a.classList.contains('dropdown-toggle')) {
-        return; // do NOT block navbar dropdowns
-    }
-
-    // Block only real in-page "#" links
-    if (href === '#' || href === '' || href === '# ' || href === '##') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
-    }
-}, true);
-
-
-
 document.addEventListener('DOMContentLoaded', function () {
+
+    const batchingPlantPage = document.querySelector('.batching-plant-page');
+
+    const isInvalidAnchorHref = (href) => {
+        const cleanHref = (href || '').trim();
+        return !cleanHref || cleanHref === '#' || cleanHref === '# ' || cleanHref === '##';
+    };
+
+    if (batchingPlantPage) {
+        // Limit "#" blocking to batching plant content so global navigation keeps working
+        batchingPlantPage.addEventListener('click', function (e) {
+            const a = e.target.closest('a');
+            if (!a || !batchingPlantPage.contains(a)) {
+                return;
+            }
+
+            if (isInvalidAnchorHref(a.getAttribute('href'))) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+    }
 
     // ========================================
     // Initialize AOS (Animate On Scroll)
@@ -42,46 +42,48 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     // Smooth Scrolling for Anchor Links
     // ========================================
-// Smooth scroll for only real anchors (Safe version)
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
+    if (batchingPlantPage) {
+        // Smooth scroll for only real anchors within batching plant page
+        batchingPlantPage.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
 
-        let href = (this.getAttribute('href') || '').trim();
+                let href = (this.getAttribute('href') || '').trim();
 
-        // Skip malformed/empty anchors → prevent Odoo's bad handler
-        if (!href || href === '#' || href === '# ' || href === '##' || href.length <= 1) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false;
-        }
+                // Skip malformed/empty anchors → prevent Odoo's bad handler
+                if (isInvalidAnchorHref(href) || href.length <= 1) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
 
-        // Clean href → remove leading "#"
-        let targetId = href.replace(/^#+/, '').trim();
-        if (!targetId) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false;
-        }
+                // Clean href → remove leading "#"
+                let targetId = href.replace(/^#+/, '').trim();
+                if (!targetId) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
 
-        // Safe element lookup
-        let target = document.getElementById(targetId);
-        if (!target) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            return false;
-        }
+                // Safe element lookup
+                let target = document.getElementById(targetId);
+                if (!target) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
 
-        // Execute smooth scroll
-        e.preventDefault();
-        e.stopImmediatePropagation();
+                // Execute smooth scroll
+                e.preventDefault();
+                e.stopImmediatePropagation();
 
-        const offsetTop = target.offsetTop - 80;
-        window.scrollTo({
-            top: offsetTop,
-            behavior: 'smooth'
+                const offsetTop = target.offsetTop - 80;
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+            });
         });
-    });
-});
+    }
 
 
     // ========================================
