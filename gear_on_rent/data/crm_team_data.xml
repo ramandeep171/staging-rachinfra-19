@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- CRM Team for Rental -->
+        <record id="crm_team_rental" model="crm.team">
+            <field name="name">Rental Team</field>
+            <field name="use_leads">True</field>
+            <field name="use_opportunities">True</field>
+            <field name="alias_name">rental</field>
+            <field name="sequence">10</field>
+        </record>
+
+    </data>
+</odoo>

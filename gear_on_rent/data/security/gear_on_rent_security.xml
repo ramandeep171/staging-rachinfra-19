@@ -83,5 +83,106 @@
       <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_portal'))]"/>
     </record>
 
+    <record id="rule_rmc_annual_reconciliation_user_company" model="ir.rule">
+      <field name="name">Annual reconciliation user company access</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_rmc_annual_reconciliation"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_user'))]"/>
+    </record>
+
+    <record id="rule_rmc_annual_reconciliation_portal_partner" model="ir.rule">
+      <field name="name">Annual reconciliation portal access</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_rmc_annual_reconciliation"/>
+      <field name="domain_force">[('so_id.partner_id', 'child_of', user.partner_id.commercial_partner_id.id)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_portal'))]"/>
+    </record>
+
+    <record id="rule_gear_reason_company" model="ir.rule">
+      <field name="name">Reason company access</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_reason"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_user')), (4, ref('gear_on_rent.group_gear_on_rent_manager'))]"/>
+    </record>
+
+    <!-- Batching-plant quotation portal visibility -->
+    <record id="rule_batching_quote_portal_partner" model="ir.rule">
+      <field name="name">Batching quotation portal access</field>
+      <field name="model_id" ref="sale.model_sale_order"/>
+      <field name="domain_force">[('x_billing_category', '=', 'plant'), ('partner_id', 'child_of', user.partner_id.commercial_partner_id.id)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_portal'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="False"/>
+      <field name="perm_create" eval="False"/>
+      <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Internal user read-only controls for batching masters -->
+    <record id="rule_batching_mgq_rate_user_readonly" model="ir.rule">
+      <field name="name">MGQ rate user readonly</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_mgq_rate_master"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_user'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="False"/>
+      <field name="perm_create" eval="False"/>
+      <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_batching_optional_service_user_readonly" model="ir.rule">
+      <field name="name">Optional services user readonly</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_optional_service_master"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_user'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="False"/>
+      <field name="perm_create" eval="False"/>
+      <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_batching_material_area_user_readonly" model="ir.rule">
+      <field name="name">Material area user readonly</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_material_area_master"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_user'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="False"/>
+      <field name="perm_create" eval="False"/>
+      <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Manager overrides for batching masters -->
+    <record id="rule_batching_mgq_rate_manager" model="ir.rule">
+      <field name="name">MGQ rate manager access</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_mgq_rate_master"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_manager'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="True"/>
+      <field name="perm_create" eval="True"/>
+      <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_batching_optional_service_manager" model="ir.rule">
+      <field name="name">Optional services manager access</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_optional_service_master"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_manager'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="True"/>
+      <field name="perm_create" eval="True"/>
+      <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_batching_material_area_manager" model="ir.rule">
+      <field name="name">Material area manager access</field>
+      <field name="model_id" ref="gear_on_rent.model_gear_material_area_master"/>
+      <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+      <field name="groups" eval="[(4, ref('gear_on_rent.group_gear_on_rent_manager'))]"/>
+      <field name="perm_read" eval="True"/>
+      <field name="perm_write" eval="True"/>
+      <field name="perm_create" eval="True"/>
+      <field name="perm_unlink" eval="True"/>
+    </record>
+
   </data>
 </odoo>

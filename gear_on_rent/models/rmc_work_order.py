@@ -2,12 +2,16 @@ from calendar import monthrange
 from datetime import datetime, time, timedelta
 from math import ceil
 
-import pytz
+try:  # pragma: no cover - shim for dev/test containers
+    import pytz
+except ModuleNotFoundError:  # pragma: no cover
+    from odoo_shims import pytz
 
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.tools import format_date
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -45,6 +49,23 @@ class GearRmcMonthlyOrder(models.Model):
         required=True,
         help="Service/consumable product that represents the concrete mix for this contract.",
     )
+    x_inventory_mode = fields.Selection(
+        selection=[
+            ("without_inventory", "Without Inventory"),
+            ("with_inventory", "With Inventory"),
+        ],
+        string="Inventory Mode",
+        default="without_inventory",
+        tracking=True,
+        help="Snapshot of the sales order inventory mode at the time this monthly order was created.",
+    )
+    x_real_warehouse_id = fields.Many2one(
+        comodel_name="stock.warehouse",
+        string="Real Warehouse",
+        tracking=True,
+        domain="[('company_id', '=', company_id)]",
+        help="Warehouse to route production when Inventory Mode is set to With Inventory.",
+    )
     date_start = fields.Date(string="Start Date", required=True, tracking=True)
     date_end = fields.Date(string="End Date", required=True, tracking=True)
     x_window_start = fields.Datetime(
@@ -71,6 +92,80 @@ class GearRmcMonthlyOrder(models.Model):
         string="Monthly MGQ Snapshot",
         digits=(16, 2),
         help="Snapshot of the contract MGQ allocated to this window.",
+        tracking=True,
+    )
+    wastage_allowed_percent = fields.Float(
+        string="Allowed Wastage (%)",
+        digits=(16, 4),
+        tracking=True,
+        help="Scrap tolerance percent captured from the sales order at creation time.",
+    )
+    prime_rate = fields.Float(
+        string="Prime Rate Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="Prime production rate captured from the sales order variables.",
+    )
+    optimize_rate = fields.Float(
+        string="Optimize Rate Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="Optimize standby rate captured from the sales order variables.",
+    )
+    ngt_rate = fields.Float(
+        string="NGT Rate Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="NGT rate captured from the sales order variables.",
+    )
+    excess_rate = fields.Float(
+        string="Excess Rate Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="Excess production rate captured from the sales order variables.",
+    )
+    mgq_monthly = fields.Float(
+        string="MGQ (Monthly) Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="Variable-based monthly MGQ captured for this window.",
+    )
+    cooling_months = fields.Integer(
+        string="Cooling Months Snapshot",
+        tracking=True,
+        help="Cooling period length captured when the monthly work order was created.",
+    )
+    loto_waveoff_hours = fields.Float(
+        string="LOTO Wave-Off Allowance Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="Wave-off allowance captured from the sales order variables.",
+    )
+    bank_pull_limit = fields.Float(
+        string="Bank Pull Limit Snapshot",
+        digits=(16, 2),
+        tracking=True,
+        help="Maximum allowed bank pull captured from the sales order variables.",
+    )
+    ngt_hourly_prorata_factor = fields.Float(
+        string="NGT Hourly Prorata Factor Snapshot",
+        digits=(16, 4),
+        tracking=True,
+        help="Hourly to m³ conversion factor captured for NGT relief calculations.",
+    )
+    standard_loading_minutes = fields.Float(
+        string="Standard Loading (min) Snapshot",
+        digits=(16, 2),
+        tracking=True,
+    )
+    diesel_burn_rate_per_hour = fields.Float(
+        string="Diesel Burn Rate (L/hr) Snapshot",
+        digits=(16, 2),
+        tracking=True,
+    )
+    diesel_rate_per_litre = fields.Monetary(
+        string="Diesel Rate per Litre",
+        currency_field="currency_id",
         tracking=True,
     )
     last_generated_date = fields.Date(
@@ -116,6 +211,47 @@ class GearRmcMonthlyOrder(models.Model):
         compute="_compute_prime_output",
         store=True,
     )
+    mwo_prime_output_qty = fields.Float(
+        string="Prime Output (m³)",
+        digits=(16, 2),
+        compute="_compute_wastage_rollup",
+        store=True,
+        help="Sum of prime outputs across all linked manufacturing orders.",
+    )
+    mwo_allowed_wastage_qty = fields.Float(
+        string="Allowed Wastage (m³)",
+        digits=(16, 2),
+        compute="_compute_wastage_rollup",
+        store=True,
+        help="Total scrap tolerance for the monthly window.",
+    )
+    mwo_actual_scrap_qty = fields.Float(
+        string="Actual Scrap (m³)",
+        digits=(16, 2),
+        compute="_compute_wastage_rollup",
+        store=True,
+        help="Aggregated scrap captured on all manufacturing orders.",
+    )
+    mwo_over_wastage_qty = fields.Float(
+        string="Over Wastage (m³)",
+        digits=(16, 2),
+        compute="_compute_wastage_rollup",
+        store=True,
+        help="Scrap quantity beyond the allowed tolerance.",
+    )
+    mwo_deduction_qty = fields.Float(
+        string="Deduction Quantity (m³)",
+        digits=(16, 2),
+        compute="_compute_wastage_rollup",
+        store=True,
+        help="Quantity to be used for wastage-based deductions at the MWO level.",
+    )
+    wastage_penalty_rate = fields.Monetary(
+        string="Wastage Penalty Rate",
+        currency_field="currency_id",
+        tracking=True,
+        help="Rate used to value over-wastage quantities during debit note creation.",
+    )
     optimized_standby_qty = fields.Float(
         string="Optimized Standby (m³)",
         digits=(16, 2),
@@ -144,6 +280,18 @@ class GearRmcMonthlyOrder(models.Model):
         string="Wave-Off Chargeable",
         digits=(16, 2),
         compute="_compute_relief_breakdown",
+        store=True,
+    )
+    excess_diesel_litre_total = fields.Float(
+        string="Excess Diesel (L)",
+        digits=(16, 3),
+        compute="_compute_diesel_overrun_totals",
+        store=True,
+    )
+    excess_diesel_amount_total = fields.Monetary(
+        string="Excess Diesel Amount",
+        currency_field="currency_id",
+        compute="_compute_diesel_overrun_totals",
         store=True,
     )
     downtime_relief_qty = fields.Float(
@@ -175,6 +323,12 @@ class GearRmcMonthlyOrder(models.Model):
         store=True,
         readonly=True,
     )
+    currency_id = fields.Many2one(
+        "res.currency",
+        related="company_id.currency_id",
+        string="Currency",
+        readonly=True,
+    )
 
     _sql_constraints = [
         (
@@ -183,6 +337,15 @@ class GearRmcMonthlyOrder(models.Model):
             "End date must not be earlier than start date.",
         )
     ]
+
+    @api.constrains("x_inventory_mode", "x_real_warehouse_id")
+    def _check_inventory_mode_real_warehouse(self):
+        for order in self:
+            silent_wh = self._gear_get_silent_warehouse(order.company_id)
+            if order.x_inventory_mode == "with_inventory" and not order.x_real_warehouse_id:
+                raise ValidationError(_("Please select a real warehouse when using Inventory Mode: With Inventory."))
+            # if silent_wh and order.x_real_warehouse_id and order.x_real_warehouse_id == silent_wh:
+            #     raise ValidationError(_("The silent warehouse cannot be selected as the real warehouse."))
 
     @api.depends("x_window_start", "x_window_end", "date_start", "date_end", "so_id", "so_id.x_monthly_mgq")
     def _compute_monthly_target_qty(self):
@@ -193,6 +356,63 @@ class GearRmcMonthlyOrder(models.Model):
             else:
                 order.monthly_target_qty = order.so_id.x_monthly_mgq or 0.0
 
+    @api.model
+    def _gear_get_silent_warehouse(self, company=None):
+        company = company or self.env.company
+        param_model = self.env["ir.config_parameter"].sudo()
+        company_key = f"gear_on_rent.silent_warehouse_id.{company.id}"
+        param_value = param_model.get_param(company_key)
+        if not param_value:
+            param_value = param_model.get_param("gear_on_rent.silent_warehouse_id")
+        silent_wh = False
+        if param_value:
+            try:
+                silent_wh = self.env["stock.warehouse"].browse(int(param_value))
+            except (TypeError, ValueError):
+                silent_wh = False
+        if silent_wh:
+            silent_wh = silent_wh.filtered(lambda wh: wh and wh.company_id == company)
+        return silent_wh
+
+    def _gear_resolve_inventory_targets(self):
+        self.ensure_one()
+        mode = self.x_inventory_mode or self.so_id.x_inventory_mode or "without_inventory"
+        real_wh = self.x_real_warehouse_id or self.so_id.x_real_warehouse_id
+        silent_wh = self._gear_get_silent_warehouse(self.company_id)
+
+        if mode == "with_inventory":
+            warehouse = real_wh
+            if not warehouse:
+                raise UserError(_("Please configure a real warehouse on the sales order before scheduling production."))
+            # if silent_wh and warehouse == silent_wh:
+            #     raise UserError(_("The silent warehouse cannot be used when Inventory Mode is set to With Inventory."))
+        else:
+            warehouse = silent_wh
+            if not warehouse:
+                raise UserError(_("Silent warehouse is not configured. Please set it in Gear On Rent settings."))
+
+        picking_type = warehouse.manu_type_id
+        if not picking_type:
+            raise UserError(_("Warehouse %s has no manufacturing picking type configured.") % (warehouse.display_name,))
+
+        location_src = picking_type.default_location_src_id or warehouse.lot_stock_id
+        location_dest = picking_type.default_location_dest_id or warehouse.lot_stock_id
+        if not location_src or not location_dest:
+            raise UserError(
+                _(
+                    "Warehouse %s lacks default source/destination locations for manufacturing. Please complete the configuration."
+                )
+                % (warehouse.display_name,)
+            )
+
+        return {
+            "inventory_mode": mode,
+            "warehouse": warehouse,
+            "picking_type": picking_type,
+            "location_src": location_src,
+            "location_dest": location_dest,
+        }
+
     @api.depends("production_ids.x_adjusted_target_qty")
     def _compute_adjusted_target(self):
         for order in self:
@@ -202,6 +422,25 @@ class GearRmcMonthlyOrder(models.Model):
     def _compute_prime_output(self):
         for order in self:
             order.prime_output_qty = sum(order.production_ids.mapped("x_prime_output_qty"))
+
+    @api.depends(
+        "production_ids.prime_output_qty",
+        "production_ids.wastage_allowed_qty",
+        "production_ids.actual_scrap_qty",
+        "production_ids.over_wastage_qty",
+        "production_ids.deduction_qty",
+    )
+    def _compute_wastage_rollup(self):
+        for order in self:
+            prime_total = sum(order.production_ids.mapped("prime_output_qty"))
+            allowed_total = sum(order.production_ids.mapped("wastage_allowed_qty"))
+            actual_total = sum(order.production_ids.mapped("actual_scrap_qty"))
+            over_total = max(actual_total - allowed_total, 0.0)
+            order.mwo_prime_output_qty = prime_total
+            order.mwo_allowed_wastage_qty = allowed_total
+            order.mwo_actual_scrap_qty = actual_total
+            order.mwo_over_wastage_qty = over_total
+            order.mwo_deduction_qty = over_total
 
     @api.depends("adjusted_target_qty", "prime_output_qty", "x_is_cooling_period")
     def _compute_optimized_standby(self):
@@ -284,6 +523,20 @@ class GearRmcMonthlyOrder(models.Model):
             order.runtime_minutes = sum(order.docket_ids.mapped("runtime_minutes"))
             order.idle_minutes = sum(order.docket_ids.mapped("idle_minutes"))
 
+    @api.depends(
+        "docket_ids.excess_minutes",
+        "docket_ids.excess_diesel_litre",
+        "docket_ids.excess_diesel_amount",
+        "docket_ids.reason_type",
+    )
+    def _compute_diesel_overrun_totals(self):
+        for order in self:
+            eligible = order.docket_ids.filtered(
+                lambda d: (d.excess_minutes or 0.0) > 0.0 and d.reason_type != "maintenance"
+            )
+            order.excess_diesel_litre_total = sum(eligible.mapped("excess_diesel_litre"))
+            order.excess_diesel_amount_total = sum(eligible.mapped("excess_diesel_amount"))
+
     @api.depends("docket_ids")
     def _compute_docket_count(self):
         for order in self:
@@ -363,6 +616,8 @@ class GearRmcMonthlyOrder(models.Model):
             order.state = "done"
             if order.so_id:
                 order.so_id.gear_generate_next_monthly_order()
+        # Ensure debit notes are generated as soon as wastage is finalized.
+        self._gear_create_over_wastage_debit_note()
 
     def _generate_daily_productions(self, until_date=False):
         Production = self.env["mrp.production"]
@@ -461,6 +716,8 @@ class GearRmcMonthlyOrder(models.Model):
 
             processed_order = False
 
+            routing = order._gear_resolve_inventory_targets()
+
             while cursor <= generation_end:
                 start_dt, end_dt = order._gear_get_day_bounds(cursor, user_tz)
 
@@ -472,6 +729,14 @@ class GearRmcMonthlyOrder(models.Model):
                                 "product_qty": daily_target,
                                 "x_daily_target_qty": daily_target,
                                 "x_is_cooling_period": order.x_is_cooling_period,
+                                "warehouse_id": routing["warehouse"].id,
+                                "picking_type_id": routing["picking_type"].id,
+                                "location_src_id": routing["location_src"].id,
+                                "location_dest_id": routing["location_dest"].id,
+                                "x_inventory_mode": routing["inventory_mode"],
+                                "x_target_warehouse_id": routing["warehouse"].id,
+                                "wastage_allowed_percent": order.wastage_allowed_percent,
+                                "wastage_penalty_rate": order.wastage_penalty_rate,
                             }
                         )
                 else:
@@ -488,6 +753,14 @@ class GearRmcMonthlyOrder(models.Model):
                         "x_sale_order_id": order.so_id.id,
                         "x_daily_target_qty": daily_target,
                         "x_is_cooling_period": order.x_is_cooling_period,
+                        "warehouse_id": routing["warehouse"].id,
+                        "picking_type_id": routing["picking_type"].id,
+                        "location_src_id": routing["location_src"].id,
+                        "location_dest_id": routing["location_dest"].id,
+                        "x_inventory_mode": routing["inventory_mode"],
+                        "x_target_warehouse_id": routing["warehouse"].id,
+                        "wastage_allowed_percent": order.wastage_allowed_percent,
+                        "wastage_penalty_rate": order.wastage_penalty_rate,
                     }
                     production = Production.search(
                         [
@@ -524,6 +797,8 @@ class GearRmcMonthlyOrder(models.Model):
                 "ngt_hours": 0.0,
                 "waveoff_applied_hours": 0.0,
                 "waveoff_chargeable_hours": 0.0,
+                "diesel_excess_litre": 0.0,
+                "diesel_excess_amount": 0.0,
             },
             "normal": {
                 "target_qty": 0.0,
@@ -534,6 +809,8 @@ class GearRmcMonthlyOrder(models.Model):
                 "ngt_hours": 0.0,
                 "waveoff_applied_hours": 0.0,
                 "waveoff_chargeable_hours": 0.0,
+                "diesel_excess_litre": 0.0,
+                "diesel_excess_amount": 0.0,
             },
         }
         for order in self:
@@ -551,7 +828,118 @@ class GearRmcMonthlyOrder(models.Model):
             data["ngt_hours"] += order.ngt_hours or 0.0
             data["waveoff_applied_hours"] += order.waveoff_hours_applied or 0.0
             data["waveoff_chargeable_hours"] += order.waveoff_hours_chargeable or 0.0
+            data["diesel_excess_litre"] += order.excess_diesel_litre_total or 0.0
+            data["diesel_excess_amount"] += order.excess_diesel_amount_total or 0.0
         return summary
+
+    def _gear_get_wastage_penalty_rate(self):
+        self.ensure_one()
+        return self.wastage_penalty_rate or self.so_id.wastage_penalty_rate
+
+    def _gear_prepare_debit_note_vals(self, rate, month_ref):
+        self.ensure_one()
+        partner = self.so_id.partner_invoice_id or self.so_id.partner_id
+        product = self.so_id._gear_get_primary_product()
+        account = False
+        if product:
+            account = product.property_account_income_id or product.categ_id.property_account_income_categ_id
+        if not account:
+            Account = self.env["account.account"]
+            domain = []
+            if "company_id" in Account._fields:
+                domain.append(("company_id", "=", self.company_id.id))
+            elif "company_ids" in Account._fields and self.company_id:
+                domain.append(("company_ids", "in", self.company_id.id))
+            if "account_type" in Account._fields:
+                domain.append(("account_type", "=", "income"))
+            else:
+                domain.append(("user_type_id.type", "=", "income"))
+            account = Account.search(domain, limit=1)
+        line_vals = {
+            "name": _("Over-wastage deduction for %s") % (self.display_name,),
+            "quantity": self.mwo_over_wastage_qty,
+            "price_unit": rate,
+            "product_id": product.id if product else False,
+            "account_id": account.id if account else False,
+        }
+        move_vals = {
+            "move_type": "out_refund",
+            "partner_id": partner.id,
+            "invoice_date": self.date_end or fields.Date.context_today(self),
+            "invoice_origin": self.so_id.name,
+            "ref": month_ref,
+            "invoice_payment_term_id": self.so_id.payment_term_id.id,
+            "currency_id": self.company_id.currency_id.id,
+            "company_id": self.company_id.id,
+            "gear_monthly_order_id": self.id,
+            "invoice_line_ids": [(0, 0, line_vals)],
+        }
+        return move_vals
+
+    def _gear_create_over_wastage_debit_note(self):
+        created = self.env["account.move"]
+        for order in self:
+            rate = order._gear_get_wastage_penalty_rate()
+            if not rate or order.mwo_over_wastage_qty <= 0 or not order.so_id:
+                continue
+            partner = order.so_id.partner_invoice_id or order.so_id.partner_id
+            month_label = False
+            if order.date_start:
+                month_label = format_date(order.env, order.date_start, date_format="MMMM yyyy")
+            ref = f"{order.name} - {month_label}" if month_label else order.name
+            existing_move = self.env["account.move"].search(
+                [
+                    ("move_type", "=", "out_refund"),
+                    ("company_id", "=", order.company_id.id),
+                    ("gear_monthly_order_id", "=", order.id),
+                    ("partner_id", "=", partner.id),
+                    ("ref", "=", ref),
+                ],
+                limit=1,
+            )
+            if existing_move:
+                continue
+            move_vals = order._gear_prepare_debit_note_vals(rate, ref)
+            move = self.env["account.move"].create(move_vals)
+            invoice_link = self.env["account.move"].search(
+                [
+                    ("move_type", "=", "out_invoice"),
+                    ("gear_monthly_order_id", "=", order.id),
+                    ("partner_id", "=", partner.id),
+                    ("state", "!=", "cancel"),
+                ],
+                order="invoice_date desc, id desc",
+                limit=1,
+            )
+            try:
+                move.action_post()
+            except Exception:
+                # If posting is blocked by configuration, leave the move in draft
+                pass
+            if invoice_link:
+                move.reversed_entry_id = invoice_link.id
+            message = _(
+                "Auto Debit Note generated due to over-wastage exceeding tolerance. Debit Note %s for %s."
+            ) % (move.display_name, move.amount_total)
+            order.message_post(body=message)
+            created |= move
+        return created
+
+    @api.model
+    def _cron_generate_over_wastage_debit_notes(self):
+        today = fields.Date.context_today(self)
+        start = today.replace(day=1)
+        last_day = monthrange(start.year, start.month)[1]
+        end = start.replace(day=last_day)
+        candidates = self.search(
+            [
+                ("date_start", ">=", start),
+                ("date_start", "<=", end),
+                ("company_id", "in", self.env.companies.ids),
+                ("mwo_over_wastage_qty", ">", 0),
+            ]
+        )
+        candidates._gear_create_over_wastage_debit_note()
 
     def _gear_reassign_productions_to_windows(self):
         """Move daily productions under the window that matches their execution date."""
@@ -620,6 +1008,10 @@ class GearRmcMonthlyOrder(models.Model):
                 "docket_no": f"{production.name}-{local_date.strftime('%Y%m%d')}",
                 "source": "cron",
                 "state": "draft",
+                "standard_loading_minutes": self.standard_loading_minutes,
+                "actual_loading_minutes": self.standard_loading_minutes,
+                "diesel_burn_rate_per_hour": self.diesel_burn_rate_per_hour,
+                "diesel_rate_per_litre": self.diesel_rate_per_litre,
             }
             docket = Docket.create(docket_vals)
 
@@ -662,6 +1054,13 @@ class GearRmcMonthlyOrder(models.Model):
             self.product_id = primary_product
         if not self.workcenter_id and self.so_id.x_workcenter_id:
             self.workcenter_id = self.so_id.x_workcenter_id
+        if self.so_id.x_inventory_mode:
+            self.x_inventory_mode = self.so_id.x_inventory_mode
+        if not self.x_real_warehouse_id and self.so_id.x_real_warehouse_id:
+            self.x_real_warehouse_id = self.so_id.x_real_warehouse_id
+        self.standard_loading_minutes = self.so_id.standard_loading_minutes
+        self.diesel_burn_rate_per_hour = self.so_id.diesel_burn_rate_per_hour
+        self.diesel_rate_per_litre = self.so_id.diesel_rate_per_litre
         contract_start = self.so_id.x_contract_start
         if contract_start:
             start = contract_start.replace(day=1)
@@ -691,6 +1090,20 @@ class GearRmcMonthlyOrder(models.Model):
                 last_day = monthrange(start.year, start.month)[1]
                 order.date_start = start
                 order.date_end = order.date_end or start.replace(day=last_day)
+            if not vals.get("x_inventory_mode") and order.so_id.x_inventory_mode:
+                order.x_inventory_mode = order.so_id.x_inventory_mode
+            if not vals.get("x_real_warehouse_id") and order.so_id.x_real_warehouse_id:
+                order.x_real_warehouse_id = order.so_id.x_real_warehouse_id
+            if vals.get("standard_loading_minutes") is None:
+                order.standard_loading_minutes = order.so_id.standard_loading_minutes
+            if vals.get("diesel_burn_rate_per_hour") is None:
+                order.diesel_burn_rate_per_hour = order.so_id.diesel_burn_rate_per_hour
+            if vals.get("diesel_rate_per_litre") is None:
+                order.diesel_rate_per_litre = order.so_id.diesel_rate_per_litre
+            if vals.get("wastage_allowed_percent") is None:
+                order.wastage_allowed_percent = order.so_id.wastage_allowed_percent
+            if vals.get("wastage_penalty_rate") is None:
+                order.wastage_penalty_rate = order.so_id.wastage_penalty_rate
         return records
 
     def _gear_sync_production_workorders(self, production, workcenter, start_dt, end_dt):

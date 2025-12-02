@@ -154,7 +154,27 @@
                 </table>
               </div>
             </div>
-
+            <div class="row mb-3">
+              <div class="col-12">
+                <h4>Inventory Settings</h4>
+                <table class="gor-metric-table gor-metric-table--left">
+                  <tbody>
+                    <tr>
+                      <th>Inventory Mode</th>
+                      <td>
+                        <t t-esc="payload.get('inventory_mode') or 'N/A'"/>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Real Warehouse</th>
+                      <td>
+                        <t t-esc="payload.get('real_warehouse') or 'N/A'"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <h4 class="mt-3">Exceptions &amp; Notes</h4>
             <table class="gor-metric-table gor-metric-table--left">
               <tbody>
@@ -244,6 +264,28 @@
               </div>
             </t>
 
+            <h4 class="mt-4">Wastage Summary</h4>
+            <table class="gor-metric-table gor-metric-table--plain">
+              <tbody>
+                <tr>
+                  <th>Prime Output (m³)</th>
+                  <td><t t-esc="payload.get('prime_output_qty', 0.0)"/></td>
+                </tr>
+                <tr>
+                  <th>Allowed Wastage (m³)</th>
+                  <td><t t-esc="payload.get('allowed_wastage_qty', 0.0)"/></td>
+                </tr>
+                <tr>
+                  <th>Actual Scrap (m³)</th>
+                  <td><t t-esc="payload.get('actual_scrap_qty', 0.0)"/></td>
+                </tr>
+                <tr>
+                  <th>Over Wastage / Deduction (m³)</th>
+                  <td><t t-esc="payload.get('over_wastage_qty', 0.0)"/></td>
+                </tr>
+              </tbody>
+            </table>
+
             <h4 class="mt-4">Manufacturing Orders</h4>
             <table class="gor-full-table">
               <thead style="display: table-header-group;">
@@ -254,6 +296,10 @@
                   <th>Daily MGQ</th>
                   <th>Adjusted MGQ</th>
                   <th>Prime Output</th>
+                  <th>Allowed Wastage</th>
+                  <th>Actual Scrap</th>
+                  <th>Over Wastage</th>
+                  <th>Deduction</th>
                   <th>Optimized Standby</th>
                   <th>NGT Hours</th>
                   <th>LOTO Hours</th>
@@ -284,6 +330,18 @@
                     </td>
                     <td>
                       <t t-esc="mo.get('prime_output', 0.0)"/>
+                    </td>
+                    <td>
+                      <t t-esc="mo.get('allowed_wastage', 0.0)"/>
+                    </td>
+                    <td>
+                      <t t-esc="mo.get('actual_scrap', 0.0)"/>
+                    </td>
+                    <td>
+                      <t t-esc="mo.get('over_wastage', 0.0)"/>
+                    </td>
+                    <td>
+                      <t t-esc="mo.get('deduction', 0.0)"/>
                     </td>
                     <td>
                       <t t-esc="mo.get('optimized_standby', 0.0)"/>

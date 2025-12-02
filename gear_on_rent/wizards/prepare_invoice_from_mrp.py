@@ -22,6 +22,7 @@ class PrepareInvoiceFromMrp(models.TransientModel):
         store=False,
         readonly=True,
     )
+    currency_id = fields.Many2one("res.currency", related="so_id.currency_id", store=False, readonly=True)
     invoice_date = fields.Date(
         string="Invoice Date",
         required=True,
@@ -65,6 +66,19 @@ class PrepareInvoiceFromMrp(models.TransientModel):
     loto_chargeable_hours = fields.Float(
         string="LOTO Chargeable Hours",
         related="monthly_order_id.waveoff_hours_chargeable",
+        store=False,
+        readonly=True,
+    )
+    diesel_excess_litre = fields.Float(
+        string="Excess Diesel (L)",
+        related="monthly_order_id.excess_diesel_litre_total",
+        store=False,
+        readonly=True,
+    )
+    diesel_excess_amount = fields.Monetary(
+        string="Diesel Overrun Amount",
+        related="monthly_order_id.excess_diesel_amount_total",
+        currency_field="currency_id",
         store=False,
         readonly=True,
     )
@@ -156,6 +170,8 @@ class PrepareInvoiceFromMrp(models.TransientModel):
         ngt_hours = cooling["ngt_hours"] + normal["ngt_hours"]
         waveoff_applied = cooling["waveoff_applied_hours"] + normal["waveoff_applied_hours"]
         waveoff_chargeable = cooling["waveoff_chargeable_hours"] + normal["waveoff_chargeable_hours"]
+        diesel_excess_litre = cooling["diesel_excess_litre"] + normal["diesel_excess_litre"]
+        diesel_excess_amount = cooling["diesel_excess_amount"] + normal["diesel_excess_amount"]
 
         if prime_output <= 0 and standby_qty <= 0 and downtime_qty <= 0:
             raise UserError(_("Nothing to invoice: no prime output, standby, or NGT quantities computed."))
@@ -176,6 +192,8 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             "gear_loto_chargeable_hours": waveoff_chargeable,
             "gear_waveoff_applied_hours": waveoff_applied,
             "gear_waveoff_allowance_hours": order.x_loto_waveoff_hours,
+            "gear_diesel_overrun_litre": diesel_excess_litre,
+            "gear_diesel_overrun_amount": diesel_excess_amount,
         }
 
         period_start_label = fields.Date.to_string(period_start)
@@ -248,6 +266,23 @@ class PrepareInvoiceFromMrp(models.TransientModel):
                         "tax_ids": [(6, 0, taxes_ngt.ids)] if taxes_ngt else False,
                         "analytic_distribution": analytic_ngt or False,
                         "sale_line_ids": [(6, 0, ngt_sale_line_ids)],
+                    },
+                )
+            )
+
+        if diesel_excess_amount > 0:
+            label = _("HSD Loading Overrun Charges (%s - %s)") % (period_start_label, period_end_label)
+            line_commands.append(
+                (
+                    0,
+                    0,
+                    {
+                        "name": label,
+                        "product_id": (line_by_mode["prime"] or main_line).product_id.id,
+                        "quantity": 1,
+                        "price_unit": diesel_excess_amount,
+                        "tax_ids": [(6, 0, taxes_prime.ids)] if taxes_prime else False,
+                        "analytic_distribution": analytic_prime or False,
                     },
                 )
             )

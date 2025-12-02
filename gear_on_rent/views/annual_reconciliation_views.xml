@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="view_gear_rmc_annual_reconciliation_list" model="ir.ui.view">
+    <field name="name">gear.rmc.annual.reconciliation.list</field>
+    <field name="model">gear.rmc.annual.reconciliation</field>
+    <field name="arch" type="xml">
+      <list string="Annual Reconciliations">
+        <field name="name"/>
+        <field name="so_id"/>
+        <field name="fiscal_year_start"/>
+        <field name="fiscal_year_end"/>
+        <field name="mgq_annual_target"/>
+        <field name="mgq_annual_actual"/>
+        <field name="bank_closing_qty"/>
+        <field name="policy"/>
+        <field name="invoice_id"/>
+        <field name="version"/>
+      </list>
+    </field>
+  </record>
+
+  <record id="view_gear_rmc_annual_reconciliation_form" model="ir.ui.view">
+    <field name="name">gear.rmc.annual.reconciliation.form</field>
+    <field name="model">gear.rmc.annual.reconciliation</field>
+    <field name="arch" type="xml">
+      <form string="Annual Reconciliation">
+        <sheet>
+          <header>
+            <button name="action_regenerate_lines" string="Regenerate" type="object" class="oe_highlight"/>
+            <button name="action_apply_policy" string="Apply Policy" type="object"/>
+            <field name="policy" widget="statusbar" statusbar_visible="bill_now,forfeit,rollover"/>
+            <field name="state" invisible="1"/>
+          </header>
+          <group>
+            <group>
+              <field name="name"/>
+              <field name="so_id"/>
+              <field name="fiscal_year_start"/>
+              <field name="fiscal_year_end"/>
+              <field name="version" readonly="1"/>
+              <field name="regenerated_on" readonly="1"/>
+              <field name="invoice_id" readonly="1"/>
+            </group>
+            <group string="Variable Snapshot">
+              <field name="prime_rate"/>
+              <field name="optimize_rate"/>
+              <field name="ngt_rate"/>
+              <field name="excess_rate"/>
+              <field name="mgq_monthly"/>
+              <field name="cooling_months"/>
+              <field name="cooling_end"/>
+              <field name="loto_waveoff_hours"/>
+              <field name="bank_pull_limit"/>
+              <field name="ngt_hourly_prorata_factor"/>
+              <field name="variable_version"/>
+            </group>
+          </group>
+          <notebook>
+            <page string="Summary">
+              <group>
+                <group>
+                  <field name="mgq_annual_target" readonly="1"/>
+                  <field name="mgq_annual_actual" readonly="1"/>
+                  <field name="bank_opening_qty"/>
+                  <field name="bank_added_total" readonly="1"/>
+                </group>
+                <group>
+                  <field name="bank_pulled_total" readonly="1"/>
+                  <field name="bank_closing_qty" readonly="1"/>
+                  <field name="excess_total" readonly="1"/>
+                  <field name="ngt_total_qty" readonly="1"/>
+                  <field name="loto_total_hours" readonly="1"/>
+                </group>
+              </group>
+            </page>
+            <page string="Monthly Lines">
+              <field name="line_ids">
+                <list editable="bottom" create="0" delete="0">
+                  <field name="month_name"/>
+                  <field name="mwo_id"/>
+                  <field name="mgq_target"/>
+                  <field name="prime_output"/>
+                  <field name="bank_add"/>
+                  <field name="bank_pull"/>
+                  <field name="bank_closing"/>
+                  <field name="excess_after_bank"/>
+                  <field name="ngt_qty"/>
+                  <field name="cooling_flag"/>
+                  <field name="prime_rate"/>
+                  <field name="optimize_rate"/>
+                  <field name="ngt_rate"/>
+                  <field name="excess_rate"/>
+                </list>
+              </field>
+            </page>
+          </notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <record id="action_gear_rmc_annual_reconciliation" model="ir.actions.act_window">
+    <field name="name">Annual Reconciliation</field>
+    <field name="res_model">gear.rmc.annual.reconciliation</field>
+    <field name="view_mode">list,form</field>
+  </record>
+</odoo>

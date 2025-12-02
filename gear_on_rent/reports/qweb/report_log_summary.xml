@@ -20,7 +20,7 @@
                         </p>
                         <p>
                             <strong>Period:</strong>
-                            <span t-esc="doc.gear_log_period_start"/> ->
+                            <span t-esc="doc.gear_log_period_start"/> 
                             <span t-esc="doc.gear_log_period_end"/>
                         </p>
 

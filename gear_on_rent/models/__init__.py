@@ -1,4 +1,5 @@
 from . import sale_order
+from . import res_config_settings
 from . import ngt_request
 from . import loto_request
 from . import account_move
@@ -9,3 +10,10 @@ from . import rmc_work_order
 from . import product_template
 from . import product_extra
 from . import account_move_send
+from . import annual_reconciliation
+from . import cycle_reason
+from . import reason
+from . import batching_plant_master
+from . import quotation_calculator
+from . import quotation_pdf
+from . import website_visitor

@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="0">
+    <!-- Service Categories -->
+    <record id="gear_service_master_dedicated" model="gear.service.master">
+      <field name="name">Dedicated Plant (Without Inventory)</field>
+      <field name="category">dedicated</field>
+      <field name="inventory_mode">without_inventory</field>
+    </record>
+
+    <record id="gear_service_master_turnkey" model="gear.service.master">
+      <field name="name">Full Factory (Turnkey)</field>
+      <field name="category">turnkey</field>
+      <field name="inventory_mode">with_inventory</field>
+    </record>
+
+    <!-- Plant Capacity Master -->
+    <record id="gear_capacity_60_cum" model="gear.plant.capacity.master">
+      <field name="name">60 CUM/hr Plant</field>
+      <field name="capacity_cum_hour">60.0</field>
+      <field name="notes">Compact capacity suited for satellite sites.</field>
+    </record>
+    <record id="gear_capacity_90_cum" model="gear.plant.capacity.master">
+      <field name="name">90 CUM/hr Plant</field>
+      <field name="capacity_cum_hour">90.0</field>
+      <field name="notes">Balanced capacity for metro clusters.</field>
+    </record>
+    <record id="gear_capacity_120_cum" model="gear.plant.capacity.master">
+      <field name="name">120 CUM/hr Plant</field>
+      <field name="capacity_cum_hour">120.0</field>
+      <field name="notes">High-throughput capacity for turnkey deployments.</field>
+    </record>
+
+    <!-- MGQ Rate Master -->
+    <record id="mgq_rate_slab_1500" model="gear.mgq.rate.master">
+      <field name="name">MGQ 1500 Slab</field>
+      <field name="service_id" ref="gear_on_rent.gear_service_master_dedicated"/>
+      <field name="capacity_id" ref="gear_on_rent.gear_capacity_60_cum"/>
+      <field name="mgq_min">1500</field>
+      <field name="mgq_max">1500</field>
+      <field name="prime_rate">410</field>
+      <field name="optimize_rate">210</field>
+      <field name="after_mgq_rate">450</field>
+    </record>
+
+    <record id="mgq_rate_slab_2000" model="gear.mgq.rate.master">
+      <field name="name">MGQ 2000 Slab</field>
+      <field name="service_id" ref="gear_on_rent.gear_service_master_dedicated"/>
+      <field name="capacity_id" ref="gear_on_rent.gear_capacity_90_cum"/>
+      <field name="mgq_min">2000</field>
+      <field name="mgq_max">2000</field>
+      <field name="prime_rate">390</field>
+      <field name="optimize_rate">200</field>
+      <field name="after_mgq_rate">430</field>
+    </record>
+
+    <record id="mgq_rate_slab_2500" model="gear.mgq.rate.master">
+      <field name="name">MGQ 2500 Slab</field>
+      <field name="service_id" ref="gear_on_rent.gear_service_master_turnkey"/>
+      <field name="capacity_id" ref="gear_on_rent.gear_capacity_120_cum"/>
+      <field name="mgq_min">2500</field>
+      <field name="mgq_max">2500</field>
+      <field name="prime_rate">370</field>
+      <field name="optimize_rate">190</field>
+      <field name="after_mgq_rate">420</field>
+    </record>
+
+    <!-- Material Area Pricing -->
+    <record id="material_area_gurgaon_south" model="gear.material.area.master">
+      <field name="name">Gurgaon South Circle</field>
+      <field name="area">Gurgaon South</field>
+      <field name="cement_rate">365</field>
+      <field name="agg_10mm_rate">940</field>
+      <field name="agg_20mm_rate">920</field>
+      <field name="admixture_rate">35</field>
+    </record>
+    <record id="material_area_gurgaon_west" model="gear.material.area.master">
+      <field name="name">Gurgaon West Zone</field>
+      <field name="area">Gurgaon West</field>
+      <field name="cement_rate">360</field>
+      <field name="agg_10mm_rate">930</field>
+      <field name="agg_20mm_rate">915</field>
+      <field name="admixture_rate">34</field>
+    </record>
+    <record id="material_area_delhi_north" model="gear.material.area.master">
+      <field name="name">Delhi North Circle</field>
+      <field name="area">Delhi North</field>
+      <field name="cement_rate">355</field>
+      <field name="agg_10mm_rate">920</field>
+      <field name="agg_20mm_rate">905</field>
+      <field name="admixture_rate">33</field>
+    </record>
+    <record id="material_area_noida" model="gear.material.area.master">
+      <field name="name">Noida Industrial Belt</field>
+      <field name="area">Noida Phase II</field>
+      <field name="cement_rate">350</field>
+      <field name="agg_10mm_rate">915</field>
+      <field name="agg_20mm_rate">900</field>
+      <field name="admixture_rate">32</field>
+    </record>
+    <record id="material_area_faridabad" model="gear.material.area.master">
+      <field name="name">Faridabad Central Hub</field>
+      <field name="area">Faridabad Central</field>
+      <field name="cement_rate">352</field>
+      <field name="agg_10mm_rate">918</field>
+      <field name="agg_20mm_rate">903</field>
+      <field name="admixture_rate">32</field>
+    </record>
+
+    <!-- Design Mix Master (grade options defined in model) -->
+    <record id="design_mix_m10" model="gear.design.mix.master">
+      <field name="name">M10 Design Mix</field>
+      <field name="grade">m10</field>
+      <field name="cement_qty">220</field>
+      <field name="agg_10mm_qty">850</field>
+      <field name="agg_20mm_qty">900</field>
+      <field name="admixture_qty">600</field>
+    </record>
+    <record id="design_mix_m20" model="gear.design.mix.master">
+      <field name="name">M20 Design Mix</field>
+      <field name="grade">m20</field>
+      <field name="cement_qty">320</field>
+      <field name="agg_10mm_qty">750</field>
+      <field name="agg_20mm_qty">950</field>
+      <field name="admixture_qty">800</field>
+    </record>
+    <record id="design_mix_m25" model="gear.design.mix.master">
+      <field name="name">M25 Design Mix</field>
+      <field name="grade">m25</field>
+      <field name="cement_qty">360</field>
+      <field name="agg_10mm_qty">730</field>
+      <field name="agg_20mm_qty">940</field>
+      <field name="admixture_qty">850</field>
+    </record>
+    <record id="design_mix_m30" model="gear.design.mix.master">
+      <field name="name">M30 Design Mix</field>
+      <field name="grade">m30</field>
+      <field name="cement_qty">380</field>
+      <field name="agg_10mm_qty">720</field>
+      <field name="agg_20mm_qty">930</field>
+      <field name="admixture_qty">900</field>
+    </record>
+
+    <!-- Optional Services Master -->
+    <record id="optional_service_transport" model="gear.optional.service.master">
+      <field name="name">Transport per CUM</field>
+      <field name="code">transport</field>
+      <field name="charge_type">per_cum</field>
+      <field name="rate">100</field>
+      <field name="default_enabled">True</field>
+    </record>
+    <record id="optional_service_pump" model="gear.optional.service.master">
+      <field name="name">Pump per CUM</field>
+      <field name="code">pump</field>
+      <field name="charge_type">per_cum</field>
+      <field name="rate">150</field>
+    </record>
+    <record id="optional_service_manpower" model="gear.optional.service.master">
+      <field name="name">Manpower per CUM</field>
+      <field name="code">manpower</field>
+      <field name="charge_type">per_cum</field>
+      <field name="rate">80</field>
+    </record>
+    <record id="optional_service_diesel" model="gear.optional.service.master">
+      <field name="name">Diesel surcharge per CUM</field>
+      <field name="code">diesel</field>
+      <field name="charge_type">per_cum</field>
+      <field name="rate">60</field>
+    </record>
+    <record id="optional_service_jcb" model="gear.optional.service.master">
+      <field name="name">JCB quarterly rental</field>
+      <field name="code">jcb</field>
+      <field name="charge_type">fixed</field>
+      <field name="rate">36000</field>
+    </record>
+
+    <!-- Cost Component Master -->
+    <record id="cost_component_base" model="gear.cost.component.master">
+      <field name="name">Base Plant Cost</field>
+      <field name="component_type">base</field>
+    </record>
+    <record id="cost_component_material" model="gear.cost.component.master">
+      <field name="name">Material Cost</field>
+      <field name="component_type">material</field>
+    </record>
+    <record id="cost_component_optional" model="gear.cost.component.master">
+      <field name="name">Optional Services</field>
+      <field name="component_type">optional</field>
+    </record>
+    <record id="cost_component_dead_cost" model="gear.cost.component.master">
+      <field name="name">Dead Cost Amortization</field>
+      <field name="component_type">dead_cost</field>
+    </record>
+    <record id="cost_component_overheads" model="gear.cost.component.master">
+      <field name="name">Overheads (Future)</field>
+      <field name="component_type">base</field>
+    </record>
+
+    <!-- Service Products -->
+    <record id="product_template_rmc_mixing_dedicated" model="product.template">
+      <field name="name">RMC Mixing &amp; Production (Dedicated Plant)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+      <field name="gear_is_production">True</field>
+    </record>
+    <record id="product_template_prime_output" model="product.template">
+      <field name="name">Prime Output Production</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+      <field name="gear_is_production">True</field>
+    </record>
+    <record id="product_template_optimize_output" model="product.template">
+      <field name="name">Optimized Standby Operations</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+      <field name="gear_is_production">True</field>
+    </record>
+    <record id="product_template_ngt" model="product.template">
+      <field name="name">No-Generation Time (NGT)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+    </record>
+    <record id="product_template_rmc_supply_turnkey" model="product.template">
+      <field name="name">RMC Supply (Full Factory – Turnkey)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+      <field name="gear_is_production">True</field>
+    </record>
+    <record id="product_template_grade_m20_supply" model="product.template">
+      <field name="name">Grade M20 – Material Supply</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+    </record>
+    <record id="product_template_transport_service" model="product.template">
+      <field name="name">Transport Service</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">100.0</field>
+    </record>
+    <record id="product_template_pump_service" model="product.template">
+      <field name="name">Concrete Pump Service</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">150.0</field>
+    </record>
+    <record id="product_template_manpower_service" model="product.template">
+      <field name="name">Site Manpower Support</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">80.0</field>
+    </record>
+    <record id="product_template_diesel_service" model="product.template">
+      <field name="name">Diesel Surcharge</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">60.0</field>
+    </record>
+    <record id="product_template_jcb_rental" model="product.template">
+      <field name="name">JCB Quarterly Rental</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">36000.0</field>
+    </record>
+    <record id="product_template_dead_cost_amortization" model="product.template">
+      <field name="name">Turnkey Dead Cost Amortization</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <!-- Demo Quotations -->
+    <record id="sale_order_batch_quote_q1" model="sale.order">
+      <field name="name">BPQ-Q1-Dedicated</field>
+      <field name="partner_id" ref="base.partner_admin"/>
+      <field name="x_billing_category">plant</field>
+      <field name="gear_service_id" ref="gear_on_rent.gear_service_master_dedicated"/>
+      <field name="gear_service_type">dedicated</field>
+      <field name="gear_capacity_id" ref="gear_on_rent.gear_capacity_90_cum"/>
+      <field name="gear_mgq_rate_id" ref="gear_on_rent.mgq_rate_slab_2000"/>
+      <field name="mgq_monthly">2000</field>
+      <field name="x_monthly_mgq">2000</field>
+      <field name="prime_rate">390</field>
+      <field name="optimize_rate">200</field>
+      <field name="excess_rate">430</field>
+      <field name="gear_expected_production_qty">2300</field>
+      <field name="x_inventory_mode">without_inventory</field>
+      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_pump'), ref('gear_on_rent.optional_service_manpower')])]"/>
+      <field name="gear_transport_opt_in">True</field>
+      <field name="gear_pumping_opt_in">True</field>
+      <field name="gear_manpower_opt_in">True</field>
+      <field name="gear_optional_services_cost">330.0</field>
+      <field name="gear_prime_rate_final">720.0</field>
+      <field name="gear_optimize_rate_final">530.0</field>
+      <field name="gear_after_mgq_rate_final">760.0</field>
+      <field name="gear_transport_per_cum">100.0</field>
+      <field name="gear_pump_per_cum">150.0</field>
+      <field name="gear_manpower_per_cum">80.0</field>
+      <field name="gear_quote_state">sent</field>
+      <field name="order_line" model="sale.order.line" eval="[(0, 0, {
+        'product_id': obj().env['product.product'].search([('product_tmpl_id', '=', ref('gear_on_rent.product_template_rmc_mixing_dedicated'))], limit=1).id,
+        'product_uom_qty': 1.0,
+        'price_unit': 720.0,
+        'name': 'Prime + Optional Rate Snapshot'
+      })]"/>
+    </record>
+
+    <record id="sale_order_batch_quote_q2" model="sale.order">
+      <field name="name">BPQ-Q2-Dedicated</field>
+      <field name="partner_id" ref="base.partner_admin"/>
+      <field name="x_billing_category">plant</field>
+      <field name="gear_service_id" ref="gear_on_rent.gear_service_master_dedicated"/>
+      <field name="gear_service_type">dedicated</field>
+      <field name="gear_capacity_id" ref="gear_on_rent.gear_capacity_60_cum"/>
+      <field name="gear_mgq_rate_id" ref="gear_on_rent.mgq_rate_slab_1500"/>
+      <field name="mgq_monthly">1500</field>
+      <field name="x_monthly_mgq">1500</field>
+      <field name="prime_rate">410</field>
+      <field name="optimize_rate">210</field>
+      <field name="excess_rate">450</field>
+      <field name="gear_expected_production_qty">1200</field>
+      <field name="x_inventory_mode">without_inventory</field>
+      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_diesel')])]"/>
+      <field name="gear_transport_opt_in">True</field>
+      <field name="gear_diesel_opt_in">True</field>
+      <field name="gear_optional_services_cost">160.0</field>
+      <field name="gear_prime_rate_final">570.0</field>
+      <field name="gear_optimize_rate_final">370.0</field>
+      <field name="gear_after_mgq_rate_final">610.0</field>
+      <field name="gear_transport_per_cum">100.0</field>
+      <field name="gear_diesel_per_cum">60.0</field>
+      <field name="gear_quote_state">sent</field>
+      <field name="order_line" model="sale.order.line" eval="[(0, 0, {
+        'product_id': obj().env['product.product'].search([('product_tmpl_id', '=', ref('gear_on_rent.product_template_prime_output'))], limit=1).id,
+        'product_uom_qty': 1.0,
+        'price_unit': 570.0,
+        'name': 'Prime + Optional Rate Snapshot'
+      })]"/>
+    </record>
+
+    <record id="sale_order_batch_quote_q3" model="sale.order">
+      <field name="name">BPQ-Q3-Turnkey</field>
+      <field name="partner_id" ref="base.partner_admin"/>
+      <field name="x_billing_category">plant</field>
+      <field name="gear_service_id" ref="gear_on_rent.gear_service_master_turnkey"/>
+      <field name="gear_service_type">turnkey</field>
+      <field name="gear_capacity_id" ref="gear_on_rent.gear_capacity_120_cum"/>
+      <field name="gear_mgq_rate_id" ref="gear_on_rent.mgq_rate_slab_2500"/>
+      <field name="mgq_monthly">2500</field>
+      <field name="x_monthly_mgq">2500</field>
+      <field name="prime_rate">370</field>
+      <field name="optimize_rate">190</field>
+      <field name="excess_rate">420</field>
+      <field name="gear_expected_production_qty">2500</field>
+      <field name="x_inventory_mode">with_inventory</field>
+      <field name="x_real_warehouse_id" ref="stock.warehouse0"/>
+      <field name="gear_design_mix_id" ref="gear_on_rent.design_mix_m20"/>
+      <field name="gear_material_area_id" ref="gear_on_rent.material_area_gurgaon_south"/>
+      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_pump'), ref('gear_on_rent.optional_service_manpower'), ref('gear_on_rent.optional_service_diesel'), ref('gear_on_rent.optional_service_jcb')])]"/>
+      <field name="gear_transport_opt_in">True</field>
+      <field name="gear_pumping_opt_in">True</field>
+      <field name="gear_manpower_opt_in">True</field>
+      <field name="gear_diesel_opt_in">True</field>
+      <field name="gear_jcb_opt_in">True</field>
+      <field name="gear_dead_cost_amount">1800000</field>
+      <field name="gear_dead_cost_months">36</field>
+      <field name="gear_civil_scope">vendor</field>
+      <field name="gear_base_plant_rate">370.0</field>
+      <field name="gear_optional_services_cost">404.4</field>
+      <field name="gear_dead_cost_per_cum">20.0</field>
+      <field name="gear_material_cost_total">3943.0</field>
+      <field name="gear_total_per_cum_rate">4737.4</field>
+      <field name="gear_transport_per_cum">100.0</field>
+      <field name="gear_pump_per_cum">150.0</field>
+      <field name="gear_manpower_per_cum">80.0</field>
+      <field name="gear_diesel_per_cum">60.0</field>
+      <field name="gear_jcb_monthly">36000.0</field>
+      <field name="gear_quote_state">sent</field>
+      <field name="order_line" model="sale.order.line" eval="[(0, 0, {
+        'product_id': obj().env['product.product'].search([('product_tmpl_id', '=', ref('gear_on_rent.product_template_rmc_supply_turnkey'))], limit=1).id,
+        'product_uom_qty': 1.0,
+        'price_unit': 4737.4,
+        'name': 'Inventory Mode Total Rate'
+      })]"/>
+    </record>
+  </data>
+</odoo>

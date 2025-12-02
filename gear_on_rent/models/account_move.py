@@ -38,6 +38,12 @@ class AccountMove(models.Model):
     gear_loto_chargeable_hours = fields.Float(string="LOTO Chargeable Hours", copy=False)
     gear_waveoff_applied_hours = fields.Float(string="Wave-Off Applied (Hours)", copy=False)
     gear_waveoff_allowance_hours = fields.Float(string="Wave-Off Allowance (Hours)", copy=False)
+    gear_diesel_overrun_litre = fields.Float(string="Diesel Overrun (L)", copy=False)
+    gear_diesel_overrun_amount = fields.Monetary(
+        string="Diesel Overrun Amount",
+        currency_field="currency_id",
+        copy=False,
+    )
     gear_log_summary_attachment_id = fields.Many2one(
         comodel_name="ir.attachment",
         string="Log Summary Attachment",
@@ -117,10 +123,22 @@ class AccountMove(models.Model):
                 cooling["waveoff_chargeable_hours"] + normal["waveoff_chargeable_hours"]
             )
             waveoff_allowance = self.gear_waveoff_allowance_hours or (contract.x_loto_waveoff_hours if contract else 0.0)
+            diesel_excess_litre = self.gear_diesel_overrun_litre or (
+                cooling["diesel_excess_litre"] + normal["diesel_excess_litre"]
+            )
+            diesel_excess_amount = self.gear_diesel_overrun_amount or (
+                cooling["diesel_excess_amount"] + normal["diesel_excess_amount"]
+            )
+
+            allowed_wastage_qty = sum(month_orders.mapped("mwo_allowed_wastage_qty"))
+            actual_scrap_qty = sum(month_orders.mapped("mwo_actual_scrap_qty"))
+            over_wastage_qty = max(actual_scrap_qty - allowed_wastage_qty, 0.0)
+            deduction_qty = sum(month_orders.mapped("mwo_deduction_qty")) or over_wastage_qty
+            prime_output_total = sum(month_orders.mapped("mwo_prime_output_qty")) or total_prime
 
             target_qty = self.gear_target_qty or total_target
             adjusted_target = self.gear_adjusted_target_qty or total_adjusted or target_qty
-            prime_output = self.gear_prime_output_qty or total_prime
+            prime_output = self.gear_prime_output_qty or prime_output_total
             optimized_standby = self.gear_optimized_standby_qty or total_standby
 
             dockets = month_orders.mapped("docket_ids").filtered(lambda d: month_start <= d.date <= month_end)
@@ -137,6 +155,10 @@ class AccountMove(models.Model):
                     "daily_mgq": production.x_daily_target_qty or 0.0,
                     "adjusted_mgq": production.x_adjusted_target_qty or 0.0,
                     "prime_output": production.x_prime_output_qty or 0.0,
+                    "allowed_wastage": production.wastage_allowed_qty,
+                    "actual_scrap": production.actual_scrap_qty,
+                    "over_wastage": production.over_wastage_qty,
+                    "deduction": production.deduction_qty,
                     "optimized_standby": production.x_optimized_standby_qty or 0.0,
                     "ngt_hours": production.x_ngt_hours or 0.0,
                     "loto_hours": production.x_loto_hours or 0.0,
@@ -173,6 +195,12 @@ class AccountMove(models.Model):
             loto_chargeable = self.gear_loto_chargeable_hours or 0.0
             waveoff_allowance = self.gear_waveoff_allowance_hours or (contract.x_loto_waveoff_hours if contract else 0.0)
             total_ngt_m3 = 0.0
+            diesel_excess_litre = self.gear_diesel_overrun_litre or 0.0
+            diesel_excess_amount = self.gear_diesel_overrun_amount or 0.0
+            allowed_wastage_qty = 0.0
+            actual_scrap_qty = 0.0
+            over_wastage_qty = 0.0
+            deduction_qty = 0.0
             cooling_totals = {
                 "target_qty": 0.0,
                 "prime_output_qty": 0.0,
@@ -194,6 +222,8 @@ class AccountMove(models.Model):
             "version_label": f"v{self.gear_month_end_version}",
             "contract_name": contract.name if contract else "",
             "customer_name": self.partner_id.display_name,
+            "inventory_mode": dict(month_orders[:1]._fields['x_inventory_mode'].selection).get(month_orders[:1].x_inventory_mode) if month_orders and month_orders[:1].x_inventory_mode else "N/A",
+            "real_warehouse": month_orders[:1].x_real_warehouse_id.display_name if month_orders and month_orders[:1].x_real_warehouse_id else "N/A",
             "target_qty": target_qty,
             "adjusted_target_qty": adjusted_target,
             "ngt_hours": ngt_hours,
@@ -203,7 +233,13 @@ class AccountMove(models.Model):
             "waveoff_applied": waveoff_applied,
             "loto_chargeable_hours": loto_chargeable,
             "prime_output_qty": prime_output,
+            "allowed_wastage_qty": allowed_wastage_qty,
+            "actual_scrap_qty": actual_scrap_qty,
+            "over_wastage_qty": over_wastage_qty,
+            "deduction_qty": deduction_qty,
             "optimized_standby": optimized_standby,
+            "diesel_excess_litre": diesel_excess_litre,
+            "diesel_excess_amount": diesel_excess_amount,
             "cooling_totals": cooling_totals,
             "normal_totals": normal_totals,
             "materials_shortage": contract.gear_materials_shortage_note if contract else "",

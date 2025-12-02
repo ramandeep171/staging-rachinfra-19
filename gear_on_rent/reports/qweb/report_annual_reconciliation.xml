@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="action_report_gear_rmc_annual_reconciliation" model="ir.actions.report">
+    <field name="name">Annual Reconciliation</field>
+    <field name="model">gear.rmc.annual.reconciliation</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">gear_on_rent.report_gear_rmc_annual_reconciliation</field>
+    <field name="report_file">gear_on_rent.report_gear_rmc_annual_reconciliation</field>
+    <field name="print_report_name">(object.name or 'Annual Reconciliation')</field>
+  </record>
+
+  <template id="report_gear_rmc_annual_reconciliation">
+    <t t-call="web.external_layout">
+      <div class="page">
+        <h2>Annual Reconciliation (Variable-Based)</h2>
+        <p t-field="doc.name"/>
+        <p>
+          <strong>Contract:</strong>
+          <span t-field="doc.so_id"/>
+        </p>
+        <p>
+          <strong>Fiscal Year:</strong>
+          <span t-field="doc.fiscal_year_start"/> → <span t-field="doc.fiscal_year_end"/>
+        </p>
+        <p>
+          <strong>Policy:</strong>
+          <span t-field="doc.policy"/>
+        </p>
+        <p class="mt16">This stub will be expanded with FY grid (MGQ vs Prime/Optimize/NGT/Bank/Excess) using SO variable snapshots.</p>
+      </div>
+    </t>
+  </template>
+</odoo>

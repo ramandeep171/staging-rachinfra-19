@@ -1,0 +1,1466 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <!-- Batching Plant Assets -->
+    <template id="batching_plant_assets" name="Batching Plant Assets">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=Poppins:wght@400;500;600;700;800&amp;display=swap"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
+      <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
+      <link rel="stylesheet" type="text/css" href="/gear_on_rent/static/src/css/batching_plant.css"/>
+      <script type="text/javascript" src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer="defer"/>
+      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js" defer="defer"/>
+      <script type="text/javascript" src="/gear_on_rent/static/src/js/batching_plant.js" defer="defer"/>
+    </template>
+
+    <!-- Batching Plant Landing Page -->
+    <template id="batching_plant_website_page" name="Batching Plant Rental Page">
+      <t t-call="website.layout">
+        <t t-set="title">Batching Plant Rental | RACH INFRA GearOnRent | Premium Plant Solutions</t>
+        <t t-set="head">
+          <t t-raw="head"/>
+          <meta name="description" content="Premium batching plant rental solutions with IoT integration, real-time monitoring, and NABL certified operations. CP 30 to CP 120 capacity plants available."/>
+          <t t-call="gear_on_rent.batching_plant_assets"/>
+        </t>
+
+        <div id="wrap" class="oe_structure oe_empty">
+          <div class="batching-plant-page">
+          <!-- Hero Section -->
+          <section class="hero oe_structure" id="home">
+            <div class="hero-background">
+              <div class="hero-overlay"></div>
+              <img src="https://www.camelwaygroup.com/dm-content/uploads/60m3-concrete-batching-plant-1.webp" alt="Premium Batching Plant" class="hero-bg-image"/>
+            </div>
+            
+            <div class="container">
+              <div class="hero-content" data-aos="fade-up">
+                <div class="hero-badge">
+                  <i class="fas fa-industry"></i> India's Most Advanced Rental Program
+                </div>
+                
+                <h1 class="hero-title">
+                  Premium <span class="gradient-text">Batching Plant</span><br/>
+                  Solutions on Rent
+                </h1>
+                
+                <p class="hero-subtitle">
+                  Revolutionizing Construction with IoT-Enabled Smart Technology<br/>
+                  <span class="highlight">CP 30 to CP 120 Capacity | NABL Certified | Real-Time Monitoring</span>
+                </p>
+                
+                <div class="hero-cta">
+                  <a href="#rental-plans" class="btn btn-hero btn-orange">
+                    <i class="fas fa-calendar-check"></i> Fixed Rental Plans
+                  </a>
+                  <a href="#rental-plans" class="btn btn-hero btn-blue">
+                    <i class="fas fa-chart-line"></i> Production Basis Plans
+                  </a>
+                </div>
+                
+                <div class="hero-stats">
+                  <div class="stat-item" data-aos="fade-up" data-aos-delay="100">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                      <h3>50+</h3>
+                      <p>IoT-Enabled Plants</p>
+                    </div>
+                  </div>
+                  <div class="stat-item" data-aos="fade-up" data-aos-delay="200">
+                    <i class="fas fa-users"></i>
+                    <div>
+                      <h3>100+</h3>
+                      <p>Active Projects</p>
+                    </div>
+                  </div>
+                  <div class="stat-item" data-aos="fade-up" data-aos-delay="300">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                      <h3>24/7</h3>
+                      <p>Technical Support</p>
+                    </div>
+                  </div>
+                  <div class="stat-item" data-aos="fade-up" data-aos-delay="400">
+                    <i class="fas fa-award"></i>
+                    <div>
+                      <h3>98%</h3>
+                      <p>On-Time Delivery</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="scroll-indicator">
+              <i class="fas fa-chevron-down"></i>
+            </div>
+          </section>
+
+          <!-- Rental Models Section -->
+          <section class="rental-models oe_structure" id="rental-plans">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Flexible Solutions</span>
+                <h2 class="section-title">Two Premium Rental Models</h2>
+                <p class="section-subtitle">Choose the perfect setup that matches your project requirements</p>
+              </div>
+              
+              <div class="models-grid">
+                <!-- Model 1: Complete Factory Setup -->
+                <div class="model-card premium" data-aos="fade-right">
+                  <div class="model-badge">
+                    <i class="fas fa-crown"></i> Premium Package
+                  </div>
+                  
+                  <div class="model-icon">
+                    <i class="fas fa-building"></i>
+                  </div>
+                  
+                  <h3 class="model-title">Complete Factory Setup</h3>
+                  <p class="model-tagline">Turnkey Solution with Full Amenities</p>
+                  
+                  <div class="model-description">
+                    <p>Complete ready-to-operate facility with all infrastructure and certifications. Perfect for premium clients who need immediate production capability.</p>
+                  </div>
+                  
+                  <div class="model-features">
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Factory Premises</h4>
+                        <p>Dedicated land with all civil work completed</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Office &amp; Lab Infrastructure</h4>
+                        <p>Fully equipped office space and NABL certified laboratory</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>All Certifications &amp; Compliance</h4>
+                        <p>NABL, ISO, and environmental clearances included</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Complete Amenities</h4>
+                        <p>Utilities, safety systems, and operational infrastructure</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Ready to Operate</h4>
+                        <p>Just arrive and start production immediately</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="model-clients">
+                    <h4>Ideal For:</h4>
+                    <div class="client-tags">
+                      <span><i class="fas fa-building"></i> UTCL</span>
+                      <span><i class="fas fa-road"></i> Infrastructure Companies</span>
+                      <span><i class="fas fa-city"></i> RDC</span>
+                      <span><i class="fas fa-industry"></i> Large EPC Contractors</span>
+                    </div>
+                  </div>
+                  
+                  <a href="#contact" class="btn btn-model btn-orange">
+                    <i class="fas fa-arrow-right"></i> Get Turnkey Quote
+                  </a>
+                </div>
+                
+                <!-- Model 2: Normal Setup -->
+                <div class="model-card" data-aos="fade-left">
+                  <div class="model-badge standard">
+                    <i class="fas fa-star"></i> Flexible Package
+                  </div>
+                  
+                  <div class="model-icon">
+                    <i class="fas fa-cogs"></i>
+                  </div>
+                  
+                  <h3 class="model-title">Dedicated Plant Setup</h3>
+                  <p class="model-tagline">Captive Plant at Your Site</p>
+                  
+                  <div class="model-description">
+                    <p>Dedicated batching plant installed at your project site with flexible configuration options. Perfect for long-term projects requiring on-site production.</p>
+                  </div>
+                  
+                  <div class="model-features">
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>On-Site Installation</h4>
+                        <p>Plant setup directly at your project location</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Dedicated Operations</h4>
+                        <p>Exclusive plant for your project needs</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Flexible Configuration</h4>
+                        <p>Customizable setup based on requirements</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Quick Deployment</h4>
+                        <p>15-30 days installation and commissioning</p>
+                      </div>
+                    </div>
+                    
+                    <div class="feature-item">
+                      <i class="fas fa-check-circle"></i>
+                      <div>
+                        <h4>Maintenance Included</h4>
+                        <p>Regular servicing and technical support</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="model-clients">
+                    <h4>Ideal For:</h4>
+                    <div class="client-tags">
+                      <span><i class="fas fa-hard-hat"></i> Contractors</span>
+                      <span><i class="fas fa-project-diagram"></i> Project Sites</span>
+                      <span><i class="fas fa-hammer"></i> Builders</span>
+                      <span><i class="fas fa-tools"></i> Construction Companies</span>
+                    </div>
+                  </div>
+                  
+                  <a href="#contact" class="btn btn-model btn-blue">
+                    <i class="fas fa-arrow-right"></i> Get Site Setup Quote
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Plant Capacity Section -->
+          <section class="plant-capacity oe_structure" id="capacity">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Range of Capacities</span>
+                <h2 class="section-title">Choose Your Perfect Capacity</h2>
+                <p class="section-subtitle">From CP 30 to CP 120 - We have the right solution for every project scale</p>
+              </div>
+              
+              <div class="capacity-selector" data-aos="fade-up" data-aos-delay="100">
+                <button class="capacity-btn active" data-capacity="cp30">CP 30</button>
+                <button class="capacity-btn" data-capacity="cp45">CP 45</button>
+                <button class="capacity-btn" data-capacity="cp60">CP 60</button>
+                <button class="capacity-btn" data-capacity="cp90">CP 90</button>
+                <button class="capacity-btn" data-capacity="cp120">CP 120</button>
+              </div>
+              
+              <div class="capacity-content">
+                <!-- CP 30 -->
+                <div class="capacity-details active" id="cp30">
+                  <div class="capacity-grid">
+                    <div class="capacity-image" data-aos="fade-right">
+                      <img src="https://www.constmach.com/Content/Images/uploads/content/c60.png" alt="CP 30 Batching Plant"/>
+                      <div class="capacity-badge">30 m³/hr</div>
+                    </div>
+                    <div class="capacity-info" data-aos="fade-left">
+                      <h3>CP 30 Batching Plant</h3>
+                      <p class="capacity-description">Compact and efficient solution perfect for small to medium projects. Ideal for residential and commercial construction sites.</p>
+                      
+                      <div class="specs-grid">
+                        <div class="spec-item">
+                          <i class="fas fa-tachometer-alt"></i>
+                          <div>
+                            <h4>Production Capacity</h4>
+                            <p>30 m³/hour</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-database"></i>
+                          <div>
+                            <h4>Aggregate Storage</h4>
+                            <p>2 Silos Configuration</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-truck"></i>
+                          <div>
+                            <h4>Mixer Capacity</h4>
+                            <p>JS500 / 0.5 m³</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-bolt"></i>
+                          <div>
+                            <h4>Power Requirement</h4>
+                            <p>50 kW</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="capacity-applications">
+                        <h4>Best For:</h4>
+                        <div class="application-tags">
+                          <span>Residential Projects</span>
+                          <span>Small Commercial Sites</span>
+                          <span>Road Construction</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- CP 45 -->
+                <div class="capacity-details" id="cp45">
+                  <div class="capacity-grid">
+                    <div class="capacity-image" data-aos="fade-right">
+                      <img src="https://www.beomach.com/wp-content/uploads/2023/09/60-SC-Transfer.jpg" alt="CP 45 Batching Plant"/>
+                      <div class="capacity-badge">45 m³/hr</div>
+                    </div>
+                    <div class="capacity-info" data-aos="fade-left">
+                      <h3>CP 45 Batching Plant</h3>
+                      <p class="capacity-description">Medium capacity plant suitable for diverse construction requirements. Balanced performance and efficiency.</p>
+                      
+                      <div class="specs-grid">
+                        <div class="spec-item">
+                          <i class="fas fa-tachometer-alt"></i>
+                          <div>
+                            <h4>Production Capacity</h4>
+                            <p>45 m³/hour</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-database"></i>
+                          <div>
+                            <h4>Aggregate Storage</h4>
+                            <p>3 Silos Configuration</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-truck"></i>
+                          <div>
+                            <h4>Mixer Capacity</h4>
+                            <p>JS750 / 0.75 m³</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-bolt"></i>
+                          <div>
+                            <h4>Power Requirement</h4>
+                            <p>65 kW</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="capacity-applications">
+                        <h4>Best For:</h4>
+                        <div class="application-tags">
+                          <span>Commercial Buildings</span>
+                          <span>Infrastructure Projects</span>
+                          <span>Highway Construction</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- CP 60 -->
+                <div class="capacity-details" id="cp60">
+                  <div class="capacity-grid">
+                    <div class="capacity-image" data-aos="fade-right">
+                      <img src="https://www.camelwaygroup.com/dm-content/uploads/60m3-concrete-batching-plant-1.webp" alt="CP 60 Batching Plant"/>
+                      <div class="capacity-badge popular">60 m³/hr - Most Popular</div>
+                    </div>
+                    <div class="capacity-info" data-aos="fade-left">
+                      <h3>CP 60 Batching Plant <span class="popular-tag">Most Popular</span></h3>
+                      <p class="capacity-description">Our flagship model with optimal capacity and efficiency. Features 3 silos and transit mixers for maximum productivity.</p>
+                      
+                      <div class="specs-grid">
+                        <div class="spec-item">
+                          <i class="fas fa-tachometer-alt"></i>
+                          <div>
+                            <h4>Production Capacity</h4>
+                            <p>60 m³/hour</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-database"></i>
+                          <div>
+                            <h4>Aggregate Storage</h4>
+                            <p>3 Silos Configuration</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-truck"></i>
+                          <div>
+                            <h4>Mixer Capacity</h4>
+                            <p>JS1000 / 1.0 m³</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-bolt"></i>
+                          <div>
+                            <h4>Power Requirement</h4>
+                            <p>80 kW</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="capacity-applications">
+                        <h4>Best For:</h4>
+                        <div class="application-tags">
+                          <span>Large Commercial Projects</span>
+                          <span>Metro &amp; Infrastructure</span>
+                          <span>Industrial Construction</span>
+                        </div>
+                      </div>
+                      
+                      <div class="featured-highlight">
+                        <i class="fas fa-star"></i>
+                        <p><strong>Featured Setup:</strong> Includes 3 silos, transit mixers, advanced control system, and IoT integration for real-time monitoring</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- CP 90 -->
+                <div class="capacity-details" id="cp90">
+                  <div class="capacity-grid">
+                    <div class="capacity-image" data-aos="fade-right">
+                      <img src="https://www.hamacchina.com/imgs/stationary-concrete-batching-plant/3.jpg" alt="CP 90 Batching Plant"/>
+                      <div class="capacity-badge">90 m³/hr</div>
+                    </div>
+                    <div class="capacity-info" data-aos="fade-left">
+                      <h3>CP 90 Batching Plant</h3>
+                      <p class="capacity-description">High-capacity solution for large-scale projects requiring substantial concrete production. Industrial-grade performance.</p>
+                      
+                      <div class="specs-grid">
+                        <div class="spec-item">
+                          <i class="fas fa-tachometer-alt"></i>
+                          <div>
+                            <h4>Production Capacity</h4>
+                            <p>90 m³/hour</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-database"></i>
+                          <div>
+                            <h4>Aggregate Storage</h4>
+                            <p>4 Silos Configuration</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-truck"></i>
+                          <div>
+                            <h4>Mixer Capacity</h4>
+                            <p>JS1500 / 1.5 m³</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-bolt"></i>
+                          <div>
+                            <h4>Power Requirement</h4>
+                            <p>110 kW</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="capacity-applications">
+                        <h4>Best For:</h4>
+                        <div class="application-tags">
+                          <span>Mega Infrastructure</span>
+                          <span>Airport &amp; Port Projects</span>
+                          <span>Dam Construction</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- CP 120 -->
+                <div class="capacity-details" id="cp120">
+                  <div class="capacity-grid">
+                    <div class="capacity-image" data-aos="fade-right">
+                      <img src="https://batchingplantsupplier.com/wp-content/uploads/2024/10/batching-plant-screw-conveyor.jpg" alt="CP 120 Batching Plant"/>
+                      <div class="capacity-badge premium-badge">120 m³/hr - Maximum</div>
+                    </div>
+                    <div class="capacity-info" data-aos="fade-left">
+                      <h3>CP 120 Batching Plant <span class="premium-tag">Premium</span></h3>
+                      <p class="capacity-description">Our highest capacity plant for mega projects. Maximum production capability with advanced automation and control systems.</p>
+                      
+                      <div class="specs-grid">
+                        <div class="spec-item">
+                          <i class="fas fa-tachometer-alt"></i>
+                          <div>
+                            <h4>Production Capacity</h4>
+                            <p>120 m³/hour</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-database"></i>
+                          <div>
+                            <h4>Aggregate Storage</h4>
+                            <p>4 Silos Configuration</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-truck"></i>
+                          <div>
+                            <h4>Mixer Capacity</h4>
+                            <p>JS2000 / 2.0 m³</p>
+                          </div>
+                        </div>
+                        <div class="spec-item">
+                          <i class="fas fa-bolt"></i>
+                          <div>
+                            <h4>Power Requirement</h4>
+                            <p>140 kW</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="capacity-applications">
+                        <h4>Best For:</h4>
+                        <div class="application-tags">
+                          <span>Mega Infrastructure</span>
+                          <span>Smart City Projects</span>
+                          <span>High-Rise Buildings</span>
+                          <span>Industrial Complexes</span>
+                        </div>
+                      </div>
+                      
+                      <div class="featured-highlight">
+                        <i class="fas fa-crown"></i>
+                        <p><strong>Premium Features:</strong> Full automation, AI-powered optimization, blockchain traceability, and dedicated technical team</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="capacity-cta" data-aos="fade-up">
+                <p>Not sure which capacity suits your project?</p>
+                <a href="#contact" class="btn btn-large btn-orange">
+                  <i class="fas fa-calculator"></i> Get Capacity Recommendation
+                </a>
+              </div>
+            </div>
+          </section>
+
+          <!-- Technology Features Section -->
+          <section class="tech-features oe_structure" id="features">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Latest Technology</span>
+                <h2 class="section-title">Advanced IoT &amp; Smart Integration</h2>
+                <p class="section-subtitle">Experience the future of batching plant operations with cutting-edge technology</p>
+              </div>
+              
+              <div class="features-grid">
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                  <div class="feature-icon">
+                    <i class="fas fa-wifi"></i>
+                  </div>
+                  <h3>IoT Integration</h3>
+                  <p>Real-time equipment connectivity with cloud-based monitoring for complete operational visibility</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="150">
+                  <div class="feature-icon">
+                    <i class="fas fa-brain"></i>
+                  </div>
+                  <h3>AI Predictive Maintenance</h3>
+                  <p>Advanced algorithms predict maintenance needs 48 hours before issues, minimizing downtime</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                  <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                  </div>
+                  <h3>Real-Time Reporting</h3>
+                  <p>Instant production analytics and performance metrics accessible from anywhere, anytime</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="250">
+                  <div class="feature-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                  </div>
+                  <h3>GPS Tracking System</h3>
+                  <p>Track equipment location, transit mixers, and delivery status with precision GPS technology</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                  <div class="feature-icon">
+                    <i class="fas fa-microchip"></i>
+                  </div>
+                  <h3>Smart Quality Sensors</h3>
+                  <p>Automated quality control with sensors monitoring concrete strength and composition</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="350">
+                  <div class="feature-icon">
+                    <i class="fas fa-cloud"></i>
+                  </div>
+                  <h3>Cloud Dashboard</h3>
+                  <p>Comprehensive cloud-based control panel for monitoring all plant operations remotely</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                  <div class="feature-icon">
+                    <i class="fas fa-bell"></i>
+                  </div>
+                  <h3>Automated Alerts</h3>
+                  <p>Instant notifications for critical events, maintenance needs, and production milestones</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="450">
+                  <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                  </div>
+                  <h3>Mobile App Integration</h3>
+                  <p>Full plant control and monitoring from your smartphone with intuitive mobile application</p>
+                </div>
+                
+                <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+                  <div class="feature-icon">
+                    <i class="fas fa-link"></i>
+                  </div>
+                  <h3>Blockchain Traceability</h3>
+                  <p>Complete material and production traceability with blockchain-based verification system</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Integration Dashboard Section -->
+          <section class="integration-section oe_structure">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Plant Integration</span>
+                <h2 class="section-title">Real-Time Production Monitoring</h2>
+                <p class="section-subtitle">Complete visibility and control over your batching plant operations</p>
+              </div>
+              
+              <div class="dashboard-showcase" data-aos="fade-up" data-aos-delay="100">
+                <div class="dashboard-mockup">
+                  <div class="dashboard-header">
+                    <div class="dashboard-title">
+                      <i class="fas fa-tachometer-alt"></i> Live Production Dashboard
+                    </div>
+                    <div class="dashboard-status">
+                      <span class="status-dot active"></span> Online
+                    </div>
+                  </div>
+                  
+                  <div class="dashboard-content">
+                    <div class="dashboard-stats">
+                      <div class="stat-box">
+                        <i class="fas fa-industry"></i>
+                        <h4>Production Today</h4>
+                        <p class="stat-value">245</p>
+                        <span class="stat-change positive">+12.5%</span>
+                      </div>
+                      <div class="stat-box">
+                        <i class="fas fa-truck-loading"></i>
+                        <h4>Batches Completed</h4>
+                        <p class="stat-value">156</p>
+                        <span class="stat-change positive">+8.3%</span>
+                      </div>
+                      <div class="stat-box">
+                        <i class="fas fa-check-circle"></i>
+                        <h4>Quality Score</h4>
+                        <p class="stat-value">98</p>
+                        <span class="stat-change positive">+2.1%</span>
+                      </div>
+                      <div class="stat-box">
+                        <i class="fas fa-clock"></i>
+                        <h4>Uptime</h4>
+                        <p class="stat-value">97</p>
+                        <span class="stat-change positive">+3.7%</span>
+                      </div>
+                    </div>
+                    
+                    <div class="dashboard-chart">
+                      <canvas id="productionChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="integration-features">
+                  <div class="integration-item" data-aos="fade-left" data-aos-delay="200">
+                    <div class="integration-icon">
+                      <i class="fas fa-flask"></i>
+                    </div>
+                    <div class="integration-content">
+                      <h3>Automated Quality Testing</h3>
+                      <p>Real-time quality monitoring with automated sampling and testing for every batch</p>
+                    </div>
+                  </div>
+                  
+                  <div class="integration-item" data-aos="fade-left" data-aos-delay="300">
+                    <div class="integration-icon">
+                      <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="integration-content">
+                      <h3>ERP Integration</h3>
+                      <p>Seamless integration with your existing ERP systems for streamlined operations</p>
+                    </div>
+                  </div>
+                  
+                  <div class="integration-item" data-aos="fade-left" data-aos-delay="400">
+                    <div class="integration-icon">
+                      <i class="fas fa-file-invoice"></i>
+                    </div>
+                    <div class="integration-content">
+                      <h3>Digital Batch Reporting</h3>
+                      <p>Automated digital documentation with QR code traceability for compliance</p>
+                    </div>
+                  </div>
+                  
+                  <div class="integration-item" data-aos="fade-left" data-aos-delay="500">
+                    <div class="integration-icon">
+                      <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="integration-content">
+                      <h3>Remote Diagnostics</h3>
+                      <p>Advanced remote troubleshooting and diagnostics to minimize downtime</p>
+                    </div>
+                  </div>
+                  
+                  <div class="integration-item" data-aos="fade-left" data-aos-delay="600">
+                    <div class="integration-icon">
+                      <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="integration-content">
+                      <h3>Performance Analytics</h3>
+                      <p>Comprehensive analytics and insights to optimize production efficiency</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Factory Layout Section -->
+          <section class="factory-layout oe_structure">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Plant Design</span>
+                <h2 class="section-title">Premium Factory Layout</h2>
+                <p class="section-subtitle">CP 60 Plant with 3 Silos and Transit Mixers - Complete Facility Visualization</p>
+              </div>
+              
+              <div class="layout-showcase" data-aos="zoom-in">
+                <div class="layout-image-wrapper">
+                  <img src="https://www.beomach.com/wp-content/uploads/2024/03/on-site-mobile-and-stationary-concrete-batching-plant.webp" alt="CP 60 Batching Plant Layout with 3 Silos" class="layout-image"/>
+                  
+                  <div class="layout-annotation" style="top: 20%; left: 15%;">
+                    <div class="annotation-dot"></div>
+                    <div class="annotation-label">
+                      <h4>3 Silos Configuration</h4>
+                      <p>High-capacity aggregate storage</p>
+                    </div>
+                  </div>
+                  
+                  <div class="layout-annotation" style="top: 40%; left: 45%;">
+                    <div class="annotation-dot"></div>
+                    <div class="annotation-label">
+                      <h4>Control Room</h4>
+                      <p>Centralized automation &amp; monitoring</p>
+                    </div>
+                  </div>
+                  
+                  <div class="layout-annotation" style="top: 60%; left: 70%;">
+                    <div class="annotation-dot"></div>
+                    <div class="annotation-label">
+                      <h4>Transit Mixers Area</h4>
+                      <p>Efficient loading &amp; dispatch zone</p>
+                    </div>
+                  </div>
+                  
+                  <div class="layout-annotation" style="top: 75%; left: 25%;">
+                    <div class="annotation-dot"></div>
+                    <div class="annotation-label">
+                      <h4>Quality Lab</h4>
+                      <p>NABL certified testing facility</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="layout-features">
+                <div class="layout-feature" data-aos="fade-up" data-aos-delay="100">
+                  <i class="fas fa-warehouse"></i>
+                  <h3>Complete Infrastructure</h3>
+                  <p>Fully equipped facility with all essential components and utilities</p>
+                </div>
+                <div class="layout-feature" data-aos="fade-up" data-aos-delay="200">
+                  <i class="fas fa-sitemap"></i>
+                  <h3>Optimized Design</h3>
+                  <p>Efficient layout for maximum productivity and minimal operational costs</p>
+                </div>
+                <div class="layout-feature" data-aos="fade-up" data-aos-delay="300">
+                  <i class="fas fa-shield-alt"></i>
+                  <h3>Safety Compliant</h3>
+                  <p>Meets all safety standards with emergency systems and protocols</p>
+                </div>
+                <div class="layout-feature" data-aos="fade-up" data-aos-delay="400">
+                  <i class="fas fa-expand-arrows-alt"></i>
+                  <h3>Scalable Setup</h3>
+                  <p>Modular design allowing future expansion and capacity upgrades</p>
+                </div>
+              </div>
+            </div>
+          </section>
+           <!-- Benefits Section -->
+          <section class="benefits-section oe_structure">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Why Choose Us</span>
+                <h2 class="section-title">Unmatched Benefits &amp; Advantages</h2>
+                <p class="section-subtitle">Experience the RACH INFRA difference with premium rental solutions</p>
+              </div>
+              
+              <div class="benefits-grid">
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="100">
+                  <div class="benefit-icon">
+                    <i class="fas fa-hand-holding-usd"></i>
+                  </div>
+                  <h3>Zero Capital Investment</h3>
+                  <p>No upfront costs - start production without heavy capital expenditure</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="150">
+                  <div class="benefit-icon">
+                    <i class="fas fa-certificate"></i>
+                  </div>
+                  <h3>NABL Certified Operations</h3>
+                  <p>All plants come with NABL certified labs and quality assurance processes</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="200">
+                  <div class="benefit-icon">
+                    <i class="fas fa-headset"></i>
+                  </div>
+                  <h3>24/7 Technical Support</h3>
+                  <p>Round-the-clock dedicated support team for immediate assistance</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="250">
+                  <div class="benefit-icon">
+                    <i class="fas fa-wrench"></i>
+                  </div>
+                  <h3>Maintenance Included</h3>
+                  <p>Regular servicing and preventive maintenance at no additional cost</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="300">
+                  <div class="benefit-icon">
+                    <i class="fas fa-rocket"></i>
+                  </div>
+                  <h3>Quick Deployment</h3>
+                  <p>Plant setup and commissioning in just 15-30 days</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="350">
+                  <div class="benefit-icon">
+                    <i class="fas fa-handshake"></i>
+                  </div>
+                  <h3>Flexible Rental Terms</h3>
+                  <p>Customizable contracts from short-term to long-term arrangements</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="400">
+                  <div class="benefit-icon">
+                    <i class="fas fa-laptop-code"></i>
+                  </div>
+                  <h3>Latest Technology</h3>
+                  <p>IoT-enabled smart plants with cutting-edge monitoring systems</p>
+                </div>
+                
+                <div class="benefit-card" data-aos="flip-left" data-aos-delay="450">
+                  <div class="benefit-icon">
+                    <i class="fas fa-map-marked-alt"></i>
+                  </div>
+                  <h3>Pan-India Service</h3>
+                  <p>Nationwide presence with local support in all major cities</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Pricing Models Section -->
+          <section class="pricing-section oe_structure">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Flexible Pricing</span>
+                <h2 class="section-title">Choose Your Payment Model</h2>
+                <p class="section-subtitle">Two transparent pricing options designed for different project needs</p>
+              </div>
+              
+              <div class="pricing-grid">
+                <div class="pricing-card" data-aos="fade-right">
+                  <div class="pricing-header">
+                    <div class="pricing-icon">
+                      <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3>Fixed Rental Plan</h3>
+                    <p class="pricing-subtitle">Predictable Monthly Costs</p>
+                  </div>
+                  
+                  <div class="pricing-features">
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Fixed monthly rental amount</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>All maintenance included</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Technical support 24/7</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Flexible contract duration</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>IoT monitoring included</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>No hidden charges</span>
+                    </div>
+                  </div>
+                  
+                  <div class="pricing-benefits">
+                    <h4>Best For:</h4>
+                    <ul>
+                      <li>Long-term projects with steady demand</li>
+                      <li>Budget predictability requirements</li>
+                      <li>Fixed timeline projects</li>
+                    </ul>
+                  </div>
+                  
+                  <a href="#contact" class="btn btn-pricing btn-orange">
+                    Get Fixed Plan Quote <i class="fas fa-arrow-right"></i>
+                  </a>
+                </div>
+                
+                <div class="pricing-card featured" data-aos="fade-left">
+                  <div class="pricing-badge">Most Flexible</div>
+                  <div class="pricing-header">
+                    <div class="pricing-icon">
+                      <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Production Basis (MGQ)</h3>
+                    <p class="pricing-subtitle">Pay for What You Produce</p>
+                  </div>
+                  
+                  <div class="pricing-features">
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Per cubic meter pricing</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Minimum Guaranteed Quantity (MGQ)</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Scale up/down as needed</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Real-time production tracking</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Transparent billing system</span>
+                    </div>
+                    <div class="pricing-feature">
+                      <i class="fas fa-check"></i>
+                      <span>Performance-based optimization</span>
+                    </div>
+                  </div>
+                  
+                  <div class="pricing-benefits">
+                    <h4>Best For:</h4>
+                    <ul>
+                      <li>Variable production requirements</li>
+                      <li>Cost optimization on actual usage</li>
+                      <li>Fluctuating project demands</li>
+                    </ul>
+                  </div>
+                  
+                  <a href="#contact" class="btn btn-pricing btn-blue">
+                    Get Production Plan Quote <i class="fas fa-arrow-right"></i>
+                  </a>
+                </div>
+              </div>
+              
+              <div class="pricing-note" data-aos="fade-up">
+                <i class="fas fa-info-circle"></i>
+                <p><strong>Note:</strong> Both plans include complete maintenance, technical support, and IoT monitoring. Custom hybrid plans available on request.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Testimonials Section -->
+          <section class="testimonials-section oe_structure">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Client Success Stories</span>
+                <h2 class="section-title">Trusted by Industry Leaders</h2>
+                <p class="section-subtitle">Hear from our satisfied clients across major infrastructure projects</p>
+              </div>
+              
+              <div class="testimonials-grid">
+                <div class="testimonial-card" data-aos="fade-up" data-aos-delay="100">
+                  <div class="testimonial-header">
+                    <div class="company-logo">
+                      <i class="fas fa-building"></i>
+                    </div>
+                    <div class="company-info">
+                      <h4>L&amp;T Construction</h4>
+                      <p>Infrastructure Division</p>
+                    </div>
+                  </div>
+                  <div class="testimonial-content">
+                    <div class="quote-icon">
+                      <i class="fas fa-quote-left"></i>
+                    </div>
+                    <p>"RACH INFRA's IoT-enabled batching plant rental has transformed our project efficiency. The real-time monitoring and predictive maintenance features saved us from potential delays."</p>
+                  </div>
+                  <div class="testimonial-footer">
+                    <div class="rating">
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                    </div>
+                    <p class="author">Project Director, Metro Project Delhi</p>
+                  </div>
+                </div>
+                
+                <div class="testimonial-card" data-aos="fade-up" data-aos-delay="200">
+                  <div class="testimonial-header">
+                    <div class="company-logo">
+                      <i class="fas fa-industry"></i>
+                    </div>
+                    <div class="company-info">
+                      <h4>Tata Projects</h4>
+                      <p>Civil Engineering</p>
+                    </div>
+                  </div>
+                  <div class="testimonial-content">
+                    <div class="quote-icon">
+                      <i class="fas fa-quote-left"></i>
+                    </div>
+                    <p>"The production-based MGQ model perfectly suited our variable concrete requirements. The CP 90 plant's capacity and smart quality sensors ensured consistent quality."</p>
+                  </div>
+                  <div class="testimonial-footer">
+                    <div class="rating">
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                    </div>
+                    <p class="author">Construction Head, Highway Project Maharashtra</p>
+                  </div>
+                </div>
+                
+                <div class="testimonial-card" data-aos="fade-up" data-aos-delay="300">
+                  <div class="testimonial-header">
+                    <div class="company-logo">
+                      <i class="fas fa-city"></i>
+                    </div>
+                    <div class="company-info">
+                      <h4>Shapoorji Pallonji</h4>
+                      <p>Infrastructure</p>
+                    </div>
+                  </div>
+                  <div class="testimonial-content">
+                    <div class="quote-icon">
+                      <i class="fas fa-quote-left"></i>
+                    </div>
+                    <p>"Outstanding turnkey solution! The complete factory setup with office, lab, and all amenities saved us months of preparation time. Zero downtime in 6 months of operation."</p>
+                  </div>
+                  <div class="testimonial-footer">
+                    <div class="rating">
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                      <i class="fas fa-star"></i>
+                    </div>
+                    <p class="author">Operations Manager, Smart City Project Gujarat</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="client-logos" data-aos="fade-up">
+                <h3>Trusted by Major Brands</h3>
+                <div class="logos-marquee">
+                  <div class="logo-item">
+                    <i class="fas fa-building"></i>
+                    <span>L&amp;T</span>
+                  </div>
+                  <div class="logo-item">
+                    <i class="fas fa-industry"></i>
+                    <span>Tata Projects</span>
+                  </div>
+                  <div class="logo-item">
+                    <i class="fas fa-city"></i>
+                    <span>Shapoorji Pallonji</span>
+                  </div>
+                  <div class="logo-item">
+                    <i class="fas fa-hammer"></i>
+                    <span>UTCL</span>
+                  </div>
+                  <div class="logo-item">
+                    <i class="fas fa-road"></i>
+                    <span>RDC Concrete</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Contact Section -->
+          <section class="contact-section oe_structure" id="contact">
+            <div class="container">
+              <div class="section-header" data-aos="fade-up">
+                <span class="section-badge">Get Started</span>
+                <h2 class="section-title">Request Your Custom Quote</h2>
+                <p class="section-subtitle">Let's discuss the perfect batching plant solution for your project</p>
+              </div>
+              
+              <div class="contact-wrapper">
+                <div class="contact-form-section" data-aos="fade-right">
+                  <form class="contact-form" id="contactForm">
+                    <div class="form-section">
+                      <h4>Customer Information</h4>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="partner_name">
+                            <i class="fas fa-user"></i> Full Name *
+                          </label>
+                          <input type="text" id="partner_name" name="partner_name" required="required" placeholder="Enter your full name"/>
+                        </div>
+                        <div class="form-group">
+                          <label for="company_name">
+                            <i class="fas fa-building"></i> Company Name
+                          </label>
+                          <input type="text" id="company_name" name="company_name" placeholder="Enter company name"/>
+                        </div>
+                      </div>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="email">
+                            <i class="fas fa-envelope"></i> Email *
+                          </label>
+                          <input type="email" id="email" name="email" required="required" placeholder="your@email.com"/>
+                        </div>
+                        <div class="form-group">
+                          <label for="phone">
+                            <i class="fas fa-phone"></i> Phone *
+                          </label>
+                          <input type="tel" id="phone" name="phone" required="required" placeholder="+91 XXXXX XXXXX"/>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-section">
+                      <h4>Project Inputs</h4>
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="gear_service_type">
+                            <i class="fas fa-clipboard-list"></i> Service Type *
+                          </label>
+                          <select id="gear_service_type" name="gear_service_type" required="required">
+                            <option value="">Select service type</option>
+                            <t t-foreach="service_types" t-as="stype">
+                              <option t-att-value="stype[0]" t-esc="stype[1]"/>
+                            </t>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="gear_capacity_id">
+                            <i class="fas fa-industry"></i> Plant Capacity *
+                          </label>
+                          <select id="gear_capacity_id" name="gear_capacity_id" required="required">
+                            <option value="">Select capacity</option>
+                            <t t-foreach="capacities" t-as="capacity">
+                              <option t-att-value="capacity.id" t-esc="capacity.name"/>
+                            </t>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="mgq_monthly">
+                            <i class="fas fa-chart-line"></i> MGQ (Monthly)
+                          </label>
+                          <input type="number" step="0.01" min="0" id="mgq_monthly" name="mgq_monthly" placeholder="Enter monthly MGQ"/>
+                        </div>
+                        <div class="form-group">
+                          <label for="gear_expected_production_qty">
+                            <i class="fas fa-cubes"></i> Expected Production (m³)
+                          </label>
+                          <input type="number" step="0.01" min="0" id="gear_expected_production_qty" name="gear_expected_production_qty" placeholder="Expected monthly production"/>
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="x_inventory_mode">
+                            <i class="fas fa-warehouse"></i> Inventory Mode *
+                          </label>
+                          <select id="x_inventory_mode" name="x_inventory_mode" required="required">
+                            <option value="">Select inventory mode</option>
+                            <t t-foreach="inventory_modes" t-as="mode">
+                              <option t-att-value="mode[0]" t-esc="mode[1]"/>
+                            </t>
+                          </select>
+                        </div>
+                        <div class="form-group" id="gradeWrapper" style="display:none;">
+                          <label for="gear_design_mix_id">
+                            <i class="fas fa-flask"></i> Grade Mix
+                          </label>
+                          <select id="gear_design_mix_id" name="gear_design_mix_id">
+                            <option value="">Select grade</option>
+                            <t t-foreach="design_mixes" t-as="design">
+                              <option t-att-value="design.id" t-esc="design.name"/>
+                            </t>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="gear_material_area_id">
+                            <i class="fas fa-map-marker-alt"></i> Material Area
+                          </label>
+                          <select id="gear_material_area_id" name="gear_material_area_id">
+                            <option value="">Select material area</option>
+                            <t t-foreach="material_areas" t-as="area">
+                              <option t-att-value="area.id" t-esc="area.name"/>
+                            </t>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="gear_project_duration_years">
+                            <i class="fas fa-clock"></i> Project Duration (Years)
+                          </label>
+                          <select id="gear_project_duration_years" name="gear_project_duration_years">
+                            <option value="">Select duration</option>
+                            <t t-foreach="project_durations" t-as="duration">
+                              <option t-att-value="duration[0]" t-esc="duration[1]"/>
+                            </t>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div class="form-row">
+                        <div class="form-group">
+                          <label for="gear_civil_scope">
+                            <i class="fas fa-hard-hat"></i> Civil Scope
+                          </label>
+                          <select id="gear_civil_scope" name="gear_civil_scope">
+                            <option value="">Select civil scope</option>
+                            <t t-foreach="civil_scopes" t-as="scope">
+                              <option t-att-value="scope[0]" t-esc="scope[1]"/>
+                            </t>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="note">
+                            <i class="fas fa-comment-alt"></i> Project Notes
+                          </label>
+                          <textarea id="note" name="note" rows="3" placeholder="Share scope, constraints, or timeline notes"></textarea>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-section">
+                      <h4>Optional Services</h4>
+                      <div class="form-row optional-row">
+                        <div class="form-group">
+                          <div class="checkbox-with-input">
+                            <label>
+                              <input type="checkbox" name="gear_transport_opt_in" value="1"/> Transport (per CUM)
+                            </label>
+                            <input type="number" step="0.01" min="0" name="gear_transport_per_cum" placeholder="0.00"/>
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <div class="checkbox-with-input">
+                            <label>
+                              <input type="checkbox" name="gear_pumping_opt_in" value="1"/> Pump (per CUM)
+                            </label>
+                            <input type="number" step="0.01" min="0" name="gear_pump_per_cum" placeholder="0.00"/>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="form-row optional-row">
+                        <div class="form-group">
+                          <div class="checkbox-with-input">
+                            <label>
+                              <input type="checkbox" name="gear_manpower_opt_in" value="1"/> Manpower (per CUM)
+                            </label>
+                            <input type="number" step="0.01" min="0" name="gear_manpower_per_cum" placeholder="0.00"/>
+                          </div>
+                        </div>
+                        <div class="form-group">
+                          <div class="checkbox-with-input">
+                            <label>
+                              <input type="checkbox" name="gear_diesel_opt_in" value="1"/> Diesel (per CUM)
+                            </label>
+                            <input type="number" step="0.01" min="0" name="gear_diesel_per_cum" placeholder="0.00"/>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="form-row optional-row">
+                        <div class="form-group">
+                          <div class="checkbox-with-input">
+                            <label>
+                              <input type="checkbox" name="gear_jcb_opt_in" value="1"/> JCB (Monthly)
+                            </label>
+                            <input type="number" step="0.01" min="0" name="gear_jcb_monthly" placeholder="0.00"/>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-submit">
+                      <i class="fas fa-paper-plane"></i> Submit Request
+                    </button>
+                  </form>
+                  
+                  <div class="form-success" id="formSuccess">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Thank You!</h3>
+                    <p id="successMessage">Your request has been submitted successfully. Our team will contact you within 24 hours.</p>
+                    <p class="quote-number" id="quoteNumber"></p>
+                    <div class="quote-preview" id="quotePreview">
+                      <iframe id="quotePreviewFrame" title="Quotation preview"></iframe>
+                    </div>
+                    <div class="quote-actions">
+                      <a id="quoteDownload" class="btn btn-primary" href="#" download="">
+                        <i class="fas fa-file-pdf"></i>
+                        Download Quotation PDF
+                      </a>
+                      <button type="button" class="btn btn-outline-primary" id="newQuoteRequest">
+                        <i class="fas fa-redo"></i>
+                        Submit Another Request
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="contact-info-section" data-aos="fade-left">
+                  <div class="contact-info-card">
+                    <h3>Direct Contact</h3>
+                    
+                    <div class="contact-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-user-tie"></i>
+                      </div>
+                      <div class="info-content">
+                        <h4>CEO Direct Line</h4>
+                        <p>Neetu Rani</p>
+                        <a href="tel:+919289375999" class="contact-link">
+                          <i class="fas fa-phone"></i> +91 8920327673
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-user"></i>
+                      </div>
+                      <div class="info-content">
+                        <h4>Account Manager</h4>
+                        <p>Yash</p>
+                        <a href="tel:+916357890641" class="contact-link">
+                          <i class="fas fa-phone"></i> +91 7428059333
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                      <div class="info-icon">
+                        <i class="fas fa-calendar-check"></i>
+                      </div>
+                      <div class="info-content">
+                        <h4>Schedule Site Visit</h4>
+                        <p>See our plants in action</p>
+                        <a href="#contact" class="btn btn-site-visit">
+                          <i class="fas fa-map-marker-alt"></i> Book Site Visit
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="contact-cta-card">
+                    <i class="fas fa-headset"></i>
+                    <h3>24/7 Support Available</h3>
+                    <p>Our technical team is ready to assist you anytime</p>
+                  </div>
+                  
+                  <div class="certifications-card">
+                    <h4>Certifications &amp; Compliance</h4>
+                    <div class="cert-items">
+                      <div class="cert-item">
+                        <i class="fas fa-certificate"></i>
+                        <span>ISO 9001:2015</span>
+                      </div>
+                      <div class="cert-item">
+                        <i class="fas fa-flask"></i>
+                        <span>NABL Accredited</span>
+                      </div>
+                      <div class="cert-item">
+                        <i class="fas fa-leaf"></i>
+                        <span>Environmental Clearance</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Back to Top Button -->
+          <button class="back-to-top" id="backToTop">
+            <i class="fas fa-arrow-up"></i>
+          </button>
+          
+          </div>
+        </div>
+      </t>
+    </template>
+  </data>
+</odoo>

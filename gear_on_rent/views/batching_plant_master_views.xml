@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="action_gear_service_master" model="ir.actions.act_window">
+        <field name="name">Service Masters</field>
+        <field name="res_model">gear.service.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_gear_plant_capacity_master" model="ir.actions.act_window">
+        <field name="name">Plant Capacities</field>
+        <field name="res_model">gear.plant.capacity.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_gear_mgq_rate_master" model="ir.actions.act_window">
+        <field name="name">MGQ Rate Tiers</field>
+      <field name="res_model">gear.mgq.rate.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_gear_cost_component_master" model="ir.actions.act_window">
+        <field name="name">Cost Components</field>
+      <field name="res_model">gear.cost.component.master</field>   
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_gear_material_area_master" model="ir.actions.act_window">
+        <field name="name">Material Area Rates</field>
+        <field name="res_model">gear.material.area.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_gear_design_mix_master" model="ir.actions.act_window">
+        <field name="name">Design Mixes</field>
+        <field name="res_model">gear.design.mix.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_gear_optional_service_master" model="ir.actions.act_window">
+        <field name="name">Optional Services</field>
+        <field name="res_model">gear.optional.service.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_gear_on_rent_masters"
+              name="Batching Masters"
+              parent="menu_gear_on_rent_root"
+              sequence="5"/>
+
+    <menuitem id="menu_gear_service_master"
+              name="Service Masters"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_service_master"
+              sequence="1"/>
+
+    <menuitem id="menu_gear_plant_capacity_master"
+              name="Plant Capacities"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_plant_capacity_master"
+              sequence="2"/>
+
+    <menuitem id="menu_gear_mgq_rate_master"
+              name="MGQ Rate Tiers"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_mgq_rate_master"
+              sequence="3"/>
+
+    <menuitem id="menu_gear_cost_component_master"
+              name="Cost Components"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_cost_component_master"
+              sequence="4"/>
+
+    <menuitem id="menu_gear_material_area_master"
+              name="Material Area Rates"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_material_area_master"
+              sequence="5"/>
+
+    <menuitem id="menu_gear_design_mix_master"
+              name="Design Mixes"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_design_mix_master"
+              sequence="6"/>
+
+    <menuitem id="menu_gear_optional_service_master"
+              name="Optional Services"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_optional_service_master"
+              sequence="7"/>
+</odoo>

@@ -20,5 +20,6 @@
             <field name="is_invoice_report">True</field>
             <field name="domain">[('move_type', 'in', ['out_invoice', 'out_receipt', 'out_refund']), ('x_billing_category', '=', 'rmc')]</field>
         </record>
+
     </data>
 </odoo>

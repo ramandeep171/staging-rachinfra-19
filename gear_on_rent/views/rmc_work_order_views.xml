@@ -8,6 +8,8 @@
                 <field name="name"/>
                 <field name="so_id"/>
                 <field name="workcenter_id"/>
+                <field name="x_inventory_mode"/>
+                <field name="x_real_warehouse_id"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
                 <field name="x_window_start"/>
@@ -20,6 +22,12 @@
                 <field name="optimized_standby_qty"/>
                 <field name="ngt_hours"/>
                 <field name="loto_hours"/>
+                <field name="excess_diesel_litre_total"/>
+                <field name="excess_diesel_amount_total"/>
+                <field name="prime_rate"/>
+                <field name="optimize_rate"/>
+                <field name="ngt_rate"/>
+                <field name="excess_rate"/>
             </list>
         </field>
     </record>
@@ -55,10 +63,14 @@
                         </h1>
                     </div>
                     <group>
-                        <group>
+                        <group string="Basic Information">
                             <field name="so_id" required="1"/>
                             <field name="product_id" required="1"/>
                             <field name="workcenter_id"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Dates &amp; Window">
                             <field name="date_start"/>
                             <field name="date_end"/>
                             <field name="x_window_start" modifiers="{'readonly': [['state', '!=', 'draft']]}"/>
@@ -66,20 +78,23 @@
                             <field name="x_is_cooling_period"/>
                             <field name="x_auto_email_daily"/>
                         </group>
-                        <group>
+                    </group>
+                    <group>
+                        <group string="Inventory Settings">
+                            <field name="x_inventory_mode"/>
+                            <field name="x_real_warehouse_id"/>
+                        </group>
+                        <group string="MGQ &amp; Targets">
                             <field name="x_monthly_mgq_snapshot" readonly="1"/>
+                            <field name="mgq_monthly" readonly="1"/>
                             <field name="monthly_target_qty" readonly="1"/>
                             <field name="adjusted_target_qty" readonly="1"/>
                             <field name="prime_output_qty" readonly="1"/>
                             <field name="optimized_standby_qty" readonly="1" modifiers="{'invisible': [['x_is_cooling_period', '=', True]]}"/>
-                            <field name="downtime_relief_qty" readonly="1"/>
-                            <field name="ngt_hours" readonly="1"/>
-                            <field name="loto_hours" readonly="1"/>
-                            <field name="waveoff_hours_chargeable" readonly="1" modifiers="{'invisible': [('loto_hours', '&lt;=', 48.0)]}"/>
                         </group>
                     </group>
                     <notebook>
-                        <page string="Manufacturing Orders">
+                    <page string="Manufacturing Orders">
                             <field name="production_ids">
                         <list editable="bottom">
                             <field name="name"/>
@@ -108,10 +123,92 @@
                                     <field name="qty_m3"/>
                                     <field name="runtime_minutes"/>
                                     <field name="idle_minutes"/>
+                                    <field name="actual_loading_minutes"/>
+                                    <field name="excess_minutes"/>
+                                    <field name="excess_diesel_amount"/>
+                                    <field name="reason_id"/>
                                     <field name="state"/>
                                 </list>
                             </field>
                         </page>
+                        <page string="Rates &amp; Snapshots">
+                            <group>
+                                <group>
+                                    <field name="prime_rate" readonly="1"/>
+                                    <field name="optimize_rate" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="ngt_rate" readonly="1"/>
+                                    <field name="excess_rate" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Wastage Tracking">
+                            <group>
+                                <group>
+                                    <field name="wastage_allowed_percent" readonly="1"/>
+                                    <field name="wastage_penalty_rate" />
+                                    <field name="mwo_prime_output_qty" readonly="1"/>
+                                    <field name="mwo_allowed_wastage_qty" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="mwo_actual_scrap_qty" readonly="1"/>
+                                    <field name="mwo_over_wastage_qty" readonly="1"/>
+                                    <field name="mwo_deduction_qty" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Relief &amp; Downtime">
+                            <group>
+                                <group>
+                                    <field name="downtime_relief_qty" readonly="1"/>
+                                    <field name="ngt_hours" readonly="1"/>
+                                    <field name="loto_hours" readonly="1"/>
+                                    <field name="waveoff_hours_applied" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="waveoff_hours_chargeable" readonly="1" invisible="loto_hours &lt;= 48.0"/>
+                                    <field name="loto_waveoff_hours" readonly="1"/>
+                                    <field name="bank_pull_limit" readonly="1"/>
+                                    <field name="ngt_hourly_prorata_factor" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Diesel Tracking">
+                            <group>
+                                <group>
+                                    <field name="standard_loading_minutes"/>
+                                    <field name="diesel_burn_rate_per_hour"/>
+                                    <field name="diesel_rate_per_litre"/>
+                                </group>
+                                <group>
+                                    <field name="excess_diesel_litre_total" readonly="1"/>
+                                    <field name="excess_diesel_amount_total" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Runtime">
+                            <group>
+                                <group>
+                                    <field name="runtime_minutes" readonly="1"/>
+                                    <field name="idle_minutes" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="docket_count" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Other">
+                            <group>
+                                <group>
+                                    <field name="cooling_months" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="last_generated_date" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -127,6 +224,27 @@
             <p>
                 Manage the monthly work orders orchestrating daily manufacturing orders and IDS dockets.
             </p>
+        </field>
+    </record>
+
+    <record id="view_mrp_production_form_inherit_gear_wastage" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.gear.wastage</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Wastage" name="gear_wastage_page">
+                    <group>
+                        <field name="wastage_allowed_percent" readonly="1"/>
+                        <field name="wastage_penalty_rate" />
+                        <field name="prime_output_qty" readonly="1"/>
+                        <field name="wastage_allowed_qty" readonly="1"/>
+                        <field name="actual_scrap_qty" readonly="1"/>
+                        <field name="over_wastage_qty" readonly="1"/>
+                        <field name="deduction_qty" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
         </field>
     </record>
 </odoo>

@@ -6,18 +6,107 @@
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
             <xpath expr="//group[@name='order_details']" position="inside">
+                <field name="company_id" invisible="1"/>
                 <field name="x_billing_category" widget="selection" help="Select 'RMC' to trigger the production-based workflow."/>
                 <field name="x_workcenter_id"
                        context="{'default_company_id': company_id}"
                        help="Primary work center used for this contract; overrides the product default."/>
+
+
             </xpath>
+            
+            <!-- Inventory Mode Section -->
+            <xpath expr="//group[@name='order_details']" position="after">
+                <group string="Inventory Mode" col="2">
+                    <field name="x_inventory_mode" widget="selection"/>
+                    <field name="x_real_warehouse_id" 
+                           required="x_inventory_mode == 'with_inventory'" 
+                           context="{'default_company_id': company_id}" 
+                           options="{'no_create': False}"/>
+                </group>
+            </xpath>
+            
             <xpath expr="//sheet/notebook" position="inside">
+                <page string="Batching Plant">
+                    <group>
+                        <group string="Batching Plant Context">
+                            <field name="gear_service_type" widget="selection"/>
+                            <field name="gear_service_id" domain="[('category', '=', gear_service_type)]"/>
+                            <field name="gear_capacity_id"/>
+                            <field name="gear_mgq_rate_id" domain="[('service_id', '=', gear_service_id), ('capacity_id', '=', gear_capacity_id)]"/>
+                            <field name="gear_design_mix_id"/>
+                            <field name="gear_material_area_id"/>
+                            <field name="gear_expected_production_qty"/>
+                            <field name="gear_civil_scope"/>
+                        </group>
+                        <group string="Material Source (Area-wise)">
+                            <field name="gear_cement_area_id"/>
+                            <field name="gear_agg_10mm_area_id"/>
+                            <field name="gear_agg_20mm_area_id"/>
+                            <field name="gear_admixture_area_id"/>
+                        </group>
+                    </group>
+                    <group string="Optional Services">
+                        <group>
+                            <field name="gear_transport_opt_in"/>
+                            <field name="gear_pumping_opt_in"/>
+                            <field name="gear_manpower_opt_in"/>
+                        </group>
+                        <group>
+                            <field name="gear_diesel_opt_in"/>
+                            <field name="gear_jcb_opt_in"/>
+                            <field name="gear_optional_service_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                </page>
+                <!-- Variable Billing Tab -->
+                <page string="Variable Billing">
+                    <group col="4">
+                        <group colspan="2">
+                            <field name="mgq_monthly"/>
+                            <field name="gear_project_duration_years"/>
+                            <field name="gear_project_duration_months"/>
+                            <field name="wastage_allowed_percent"/>
+                            <field name="wastage_penalty_rate"/>
+                            <field name="prime_rate"/>
+                            <field name="optimize_rate"/>
+                        </group>
+                        <group colspan="2">
+                            <field name="ngt_rate"/>
+                            <field name="excess_rate"/>
+                            <field name="bank_pull_limit"/>
+                            <field name="ngt_hourly_prorata_factor"/>
+                        </group>
+                    </group>
+                </page>
+                
+                <!-- Diesel Overrun Defaults Tab -->
+                <page string="Diesel Overrun Defaults" groups="gear_on_rent.group_gear_on_rent_manager">
+                    <group col="4">
+                        <field name="standard_loading_minutes"/>
+                        <field name="diesel_burn_rate_per_hour"/>
+                        <field name="diesel_rate_per_litre"/>
+                    </group>
+                </page>
+                
                 <page string="Contract / Cooling">
                     <group>
-                        <field name="x_cooling_period_months"/>
+                        <field name="cooling_months"/>
                         <field name="x_cooling_end" readonly="1"/>
                     </group>
                 </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_sale_order_list_inherit_gear_on_rent" model="ir.ui.view">
+        <field name="name">sale.order.list.gear.on.rent</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='commitment_date']" position="after">
+                <field name="x_inventory_mode"/>
+                <field name="x_real_warehouse_id"/>
             </xpath>
         </field>
     </record>

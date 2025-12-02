@@ -54,7 +54,65 @@
       <a t-attf-href="/my/gear-on-rent" role="menuitem" class="dropdown-item ps-3">
         <i class="fa fa-fw fa-cogs me-1 small text-primary-emphasis"/> My Gear On Rent
       </a>
+      <a t-attf-href="/my/gear-on-rent/reconciliations" role="menuitem" class="dropdown-item ps-3">
+        <i class="fa fa-fw fa-file-text-o me-1 small text-primary-emphasis"/> Annual Reconciliation
+      </a>
       <div class="dropdown-divider"/>
     </xpath>
+  </template>
+
+  <template id="portal_gear_on_rent_reconciliation" name="Annual Reconciliation">
+    <t t-call="portal.portal_layout">
+      <div class="o_portal_wrap">
+        <div class="container">
+          <div class="row">
+            <div class="col-12">
+              <h1 class="display-6">Annual Reconciliation</h1>
+              <p class="text-muted">Fiscal year MGQ vs production with bank and policy outcomes.</p>
+            </div>
+          </div>
+          <div class="row g-3 mt-3">
+            <t t-if="reconciliations">
+              <t t-foreach="reconciliations" t-as="recon">
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <h5 class="card-title" t-esc="recon.name"/>
+                          <p class="mb-1 small text-muted" t-esc="recon.so_id.display_name"/>
+                          <p class="mb-1">
+                            <strong>FY:</strong>
+                            <span t-esc="recon.fiscal_year_start"/> → <span t-esc="recon.fiscal_year_end"/>
+                          </p>
+                          <p class="mb-1">
+                            <strong>Closing Bank:</strong>
+                            <span t-esc="recon.bank_closing_qty"/> m³
+                          </p>
+                          <p class="mb-0">
+                            <strong>Policy:</strong>
+                            <span t-esc="recon.policy"/>
+                          </p>
+                        </div>
+                        <div>
+                          <a t-attf-href="/my/gear-on-rent/reconciliations/#{recon.id}/export" class="btn btn-sm btn-outline-primary">
+                            Export FY Grid
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </t>
+            </t>
+            <t t-else="">
+              <div class="col-12">
+                <div class="alert alert-info mb-0">No annual reconciliations are available yet.</div>
+              </div>
+            </t>
+          </div>
+        </div>
+      </div>
+    </t>
   </template>
 </odoo>

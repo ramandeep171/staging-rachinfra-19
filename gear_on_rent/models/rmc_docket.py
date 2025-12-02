@@ -65,6 +65,40 @@ class GearRmcDocket(models.Model):
     slump = fields.Char(string="Slump")
     runtime_minutes = fields.Float(string="Runtime (min)", digits=(16, 2))
     idle_minutes = fields.Float(string="Idle (min)", digits=(16, 2))
+    standard_loading_minutes = fields.Float(string="Standard Loading (min)", digits=(16, 2), tracking=True)
+    actual_loading_minutes = fields.Float(string="Actual Loading (min)", digits=(16, 2), tracking=True)
+    excess_minutes = fields.Float(
+        string="Excess Loading (min)",
+        digits=(16, 2),
+        compute="_compute_diesel_overrun",
+        store=True,
+    )
+    diesel_burn_rate_per_hour = fields.Float(string="Diesel Burn Rate (L/hr)", digits=(16, 2), tracking=True)
+    diesel_rate_per_litre = fields.Monetary(
+        string="Diesel Rate per Litre",
+        currency_field="currency_id",
+        tracking=True,
+    )
+    excess_diesel_litre = fields.Float(
+        string="Excess Diesel (L)",
+        digits=(16, 3),
+        compute="_compute_diesel_overrun",
+        store=True,
+    )
+    excess_diesel_amount = fields.Monetary(
+        string="Excess Diesel Amount",
+        currency_field="currency_id",
+        compute="_compute_diesel_overrun",
+        store=True,
+    )
+    reason_id = fields.Many2one(
+        "gear.reason",
+        string="Diesel Overrun Reason",
+        tracking=True,
+        domain="[('company_id', '=', company_id)]",
+        check_company=True,
+    )
+    reason_type = fields.Selection(related="reason_id.reason_type", store=True, readonly=True)
     alarm_codes = fields.Json(string="IDS Alarms", help="Telemetry alarms raised for this docket.", default=list)
 
     helpdesk_ticket_id = fields.Many2one("helpdesk.ticket", string="Ticket")
@@ -81,6 +115,7 @@ class GearRmcDocket(models.Model):
     )
 
     company_id = fields.Many2one("res.company", related="so_id.company_id", store=True, readonly=True)
+    currency_id = fields.Many2one("res.currency", related="so_id.currency_id", store=True, readonly=True)
 
     source = fields.Selection(
         selection=[
@@ -91,6 +126,16 @@ class GearRmcDocket(models.Model):
         string="Captured By",
         default="manual",
         tracking=True,
+    )
+    cycle_reason_id = fields.Many2one(
+        comodel_name="gear.cycle.reason",
+        string="Cycle Reason",
+        tracking=True,
+    )
+    cycle_reason_type = fields.Selection(
+        related="cycle_reason_id.reason_type",
+        store=True,
+        readonly=True,
     )
     state = fields.Selection(
         selection=[
@@ -161,6 +206,15 @@ class GearRmcDocket(models.Model):
         ("unique_docket_per_contract", "unique(so_id, docket_no)", "The docket number must be unique per contract."),
     ]
 
+    @api.model
+    def _get_cycle_runtime_threshold(self):
+        param_model = self.env["ir.config_parameter"].sudo()
+        raw_value = param_model.get_param("gear_on_rent.cycle_runtime_threshold", 60.0)
+        try:
+            return float(raw_value)
+        except (TypeError, ValueError):
+            return 60.0
+
     @api.depends("workorder_id.workcenter_id")
     def _compute_workcenter(self):
         for docket in self:
@@ -170,6 +224,24 @@ class GearRmcDocket(models.Model):
     def _compute_monthly_order(self):
         for docket in self:
             docket.monthly_order_id = docket.production_id.x_monthly_order_id or False
+
+    @api.depends(
+        "actual_loading_minutes",
+        "standard_loading_minutes",
+        "diesel_burn_rate_per_hour",
+        "diesel_rate_per_litre",
+    )
+    def _compute_diesel_overrun(self):
+        for docket in self:
+            standard = docket.standard_loading_minutes or 0.0
+            actual = docket.actual_loading_minutes or 0.0
+            excess_minutes = max(actual - standard, 0.0)
+            burn_rate = docket.diesel_burn_rate_per_hour or 0.0
+            excess_litre = excess_minutes * (burn_rate / 60.0) if burn_rate else 0.0
+            rate = docket.diesel_rate_per_litre or 0.0
+            docket.excess_minutes = excess_minutes
+            docket.excess_diesel_litre = excess_litre
+            docket.excess_diesel_amount = excess_litre * rate
 
     @api.depends("helpdesk_ticket_id")
     def _compute_quantity_ticket(self):
@@ -242,6 +314,14 @@ class GearRmcDocket(models.Model):
                 vals["name"] = self.env["ir.sequence"].next_by_code("gear.rmc.docket") or "New"
             if vals.get("docket_no") and not vals.get("state"):
                 vals["state"] = "in_production"
+            so_id = vals.get("so_id")
+            if so_id:
+                order = self.env["sale.order"].browse(so_id)
+                vals.setdefault("standard_loading_minutes", order.standard_loading_minutes)
+                vals.setdefault("diesel_burn_rate_per_hour", order.diesel_burn_rate_per_hour)
+                vals.setdefault("diesel_rate_per_litre", order.diesel_rate_per_litre)
+            if vals.get("actual_loading_minutes") is None:
+                vals["actual_loading_minutes"] = vals.get("standard_loading_minutes", 0.0)
         records = super().create(vals_list)
         for record, vals in zip(records, vals_list):
             record._gear_backfill_links(vals)
@@ -324,7 +404,8 @@ class GearRmcDocket(models.Model):
             self.workorder_id.gear_docket_ids.filtered(lambda d: d.state != "cancel").mapped("quantity_produced")
         ) or 0.0
         if candidate_qty and self.workorder_id.qty_produced != candidate_qty:
-            self.workorder_id.write({"qty_produced": candidate_qty})
+            ctx_workorder = self.workorder_id.with_context(allow_qty_produced_done=True)
+            ctx_workorder.write({"qty_produced": candidate_qty})
 
     def _apply_recipe_lines(self):
         for docket in self:
@@ -515,8 +596,37 @@ class GearRmcDocket(models.Model):
                 parsed_date = monthly_order.date_end
             date_value = fields.Date.to_string(parsed_date)
 
+        reason_id = payload.get("cycle_reason_id") or (workorder.gear_cycle_reason_id and workorder.gear_cycle_reason_id.id)
+
+        monthly_order = workorder.production_id.x_monthly_order_id if workorder.production_id else False
+        sale_order = workorder.production_id.x_sale_order_id
+        standard_minutes = payload.get("standard_loading_minutes")
+        if standard_minutes is None:
+            standard_minutes = (
+                monthly_order.standard_loading_minutes
+                if monthly_order
+                else (sale_order.standard_loading_minutes if sale_order else 0.0)
+            )
+        burn_rate = payload.get("diesel_burn_rate_per_hour")
+        if burn_rate is None:
+            burn_rate = (
+                monthly_order.diesel_burn_rate_per_hour
+                if monthly_order
+                else (sale_order.diesel_burn_rate_per_hour if sale_order else 0.0)
+            )
+        diesel_rate = payload.get("diesel_rate_per_litre")
+        if diesel_rate is None:
+            diesel_rate = (
+                monthly_order.diesel_rate_per_litre
+                if monthly_order
+                else (sale_order.diesel_rate_per_litre if sale_order else 0.0)
+            )
+        actual_minutes = payload.get("actual_loading_minutes")
+        if actual_minutes is None:
+            actual_minutes = standard_minutes if standard_minutes is not None else 0.0
+
         vals = {
-            "so_id": payload.get("so_id") or workorder.production_id.x_sale_order_id.id,
+            "so_id": payload.get("so_id") or sale_order.id,
             "production_id": payload.get("production_id") or workorder.production_id.id,
             "workorder_id": workorder.id,
             "workcenter_id": workorder.workcenter_id.id,
@@ -527,16 +637,44 @@ class GearRmcDocket(models.Model):
             "slump": payload.get("slump"),
             "runtime_minutes": payload.get("runtime_min", payload.get("runtime_minutes", 0.0)),
             "idle_minutes": payload.get("idle_min", payload.get("idle_minutes", 0.0)),
+            "standard_loading_minutes": standard_minutes,
+            "actual_loading_minutes": actual_minutes,
+            "diesel_burn_rate_per_hour": burn_rate,
+            "diesel_rate_per_litre": diesel_rate,
             "alarm_codes": payload.get("alarms", []),
             "notes": payload.get("notes"),
             "source": payload.get("source") or "ids",
             "state": "in_production",
         }
+        if reason_id:
+            vals["cycle_reason_id"] = reason_id
         if docket:
             docket.write(vals)
         else:
             docket = self.create(vals)
         return docket
+
+    @api.constrains("runtime_minutes", "cycle_reason_id", "so_id")
+    def _check_cycle_reason_enforcement(self):
+        threshold = self._get_cycle_runtime_threshold()
+        for docket in self:
+            exceeds = docket.runtime_minutes and docket.runtime_minutes > threshold
+            if exceeds and not docket.cycle_reason_id:
+                raise ValidationError(
+                    _("A reason is required when cycle runtime exceeds %(threshold)s minutes.", threshold=threshold)
+                )
+            if exceeds and docket.cycle_reason_id and docket.cycle_reason_type != "client":
+                raise ValidationError(_("Client workflows require a Client reason."))
+
+    @api.constrains("actual_loading_minutes", "standard_loading_minutes", "reason_id")
+    def _check_diesel_overrun_reason(self):
+        for docket in self:
+            actual = docket.actual_loading_minutes or 0.0
+            standard = docket.standard_loading_minutes or 0.0
+            if actual < 0 or standard < 0:
+                raise ValidationError(_("Loading minutes cannot be negative."))
+            if actual > standard and not docket.reason_id:
+                raise ValidationError(_("Please select a diesel overrun reason for excess loading."))
 
 
 class GearRmcDocketLine(models.Model):

@@ -5,21 +5,75 @@
       <field name="name">Gear On Rent Daily MO Report</field>
       <field name="model_id" ref="mrp.model_mrp_production"/>
       <field name="auto_delete" eval="True"/>
-      <field name="email_from">${(object.x_sale_order_id.company_id.email or object.company_id.email) or ''}</field>
-      <field name="partner_to">${object.x_sale_order_id.partner_invoice_id.id or object.x_sale_order_id.partner_id.id}</field>
-      <field name="subject">Daily MO Report - ${object.display_name}</field>
-      <field name="body_html"><![CDATA[
-<p>Namaste ${object.x_sale_order_id.partner_id.name or 'Customer'},</p>
-<p>Daily report for manufacturing order <strong>${object.display_name}</strong> is ready. Key metrics:</p>
-<ul>
-  <li>Daily Target: ${format_lang(object.x_daily_target_qty or 0.0, digits=2)} m³</li>
-  <li>Adjusted Target: ${format_lang(object.x_adjusted_target_qty or 0.0, digits=2)} m³</li>
-  <li>Prime Output: ${format_lang(object.x_prime_output_qty or 0.0, digits=2)} m³</li>
-  <li>NGT Relief: ${format_lang(object.x_relief_qty or 0.0, digits=2)} m³</li>
-</ul>
-<p>The full PDF report is attached for your reference.</p>
-<p>--<br/>Gear On Rent Automation</p>
-      ]]></field>
+      <field name="email_from">{{ (object.x_sale_order_id.company_id.email or object.company_id.email) or '' }}</field>
+      <field name="partner_to">{{ object.x_sale_order_id.partner_invoice_id.id or object.x_sale_order_id.partner_id.id }}</field>
+      <field name="subject">Daily MO Report - {{ object.display_name }}</field>
+      <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Namaste <t t-out="object.x_sale_order_id.partner_id.name or 'Customer'"/>,</p>
+    <p>Daily report for manufacturing order <strong><t t-out="object.display_name"/></strong> is ready. Key metrics:</p>
+    <ul>
+      <li>Daily Target: <t t-out="format_amount(object.x_daily_target_qty or 0.0, object.company_id.currency_id) if object.company_id else object.x_daily_target_qty"/> m³</li>
+      <li>Adjusted Target: <t t-out="object.x_adjusted_target_qty or 0.0"/> m³</li>
+      <li>Prime Output: <t t-out="object.x_prime_output_qty or 0.0"/> m³</li>
+      <li>NGT Relief: <t t-out="object.x_relief_qty or 0.0"/> m³</li>
+    </ul>
+    <p>The full PDF report is attached for your reference.</p>
+    <p>--<br/>Gear On Rent Automation</p>
+</div>
+      </field>
+    </record>
+
+    <record id="mail_template_batching_quote_accept" model="mail.template">
+      <field name="name">Batching Plant Quote Accepted</field>
+      <field name="model_id" ref="sale.model_sale_order"/>
+      <field name="auto_delete" eval="True"/>
+      <field name="email_from">{{ (object.company_id.email or object.user_id.email) or '' }}</field>
+      <field name="partner_to">{{ object.partner_id.id }}</field>
+      <field name="subject">Batching Plant Quotation Accepted - {{ object.name }}</field>
+      <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Namaste <t t-out="object.partner_id.name or 'Customer'"/>,</p>
+    <p>Your batching plant quotation <strong><t t-out="object.name"/></strong> has been accepted via the customer portal.</p>
+    <p><strong>Highlights</strong></p>
+    <ul>
+      <li>Service Type: <t t-out="object.gear_service_type or '—'"/></li>
+      <li>Capacity: <t t-out="object.gear_capacity_id.name or '—'"/></li>
+      <li>MGQ: <t t-out="object.mgq_monthly or object.x_monthly_mgq or 0.0"/> m³</li>
+      <li>Inventory Mode: <t t-out="object.x_inventory_mode or '—'"/></li>
+      <li>Final Rate: <t t-out="object.gear_total_per_cum_rate or object.gear_prime_rate_final or '—'"/></li>
+    </ul>
+    <p>You can review the generated Sales Order here: <a t-att-href="object.get_portal_url()"><t t-out="object.get_portal_url()"/></a>.</p>
+    <p>PDF copy of your quotation is available anytime from the portal: <a t-att-href="'/my/batching-plant/%s/pdf' % object.id">Download PDF</a>.</p>
+    <p>We will process the sales order and share the finalized PDF shortly.</p>
+    <p>--<br/>SP Nexgen Automind Pvt Ltd — Tech Paras<br/>Automate Excellence<br/>www.smarterpeak.com</p>
+</div>
+      </field>
+    </record>
+    <record id="mail_template_batching_quote_send" model="mail.template">
+      <field name="name">Batching Plant: Send Quotation</field>
+      <field name="model_id" ref="sale.model_sale_order"/>
+      <field name="subject">{{ object.company_id.name }} Batching Plant Quotation (Ref {{ object.name or 'n/a' }})</field>
+      <field name="email_from">{{ (object.user_id.email_formatted or object.company_id.email_formatted or user.email_formatted) }}</field>
+      <field name="partner_to">{{ object.partner_id.id }}</field>
+      <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p>Namaste <t t-out="object.partner_id.name or 'Customer'"/>,</p>
+    <p>Your batching plant quotation <strong><t t-out="object.name"/></strong> is ready for review.</p>
+    <p><strong>Highlights</strong></p>
+    <ul>
+      <li>Service Type: <t t-out="object.gear_service_type or '—'"/></li>
+      <li>Capacity: <t t-out="object.gear_capacity_id.name or '—'"/></li>
+      <li>MGQ: <t t-out="object.mgq_monthly or object.x_monthly_mgq or 0.0"/> m³</li>
+      <li>Inventory Mode: <t t-out="object.x_inventory_mode or '—'"/></li>
+    </ul>
+    <p>You can review and accept the quotation online: <a t-att-href="object.get_portal_url()"><t t-out="object.get_portal_url()"/></a>.</p>
+    <p>A PDF copy is also attached.</p>
+    <p>--<br/>SP Nexgen Automind Pvt Ltd — Tech Paras<br/>Automate Excellence<br/>www.smarterpeak.com</p>
+</div>
+      </field>
+      <field name="report_template_ids" eval="[(4, ref('gear_on_rent.action_report_batching_plant_quote'))]"/>
+      <field name="auto_delete" eval="True"/>
     </record>
   </data>
 </odoo>

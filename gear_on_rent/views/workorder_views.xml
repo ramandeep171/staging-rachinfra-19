@@ -7,6 +7,11 @@
         <field name="arch" type="xml">
             <xpath expr="//sheet/notebook" position="inside">
                 <page string="RMC Dockets" name="gear_rmc_docket_page">
+                    <group>
+                        <field name="gear_cycle_reason_id"/>
+                        <field name="gear_cycle_reason_type" readonly="1"/>
+                        <field name="scrap_qty"/>
+                    </group>
                     <field name="gear_docket_ids"
                            context="{
                                'default_workorder_id': id,
@@ -22,6 +27,8 @@
                             <field name="quantity_ordered"/>
                             <field name="runtime_minutes"/>
                             <field name="idle_minutes"/>
+                            <field name="cycle_reason_id"/>
+                            <field name="cycle_reason_type" readonly="1"/>
                             <field name="source" optional="hide"/>
                             <field name="notes" optional="hide"/>
                         </list>

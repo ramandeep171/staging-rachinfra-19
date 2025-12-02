@@ -66,6 +66,80 @@ class MrpProduction(models.Model):
         string="Cooling Period Window",
         help="Indicates the parent monthly work order is within the cooling period.",
     )
+    x_inventory_mode = fields.Selection(
+        selection=[
+            ("without_inventory", "Without Inventory"),
+            ("with_inventory", "With Inventory"),
+        ],
+        string="Inventory Mode",
+        default="without_inventory",
+        help="Snapshot of the inventory routing mode at MO creation time.",
+    )
+    x_target_warehouse_id = fields.Many2one(
+        comodel_name="stock.warehouse",
+        string="Inventory Warehouse",
+        help="Warehouse resolved for this MO based on the sales order inventory mode.",
+    )
+    company_currency_id = fields.Many2one(
+        comodel_name="res.currency",
+        related="company_id.currency_id",
+        readonly=True,
+        string="Company Currency",
+    )
+    prime_rate = fields.Float(
+        string="Prime Rate Snapshot",
+        digits=(16, 2),
+        help="Prime production rate captured from the parent sales order variables.",
+    )
+    optimize_rate = fields.Float(
+        string="Optimize Rate Snapshot",
+        digits=(16, 2),
+        help="Optimize standby rate captured from the parent sales order variables.",
+    )
+    ngt_rate = fields.Float(
+        string="NGT Rate Snapshot",
+        digits=(16, 2),
+        help="NGT rate captured from the parent sales order variables.",
+    )
+    excess_rate = fields.Float(
+        string="Excess Rate Snapshot",
+        digits=(16, 2),
+        help="Excess production rate captured from the parent sales order variables.",
+    )
+    mgq_monthly = fields.Float(
+        string="MGQ (Monthly) Snapshot",
+        digits=(16, 2),
+        help="Variable-based monthly MGQ captured for this manufacturing order window.",
+    )
+    wastage_allowed_percent = fields.Float(
+        string="Allowed Wastage (%)",
+        digits=(16, 4),
+        help="Scrap tolerance percent snapshot from the parent monthly order or sales order.",
+    )
+    wastage_penalty_rate = fields.Monetary(
+        string="Wastage Penalty Rate",
+        currency_field="company_currency_id",
+        help="Penalty rate snapshot used to value over-wastage quantities (copied from SO/MWO).",
+    )
+    cooling_months = fields.Integer(
+        string="Cooling Months Snapshot",
+        help="Cooling period length captured when the manufacturing order was created.",
+    )
+    loto_waveoff_hours = fields.Float(
+        string="LOTO Wave-Off Allowance Snapshot",
+        digits=(16, 2),
+        help="Wave-off allowance captured from the sales order variables.",
+    )
+    bank_pull_limit = fields.Float(
+        string="Bank Pull Limit Snapshot",
+        digits=(16, 2),
+        help="Maximum allowed bank pull captured from the sales order variables.",
+    )
+    ngt_hourly_prorata_factor = fields.Float(
+        string="NGT Hourly Prorata Factor Snapshot",
+        digits=(16, 4),
+        help="Hourly to m³ conversion factor captured for NGT relief calculations.",
+    )
     x_docket_ids = fields.One2many(
         comodel_name="gear.rmc.docket",
         inverse_name="production_id",
@@ -95,6 +169,40 @@ class MrpProduction(models.Model):
         store=True,
         digits=(16, 2),
     )
+    actual_scrap_qty = fields.Float(
+        string="Actual Scrap (m³)",
+        compute="_compute_actual_scrap_qty",
+        store=True,
+        digits=(16, 2),
+        help="Total scrap recorded across all work orders for this manufacturing order.",
+    )
+    prime_output_qty = fields.Float(
+        string="Prime Output (m³)",
+        related="x_prime_output_qty",
+        store=True,
+        readonly=True,
+    )
+    wastage_allowed_qty = fields.Float(
+        string="Allowed Wastage (m³)",
+        compute="_compute_wastage_kpis",
+        store=True,
+        digits=(16, 2),
+        help="Quantity of scrap permitted under the wastage tolerance.",
+    )
+    over_wastage_qty = fields.Float(
+        string="Over Wastage (m³)",
+        compute="_compute_wastage_kpis",
+        store=True,
+        digits=(16, 2),
+        help="Scrap above the allowed tolerance.",
+    )
+    deduction_qty = fields.Float(
+        string="Deduction Quantity (m³)",
+        compute="_compute_wastage_kpis",
+        store=True,
+        digits=(16, 2),
+        help="Quantity to be used for wastage-based deductions.",
+    )
     x_pending_workorder_chunks = fields.Json(
         string="Queued Work Order Chunks",
         default=list,
@@ -119,7 +227,8 @@ class MrpProduction(models.Model):
     @api.depends("x_docket_ids.qty_m3")
     def _compute_prime_output_qty(self):
         for production in self:
-            production.x_prime_output_qty = sum(production.x_docket_ids.mapped("qty_m3"))
+            client_dockets = production._gear_client_dockets()
+            production.x_prime_output_qty = sum(client_dockets.mapped("qty_m3"))
 
     @api.depends("x_adjusted_target_qty", "x_prime_output_qty")
     def _compute_optimized_standby_qty(self):
@@ -131,8 +240,46 @@ class MrpProduction(models.Model):
     @api.depends("x_docket_ids.runtime_minutes", "x_docket_ids.idle_minutes")
     def _compute_runtime_idle_minutes(self):
         for production in self:
-            production.x_runtime_minutes = sum(production.x_docket_ids.mapped("runtime_minutes"))
-            production.x_idle_minutes = sum(production.x_docket_ids.mapped("idle_minutes"))
+            client_dockets = production._gear_client_dockets()
+            production.x_runtime_minutes = sum(client_dockets.mapped("runtime_minutes"))
+            production.x_idle_minutes = sum(client_dockets.mapped("idle_minutes"))
+
+    @api.depends("workorder_ids.scrap_qty")
+    def _compute_actual_scrap_qty(self):
+        for production in self:
+            production.actual_scrap_qty = sum(production.workorder_ids.mapped("scrap_qty"))
+
+    @api.depends("prime_output_qty", "wastage_allowed_percent", "actual_scrap_qty")
+    def _compute_wastage_kpis(self):
+        for production in self:
+            prime_output = production.prime_output_qty or 0.0
+            allowed_percent = production.wastage_allowed_percent or 0.0
+            allowed_qty = (prime_output * allowed_percent) / 100.0 if allowed_percent else 0.0
+            actual_scrap = production.actual_scrap_qty or 0.0
+            over_wastage = max(actual_scrap - allowed_qty, 0.0)
+            production.wastage_allowed_qty = round(allowed_qty, 2)
+            production.over_wastage_qty = round(over_wastage, 2)
+            production.deduction_qty = production.over_wastage_qty
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        productions = super().create(vals_list)
+        for production, vals in zip(productions, vals_list):
+            if vals.get("wastage_allowed_percent") is None:
+                percent = False
+                if production.x_monthly_order_id:
+                    percent = production.x_monthly_order_id.wastage_allowed_percent
+                elif production.x_sale_order_id:
+                    percent = production.x_sale_order_id.wastage_allowed_percent
+                production.wastage_allowed_percent = percent
+            if vals.get("wastage_penalty_rate") is None:
+                rate = False
+                if production.x_monthly_order_id:
+                    rate = production.x_monthly_order_id.wastage_penalty_rate
+                elif production.x_sale_order_id:
+                    rate = production.x_sale_order_id.wastage_penalty_rate
+                production.wastage_penalty_rate = rate
+        return productions
 
     def gear_allocate_relief_hours(self, hours, reason):
         """Apply downtime hours to the MO and adjust MGQ relief when applicable."""
@@ -252,6 +399,10 @@ class MrpProduction(models.Model):
         waveoff_applied = self.x_waveoff_hours_applied or 0.0
         waveoff_chargeable = self.x_waveoff_hours_chargeable or 0.0
         total_waveoff = waveoff_applied + waveoff_chargeable
+        allowed_wastage_qty = self.wastage_allowed_qty or 0.0
+        actual_scrap_qty = self.actual_scrap_qty or 0.0
+        over_wastage_qty = self.over_wastage_qty or 0.0
+        deduction_qty = self.deduction_qty or 0.0
         monthly_target_qty = monthly_order.monthly_target_qty if monthly_order else contract.x_monthly_mgq if contract else 0.0
         monthly_adjusted = monthly_order.adjusted_target_qty if monthly_order else monthly_target_qty
         cumulative_prime = monthly_order.prime_output_qty if monthly_order else prime_output
@@ -353,6 +504,10 @@ class MrpProduction(models.Model):
                 "daily_mgq": target_qty,
                 "adjusted_mgq": adjusted_qty,
                 "prime_output": prime_output,
+                "allowed_wastage": allowed_wastage_qty,
+                "actual_scrap": actual_scrap_qty,
+                "over_wastage": over_wastage_qty,
+                "deduction": deduction_qty,
                 "optimized_standby": standby_qty,
                 "ngt_hours": ngt_hours,
                 "loto_hours": waveoff_chargeable,
@@ -370,6 +525,8 @@ class MrpProduction(models.Model):
             "version_label": _("Daily Summary"),
             "contract_name": contract.name if contract else "",
             "customer_name": customer.display_name if customer else "",
+            "inventory_mode": dict(monthly_order._fields['x_inventory_mode'].selection).get(monthly_order.x_inventory_mode) if monthly_order and monthly_order.x_inventory_mode else "N/A",
+            "real_warehouse": monthly_order.x_real_warehouse_id.display_name if monthly_order and monthly_order.x_real_warehouse_id else "N/A",
             "loto_total_hours": total_waveoff,
             "waveoff_allowance": contract.x_loto_waveoff_hours if contract else 0.0,
             "waveoff_applied": waveoff_applied,
@@ -379,6 +536,10 @@ class MrpProduction(models.Model):
             "ngt_hours": ngt_hours,
             "ngt_qty": relief_qty,
             "prime_output_qty": prime_output,
+            "allowed_wastage_qty": allowed_wastage_qty,
+            "actual_scrap_qty": actual_scrap_qty,
+            "over_wastage_qty": over_wastage_qty,
+            "deduction_qty": deduction_qty,
             "optimized_standby": standby_qty,
             "show_cooling_totals": is_cooling,
             "show_normal_totals": show_normal_totals,
@@ -406,6 +567,10 @@ class MrpProduction(models.Model):
         Workorder = self.env["mrp.workorder"]
         workorder = Workorder.gear_find_workorder(workcenter, timestamp)
         return workorder.production_id if workorder else self.browse()
+
+    def _gear_client_dockets(self):
+        self.ensure_one()
+        return self.x_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance")
 
 
 class MrpWorkorder(models.Model):
@@ -447,10 +612,25 @@ class MrpWorkorder(models.Model):
         store=True,
         digits=(16, 2),
     )
+    scrap_qty = fields.Float(
+        string="Scrap Quantity (m³)",
+        digits=(16, 2),
+        help="Quantity scrapped for this work order.",
+    )
     gear_recipe_product_id = fields.Many2one(
         comodel_name="product.product",
         string="Recipe Product",
         help="Concrete product whose recipe should be followed for this work order.",
+    )
+    gear_cycle_reason_id = fields.Many2one(
+        comodel_name="gear.cycle.reason",
+        string="Cycle Reason",
+        tracking=True,
+    )
+    gear_cycle_reason_type = fields.Selection(
+        related="gear_cycle_reason_id.reason_type",
+        store=True,
+        readonly=True,
     )
     gear_recipe_id = fields.Many2one(
         comodel_name="mrp.bom",
@@ -485,13 +665,15 @@ class MrpWorkorder(models.Model):
     @api.depends("gear_docket_ids.qty_m3")
     def _compute_prime_output_qty(self):
         for workorder in self:
-            workorder.gear_prime_output_qty = sum(workorder.gear_docket_ids.mapped("qty_m3"))
+            dockets = workorder.gear_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance")
+            workorder.gear_prime_output_qty = sum(dockets.mapped("qty_m3"))
 
     @api.depends("gear_docket_ids.runtime_minutes", "gear_docket_ids.idle_minutes")
     def _compute_runtime_idle_minutes(self):
         for workorder in self:
-            workorder.gear_runtime_minutes = sum(workorder.gear_docket_ids.mapped("runtime_minutes"))
-            workorder.gear_idle_minutes = sum(workorder.gear_docket_ids.mapped("idle_minutes"))
+            dockets = workorder.gear_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance")
+            workorder.gear_runtime_minutes = sum(dockets.mapped("runtime_minutes"))
+            workorder.gear_idle_minutes = sum(dockets.mapped("idle_minutes"))
 
     @api.depends("gear_recipe_id", "gear_recipe_id.bom_line_ids")
     def _compute_gear_recipe_line_ids(self):
@@ -520,7 +702,8 @@ class MrpWorkorder(models.Model):
         return res
 
     def button_finish(self):
-        res = super().button_finish()
+        workorders = self.with_context(allow_qty_produced_done=True)
+        res = super(MrpWorkorder, workorders).button_finish()
         self._gear_finalize_dockets()
         return res
 
@@ -592,12 +775,16 @@ class MrpWorkorder(models.Model):
                 "quantity_ordered": workorder.gear_qty_planned or workorder.qty_production or production.product_qty,
                 "payload_timestamp": workorder.date_start,
             }
+            if workorder.gear_cycle_reason_id:
+                docket_vals["cycle_reason_id"] = workorder.gear_cycle_reason_id.id
             docket_model.create(docket_vals)
 
     def _gear_update_docket_states(self, target_state):
         valid_states = {"draft", "in_production", "ready", "dispatched"}
         for workorder in self:
-            dockets = workorder.gear_docket_ids.filtered(lambda d: d.state in valid_states)
+            dockets = workorder.gear_docket_ids.filtered(
+                lambda d: d.state in valid_states and d.cycle_reason_type != "maintenance"
+            )
             if not dockets:
                 continue
             if target_state == "in_production":
@@ -612,7 +799,7 @@ class MrpWorkorder(models.Model):
 
     def _gear_finalize_dockets(self):
         for workorder in self:
-            dockets = workorder.gear_docket_ids
+            dockets = workorder.gear_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance")
             if not dockets:
                 continue
             produced_qty = (
@@ -728,17 +915,19 @@ class MrpWorkorder(models.Model):
             "notes": payload.get("notes"),
             "source": "ids",
         }
+        if self.gear_cycle_reason_id:
+            docket_payload["cycle_reason_id"] = self.gear_cycle_reason_id.id
         if payload.get("slump"):
             docket_payload["slump"] = payload["slump"]
 
         docket = self.env["gear.rmc.docket"].gear_create_from_workorder(self, docket_payload)
         self.invalidate_model(
             [
-                    "gear_prime_output_qty",
-                    "gear_runtime_minutes",
-                    "gear_idle_minutes",
-                ]
-            )
+                "gear_prime_output_qty",
+                "gear_runtime_minutes",
+                "gear_idle_minutes",
+            ]
+        )
         if self.production_id:
             self.production_id.invalidate_model(
                 [
@@ -824,3 +1013,21 @@ class MrpWorkorder(models.Model):
                 except Exception:
                     # ignore if compute-driven or forbidden; manual intervention needed
                     pass
+
+    @api.constrains("gear_runtime_minutes", "gear_cycle_reason_id")
+    def _check_cycle_reason_threshold(self):
+        threshold = self.env["gear.rmc.docket"]._get_cycle_runtime_threshold()
+        for workorder in self:
+            exceeds = workorder.gear_runtime_minutes and workorder.gear_runtime_minutes > threshold
+            docket_reasons = workorder.gear_docket_ids.filtered("cycle_reason_id")
+            has_reason = workorder.gear_cycle_reason_id or docket_reasons
+            client_reason = (
+                workorder.gear_cycle_reason_type == "client"
+                or any(dr.cycle_reason_type == "client" for dr in docket_reasons)
+            )
+            if exceeds and not has_reason:
+                raise ValidationError(
+                    _("A cycle reason is required when runtime exceeds %(threshold)s minutes.", threshold=threshold)
+                )
+            if exceeds and not client_reason:
+                raise ValidationError(_("Client workflows require a Client reason."))

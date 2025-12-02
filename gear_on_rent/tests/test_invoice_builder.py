@@ -1,8 +1,18 @@
+from calendar import monthrange
 from datetime import datetime, timedelta, time
 
-from odoo import fields
-from odoo.tests import Form, SavepointCase
-from odoo.tests.common import new_test_request
+import pytest
+
+try:  # pragma: no cover - skip when the Odoo framework is unavailable
+    from odoo import fields
+    from odoo.tests import Form, SavepointCase
+    from odoo.tests.common import new_test_request
+    from odoo.exceptions import ValidationError
+except ModuleNotFoundError:  # pragma: no cover
+    pytest.skip(
+        "The Odoo test framework is not available in this execution environment.",
+        allow_module_level=True,
+    )
 
 
 class TestGearOnRentMrp(SavepointCase):
@@ -53,6 +63,9 @@ class TestGearOnRentMrp(SavepointCase):
             {
                 "partner_id": cls.partner.id,
                 "x_workcenter_id": cls.workcenter.id,
+                "standard_loading_minutes": 30.0,
+                "diesel_burn_rate_per_hour": 6.0,
+                "diesel_rate_per_litre": 100.0,
             }
         )
 
@@ -72,6 +85,19 @@ class TestGearOnRentMrp(SavepointCase):
         cls.assertEqual(cls.order.x_monthly_mgq, 240.0)
         cls.assertEqual(cls.order.x_contract_start, contract_start)
         cls.assertEqual(cls.order.x_contract_end, contract_end)
+
+        cls.client_reason = cls.env["gear.cycle.reason"].create(
+            {"name": "Client Delay", "reason_type": "client"}
+        )
+        cls.maintenance_reason = cls.env["gear.cycle.reason"].create(
+            {"name": "Maintenance", "reason_type": "maintenance"}
+        )
+        cls.diesel_reason_client = cls.env["gear.reason"].create(
+            {"name": "Client Overrun", "reason_type": "client"}
+        )
+        cls.diesel_reason_maintenance = cls.env["gear.reason"].create(
+            {"name": "Maintenance Overrun", "reason_type": "maintenance"}
+        )
 
         cls.order.action_confirm()
         cls.order.gear_generate_monthly_orders()
@@ -144,6 +170,107 @@ class TestGearOnRentMrp(SavepointCase):
             "Default docket should align with the monthly start date.",
         )
 
+    def test_cycle_reason_required_for_long_runtime(self):
+        self.env["ir.config_parameter"].sudo().set_param("gear_on_rent.cycle_runtime_threshold", 5)
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        docket = workorder.gear_docket_ids[:1]
+
+        with self.assertRaises(ValidationError):
+            docket.write({"runtime_minutes": 6.0})
+
+        docket.write({"cycle_reason_id": self.client_reason.id, "runtime_minutes": 6.0})
+        self.assertEqual(docket.cycle_reason_type, "client")
+
+    def test_maintenance_reason_excluded_from_billing(self):
+        self.env["ir.config_parameter"].sudo().set_param("gear_on_rent.cycle_runtime_threshold", 1000)
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        docket = workorder.gear_docket_ids[:1]
+
+        docket.write(
+            {
+                "cycle_reason_id": self.maintenance_reason.id,
+                "qty_m3": 12.0,
+                "runtime_minutes": 20.0,
+            }
+        )
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+        self.assertAlmostEqual(self.monthly_order.prime_output_qty, 0.0, places=2)
+
+        docket.write({"cycle_reason_id": self.client_reason.id})
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+        self.assertAlmostEqual(self.monthly_order.prime_output_qty, 12.0, places=2)
+
+    def test_diesel_defaults_propagate(self):
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        docket = workorder.gear_docket_ids[:1]
+        self.assertTrue(docket)
+        self.assertAlmostEqual(docket.standard_loading_minutes, self.order.standard_loading_minutes, places=2)
+        self.assertAlmostEqual(docket.actual_loading_minutes, docket.standard_loading_minutes, places=2)
+        self.assertAlmostEqual(self.monthly_order.standard_loading_minutes, self.order.standard_loading_minutes, places=2)
+
+    def test_diesel_overrun_reason_flow(self):
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        docket = workorder.gear_docket_ids[:1]
+        docket.write(
+            {
+                "actual_loading_minutes": docket.standard_loading_minutes + 30.0,
+                "reason_id": self.diesel_reason_maintenance.id,
+            }
+        )
+        docket.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+        self.assertGreater(docket.excess_diesel_amount, 0.0)
+        self.assertAlmostEqual(self.monthly_order.excess_diesel_amount_total, 0.0, places=2)
+
+        docket.write({"reason_id": self.diesel_reason_client.id})
+        docket.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+        self.assertGreater(self.monthly_order.excess_diesel_amount_total, 0.0)
+
+    def test_invoice_includes_diesel_overrun_line(self):
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        payload = {
+            "produced_m3": 20.0,
+            "timestamp": fields.Datetime.to_string(production.date_start or fields.Datetime.now()),
+            "runtime_min": 50,
+            "idle_min": 10,
+        }
+        workorder.gear_register_ids_payload(payload)
+
+        docket = workorder.gear_docket_ids[:1]
+        docket.write(
+            {
+                "actual_loading_minutes": docket.standard_loading_minutes + 20.0,
+                "reason_id": self.diesel_reason_client.id,
+            }
+        )
+        docket.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+
+        wizard = Form(self.env["gear.prepare.invoice.mrp"])
+        wizard.monthly_order_id = self.monthly_order
+        wizard.invoice_date = fields.Date.to_date("2025-03-31")
+        prepare = wizard.save()
+        action = prepare.action_prepare_invoice()
+        invoice = self.env["account.move"].browse(action["res_id"])
+
+        diesel_lines = invoice.invoice_line_ids.filtered(lambda l: "Overrun" in (l.name or ""))
+        self.assertTrue(diesel_lines, "Diesel overrun line should be present when excess exists.")
+        self.assertAlmostEqual(
+            sum(diesel_lines.mapped("price_subtotal")),
+            self.monthly_order.excess_diesel_amount_total,
+            places=2,
+        )
+        payload = invoice._gear_get_month_end_payload()
+        self.assertAlmostEqual(payload.get("diesel_excess_amount", 0.0), self.monthly_order.excess_diesel_amount_total, places=2)
+
     def test_invoice_builder_uses_mrp_metrics(self):
         production = self._get_first_production()
         workorder = production.workorder_ids[:1]
@@ -206,6 +333,147 @@ class TestGearOnRentMrp(SavepointCase):
         self.assertAlmostEqual(dockets[0].get("qty_m3", 0.0), 28.0, places=2)
         self.assertAlmostEqual(dockets[0].get("runtime_minutes", 0.0), 50.0, places=2)
         self.assertFalse(report_payload.get("show_cooling_totals"))
+
+    def test_wastage_kpis_and_debit_note(self):
+        self.order.wastage_allowed_percent = 0.5
+        self.order.wastage_penalty_rate = 150.0
+        self.order.gear_generate_monthly_orders()
+        self.monthly_order.invalidate_recordset()
+
+        production = self._get_first_production()
+        self.assertAlmostEqual(production.wastage_allowed_percent, 0.5, places=4)
+
+        workorder = production.workorder_ids[:1]
+        workorder.scrap_qty = 2.0
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+
+        self.assertAlmostEqual(production.actual_scrap_qty, 2.0, places=2)
+        self.assertAlmostEqual(production.over_wastage_qty, 2.0, places=2)
+        self.assertAlmostEqual(self.monthly_order.mwo_actual_scrap_qty, 2.0, places=2)
+        self.assertAlmostEqual(self.monthly_order.mwo_over_wastage_qty, 2.0, places=2)
+
+        debit_note = self.monthly_order._gear_create_over_wastage_debit_note()
+        note = debit_note[:1]
+        self.assertTrue(note, "Debit note should be created when over-wastage exists")
+        self.assertEqual(note.move_type, "out_refund")
+        self.assertGreater(note.amount_total, 0.0)
+
+    def test_wastage_fields_propagate_and_rollup(self):
+        self.order.write({"wastage_allowed_percent": 1.25, "wastage_penalty_rate": 225.0})
+        self.order.gear_generate_monthly_orders()
+        self.monthly_order.invalidate_recordset()
+        self.monthly_order.action_schedule_orders()
+
+        self.assertAlmostEqual(self.monthly_order.wastage_allowed_percent, 1.25, places=4)
+        self.assertAlmostEqual(self.monthly_order.wastage_penalty_rate, 225.0, places=2)
+
+        production = self._get_first_production()
+        self.assertAlmostEqual(production.wastage_allowed_percent, 1.25, places=4)
+        self.assertAlmostEqual(production.wastage_penalty_rate, 225.0, places=2)
+
+        workorder = production.workorder_ids[:1]
+        workorder.scrap_qty = 1.0
+        extra = workorder.copy({"scrap_qty": 0.5, "production_id": production.id})
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+
+        self.assertAlmostEqual(production.actual_scrap_qty, 1.5, places=2)
+        self.assertAlmostEqual(self.monthly_order.mwo_actual_scrap_qty, 1.5, places=2)
+        allowed_qty = (production.prime_output_qty or 0.0) * 0.0125
+        self.assertAlmostEqual(production.wastage_allowed_qty, round(allowed_qty, 2), places=2)
+        self.assertGreaterEqual(self.monthly_order.mwo_over_wastage_qty, production.over_wastage_qty)
+
+    def test_month_end_payload_includes_wastage_totals(self):
+        self.order.write({"wastage_allowed_percent": 1.0, "wastage_penalty_rate": 300.0})
+        self.order.gear_generate_monthly_orders()
+        self.monthly_order.invalidate_recordset()
+        production = self._get_first_production()
+
+        workorder = production.workorder_ids[:1]
+        payload = {
+            "produced_m3": 10.0,
+            "timestamp": fields.Datetime.to_string(production.date_start or fields.Datetime.now()),
+            "runtime_min": 30,
+            "idle_min": 10,
+            "alarms": [],
+        }
+        workorder.gear_register_ids_payload(payload)
+        workorder.scrap_qty = 2.0
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+
+        wizard = Form(self.env["gear.prepare.invoice.mrp"])
+        wizard.monthly_order_id = self.monthly_order
+        wizard.invoice_date = fields.Date.context_today(self)
+        prepare = wizard.save()
+        action = prepare.action_prepare_invoice()
+        invoice = self.env["account.move"].browse(action["res_id"])
+        payload = invoice._gear_get_month_end_payload()
+
+        self.assertAlmostEqual(payload.get("prime_output_qty", 0.0), 10.0, places=2)
+        self.assertAlmostEqual(payload.get("allowed_wastage_qty", 0.0), 0.1, places=2)
+        self.assertAlmostEqual(payload.get("actual_scrap_qty", 0.0), 2.0, places=2)
+        self.assertAlmostEqual(payload.get("over_wastage_qty", 0.0), 1.9, places=2)
+        detail = payload.get("manufacturing_orders", [])
+        self.assertTrue(detail)
+        self.assertAlmostEqual(detail[0].get("allowed_wastage", 0.0), 0.1, places=2)
+        self.assertAlmostEqual(detail[0].get("over_wastage", 0.0), 1.9, places=2)
+
+    def test_debit_note_cron_is_idempotent(self):
+        today = fields.Date.context_today(self)
+        month_start = today.replace(day=1)
+        last_day = monthrange(month_start.year, month_start.month)[1]
+        month_end = month_start.replace(day=last_day)
+        self.monthly_order.write(
+            {
+                "date_start": month_start,
+                "date_end": month_end,
+                "wastage_allowed_percent": 0.0,
+                "wastage_penalty_rate": 100.0,
+            }
+        )
+
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        workorder.scrap_qty = 5.0
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+
+        self.monthly_order._cron_generate_over_wastage_debit_notes()
+        notes = self.env["account.move"].search(
+            [("gear_monthly_order_id", "=", self.monthly_order.id), ("move_type", "=", "out_refund")]
+        )
+        self.assertEqual(len(notes), 1)
+        self.monthly_order._cron_generate_over_wastage_debit_notes()
+        notes_after = self.env["account.move"].search(
+            [("gear_monthly_order_id", "=", self.monthly_order.id), ("move_type", "=", "out_refund")]
+        )
+        self.assertEqual(len(notes_after), 1)
+
+    def test_mark_done_triggers_debit_note(self):
+        self.monthly_order.write({"wastage_allowed_percent": 0.0, "wastage_penalty_rate": 125.0})
+        production = self._get_first_production()
+        workorder = production.workorder_ids[:1]
+        workorder.scrap_qty = 4.0
+        production.invalidate_recordset()
+        self.monthly_order.invalidate_recordset()
+
+        wizard = Form(self.env["gear.prepare.invoice.mrp"])
+        wizard.monthly_order_id = self.monthly_order
+        wizard.invoice_date = fields.Date.context_today(self)
+        prepare = wizard.save()
+        action = prepare.action_prepare_invoice()
+        invoice = self.env["account.move"].browse(action["res_id"])
+        invoice.action_post()
+
+        self.monthly_order.action_mark_done()
+        notes = self.env["account.move"].search(
+            [("gear_monthly_order_id", "=", self.monthly_order.id), ("move_type", "=", "out_refund")]
+        )
+        self.assertEqual(len(notes), 1)
+        self.assertGreater(notes.amount_total, 0.0)
+        self.assertEqual(notes.reversed_entry_id, invoice)
 
     def test_daily_mo_report_payload_without_dockets(self):
         production = self._get_first_production()

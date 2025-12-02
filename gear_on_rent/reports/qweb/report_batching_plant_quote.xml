@@ -1,0 +1,329 @@
+<odoo>
+    <record id="action_report_batching_plant_quote" model="ir.actions.report">
+        <field name="name">Batching Plant Quotation</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">gear_on_rent.report_batching_plant_quote</field>
+        <field name="report_file">gear_on_rent.report_batching_plant_quote</field>
+        <field name="print_report_name">(object.name or 'Batching Plant Quote')</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_batching_plant_quote">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="pdf_data" t-value="pdf_data"/>
+                <t t-set="chart_urls" t-value="chart_urls"/>
+                <t t-set="order" t-value="pdf_data.get('order')"/>
+                <t t-set="base_rates" t-value="pdf_data.get('base_rates') or {}"/>
+                <t t-set="final_rates" t-value="pdf_data.get('final_rates') or {}"/>
+                <t t-set="cost_breakdown" t-value="pdf_data.get('cost_breakdown') or {}"/>
+                <t t-set="mgq_scenarios" t-value="pdf_data.get('mgq_scenarios') or []"/>
+                <t t-set="summary_cards" t-value="pdf_data.get('summary_cards') or []"/>
+
+                <style>
+                        .bp-wrapper{
+                            font-family:"Lato","Helvetica","Arial",sans-serif;
+                            color:#111827;
+                            padding:20px 25px;
+                            font-size:12px;
+                        }
+                        .bp-heading{
+                            text-align:center;
+                            margin-bottom:20px;
+                        }
+                        .bp-heading .bp-brand{
+                            font-size:18px;
+                            font-weight:600;
+                        }
+                        .bp-heading .bp-tagline{
+                            font-size:11px;
+                            color:#6b7280;
+                            letter-spacing:0.5px;
+                        }
+                        .bp-main-title{
+                            color:#f57c00;
+                            font-size:24px;
+                            text-align:center;
+                            margin-bottom:14px;
+                            text-transform:uppercase;
+                            letter-spacing:0.5px;
+                        }
+                        .bp-section{
+                            margin-top:20px;
+                        }
+                        .bp-section h3{
+                            color:#f57c00;
+                            font-size:18px;
+                            margin:0 0 6px 0;
+                            border-bottom:2px solid #f57c00;
+                            padding-bottom:4px;
+                        }
+                        .bp-bullet-list{
+                            list-style:disc;
+                            margin:0 0 0 22px;
+                            padding:0;
+                            line-height:1.5;
+                        }
+                        .bp-bullet-list li{
+                            margin-bottom:4px;
+                        }
+                        .bp-table{
+                            width:100%;
+                            border-collapse:collapse;
+                            margin-top:8px;
+                            font-size:12px;
+                        }
+                        .bp-table thead th{
+                            background-color:#f57c00;
+                            color:#fff;
+                            padding:6px 8px;
+                            text-transform:uppercase;
+                            border:1px solid #de6d00;
+                        }
+                        .bp-table thead th:first-child{
+                            border-top-left-radius:8px;
+                        }
+                        .bp-table thead th:last-child{
+                            border-top-right-radius:8px;
+                        }
+                        .bp-table td{
+                            border:1px solid #d1d5db;
+                            padding:6px 8px;
+                        }
+                        .bp-chart{
+                            margin-top:18px;
+                        }
+                        .bp-chart-title{
+                            margin:0 0 4px 0;
+                            font-weight:600;
+                            color:#374151;
+                        }
+                        .bp-chart img{
+                            width:100%;
+                            border:1px solid #d1d5db;
+                            border-radius:6px;
+                            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+                        }
+                        .bp-summary-list{
+                            list-style:disc;
+                            margin-left:22px;
+                            line-height:1.5;
+                        }
+                        .bp-footer-note{
+                            margin-top:30px;
+                            text-align:center;
+                            font-size:10px;
+                            color:#9ca3af;
+                            letter-spacing:0.4px;
+                        }
+                </style>
+
+                <t t-if="order">
+                    <div class="page bp-wrapper">
+                            <div class="bp-heading">
+                                <div class="bp-brand">SP Nexgen Automind Pvt Ltd</div>
+                                <div class="bp-tagline">Tech Paras - Odoo Engineering Division - Automate Excellence</div>
+                            </div>
+                            <div class="bp-main-title">Batching Plant Quotation</div>
+
+                            <section class="bp-section">
+                                <h3>Service Summary</h3>
+                                <ul class="bp-bullet-list">
+                                    <li><strong>Service Type:</strong> <t t-esc="order.gear_service_type or '-'"/></li>
+                                    <li><strong>Plant Capacity:</strong> <t t-esc="order.gear_capacity_id.name or '-'"/></li>
+                                    <li><strong>MGQ:</strong> <t t-esc="base_rates.get('mgq')"/></li>
+                                    <li><strong>Inventory:</strong> <t t-esc="order.x_inventory_mode or '-'"/></li>
+                                    <li t-if="order.gear_design_mix_id"><strong>Grade:</strong> <t t-esc="order.gear_design_mix_id.grade"/></li>
+                                    <li>
+                                        <strong>Optional Services:</strong>
+                                        <t t-if="order.gear_transport_opt_in or order.gear_pumping_opt_in or order.gear_manpower_opt_in or order.gear_diesel_opt_in or order.gear_jcb_opt_in">
+                                            <span t-if="order.gear_transport_opt_in">Transport </span>
+                                            <span t-if="order.gear_pumping_opt_in">Pump </span>
+                                            <span t-if="order.gear_manpower_opt_in">Manpower </span>
+                                            <span t-if="order.gear_diesel_opt_in">Diesel </span>
+                                            <span t-if="order.gear_jcb_opt_in">JCB </span>
+                                        </t>
+                                        <t t-else="">None</t>
+                                    </li>
+                                    <li><strong>Project Duration:</strong> <t t-esc="order.gear_project_duration_months or 0"/> months</li>
+                                    <li><strong>Civil Scope:</strong> <t t-esc="order.gear_civil_scope or '-'"/></li>
+                                    <li><strong>Area:</strong> <t t-esc="order.gear_material_area_id.name or '-'"/></li>
+                                </ul>
+                            </section>
+
+                            <section class="bp-section">
+                                <h3>Final Rates</h3>
+                                <table class="bp-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Label</th>
+                                            <th>Rate</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-if="order.x_inventory_mode == 'without_inventory'">
+                                            <td>Prime</td>
+                                            <td t-esc="final_rates.get('final_prime_rate')"/>
+                                        </tr>
+                                        <tr t-if="order.x_inventory_mode == 'without_inventory'">
+                                            <td>Optimize</td>
+                                            <td t-esc="final_rates.get('final_optimize_rate')"/>
+                                        </tr>
+                                        <tr t-if="order.x_inventory_mode == 'without_inventory'">
+                                            <td>After MGQ</td>
+                                            <td t-esc="final_rates.get('final_after_mgq_rate')"/>
+                                        </tr>
+                                        <tr t-if="order.x_inventory_mode == 'with_inventory'">
+                                            <td t-esc="final_rates.get('grade') or 'Grade Rate'"/>
+                                            <td t-esc="final_rates.get('total_per_cum')"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+
+                            <section class="bp-section">
+                                <h3>Cost Breakup</h3>
+                                <table class="bp-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Component</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Base Plant</td>
+                                            <td t-esc="cost_breakdown.get('base')"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Material</td>
+                                            <td t-esc="cost_breakdown.get('material')"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Optional</td>
+                                            <td t-esc="cost_breakdown.get('optional')"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Dead Cost</td>
+                                            <td t-esc="cost_breakdown.get('dead_cost')"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+
+                            <section class="bp-section" t-if="order.x_inventory_mode == 'with_inventory'">
+                                <h3>Material Cost</h3>
+                                <table class="bp-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Component</th>
+                                            <th>Consumption</th>
+                                            <th>Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Cement</td>
+                                            <td t-esc="order.gear_design_mix_id.cement_qty"/>
+                                            <td t-esc="order.gear_material_area_id.cement_rate"/>
+                                        </tr>
+                                        <tr>
+                                            <td>10mm Aggregate</td>
+                                            <td t-esc="order.gear_design_mix_id.agg_10mm_qty"/>
+                                            <td t-esc="order.gear_material_area_id.agg_10mm_rate"/>
+                                        </tr>
+                                        <tr>
+                                            <td>20mm Aggregate</td>
+                                            <td t-esc="order.gear_design_mix_id.agg_20mm_qty"/>
+                                            <td t-esc="order.gear_material_area_id.agg_20mm_rate"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Admixture</td>
+                                            <td t-esc="order.gear_design_mix_id.admixture_qty"/>
+                                            <td t-esc="order.gear_material_area_id.admixture_rate"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </section>
+                    </div>
+
+                    <div class="page bp-wrapper">
+                        <section class="bp-section" t-if="mgq_scenarios">
+                            <h3>MGQ Billing Scenarios</h3>
+                            <table class="bp-table">
+                                <thead>
+                                    <tr>
+                                        <th>Scenario</th>
+                                        <th>Quantity</th>
+                                        <th>Prime</th>
+                                        <th>Optimize</th>
+                                        <th>After MGQ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="mgq_scenarios" t-as="scenario">
+                                        <td t-esc="scenario.get('label')"/>
+                                        <td t-esc="scenario.get('qty')"/>
+                                        <td t-esc="scenario.get('prime_bill')"/>
+                                        <td t-esc="scenario.get('optimize_bill')"/>
+                                        <td t-esc="scenario.get('after_bill')"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    </div>
+
+                    <div class="page bp-wrapper">
+                        <section class="bp-section">
+                            <h3>Charts</h3>
+                            <div class="bp-chart" t-if="chart_urls.get('cost_pie')">
+                                <p class="bp-chart-title">Cost Breakdown</p>
+                                <img t-att-src="chart_urls.get('cost_pie')" alt="Cost breakdown chart"/>
+                            </div>
+                            <div class="bp-chart" t-if="chart_urls.get('mgq_bars')">
+                                <p class="bp-chart-title">MGQ Billing</p>
+                                <img t-att-src="chart_urls.get('mgq_bars')" alt="MGQ billing chart"/>
+                            </div>
+                            <div class="bp-chart" t-if="chart_urls.get('diesel_line')">
+                                <p class="bp-chart-title">Diesel Escalation</p>
+                                <img t-att-src="chart_urls.get('diesel_line')" alt="Diesel escalation chart"/>
+                            </div>
+                        </section>
+
+                        <section class="bp-section" t-if="chart_urls.get('grade_comparison')">
+                            <h3>Grade Comparison</h3>
+                            <div class="bp-chart">
+                                <img t-att-src="chart_urls.get('grade_comparison')" alt="Grade comparison chart"/>
+                            </div>
+                        </section>
+
+                        <section class="bp-section">
+                            <h3>Summary</h3>
+                            <ul class="bp-summary-list">
+                                <li t-foreach="summary_cards" t-as="card">
+                                    <strong t-esc="card.get('label')"/>:
+                                    <t t-esc="card.get('value')"/>
+                                </li>
+                            </ul>
+                        </section>
+
+                        <div class="bp-footer-note">
+                            Generated by Tech Paras - Automate Excellence - https://www.smarterpeak.com
+                        </div>
+                    </div>
+                </t>
+
+                <t t-if="not order">
+                    <div class="page bp-wrapper">
+                        <div class="bp-heading">
+                            <div class="bp-main-title">Batching Plant Quotation</div>
+                            <p>No data available for this report.</p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

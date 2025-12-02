@@ -1,7 +1,25 @@
-from dateutil.relativedelta import relativedelta
+try:  # pragma: no cover - allows running tests without optional deps
+    from dateutil.relativedelta import relativedelta
+except ModuleNotFoundError:  # pragma: no cover
+    from odoo_shims.relativedelta import relativedelta
+
+import base64
+import io
+import logging
+import textwrap
 
 from odoo import fields, http
+from odoo.exceptions import UserError
 from odoo.http import request
+
+try:  # pragma: no cover - optional dependency in some test envs
+    from reportlab.lib.pagesizes import letter as rl_letter
+    from reportlab.pdfgen import canvas as rl_canvas
+except ModuleNotFoundError:  # pragma: no cover
+    rl_letter = None
+    rl_canvas = None
+
+_logger = logging.getLogger(__name__)
 
 
 class GearOnRentPortal(http.Controller):
@@ -22,6 +40,34 @@ class GearOnRentPortal(http.Controller):
             "orders": orders,
         }
         return request.render("gear_on_rent.portal_gear_on_rent_dashboard", values)
+
+    @http.route("/my/gear-on-rent/reconciliations", type="http", auth="user", website=True)
+    def gear_on_rent_reconciliations(self, **kwargs):
+        partner = request.env.user.partner_id.commercial_partner_id
+        Recon = request.env["gear.rmc.annual.reconciliation"].sudo()
+        domain = [("so_id.partner_id", "child_of", partner.id)]
+        reconciliations = Recon.search(domain, order="fiscal_year_start desc")
+        values = {
+            "page_name": "gear_on_rent_reconciliation",
+            "reconciliations": reconciliations,
+        }
+        return request.render("gear_on_rent.portal_gear_on_rent_reconciliation", values)
+
+    @http.route("/my/gear-on-rent/reconciliations/<int:recon_id>/export", type="http", auth="user", website=True)
+    def gear_on_rent_reconciliation_export(self, recon_id, **kwargs):
+        partner = request.env.user.partner_id.commercial_partner_id
+        recon = request.env["gear.rmc.annual.reconciliation"].sudo().browse(recon_id)
+        if not recon or recon.so_id.partner_id not in (partner | partner.child_ids):
+            return request.not_found()
+        # XLSX export stub: return a simple response for now
+        content = "FY grid export placeholder for %s" % (recon.name,)
+        return request.make_response(
+            content,
+            headers={
+                "Content-Type": "text/plain;charset=utf-8",
+                "Content-Disposition": "attachment; filename=reconciliation_%s.txt" % recon.name,
+            },
+        )
 
     @http.route(
         "/gear_on_rent/quote_request",
@@ -125,7 +171,50 @@ class GearOnRentPortal(http.Controller):
 
         note_text = "\n".join(filter(None, notes))
 
-        amount_display = f"₹{int(round(amount_float)):,}"
+        amount_display = f"INR {int(round(amount_float)):,}"
+
+        lead = False
+        rental_team = request.env.ref("gear_on_rent.crm_team_rental", raise_if_not_found=False)
+        Lead = request.env["crm.lead"].sudo()
+        if rental_team:
+            visitor_env = request.env["website.visitor"].sudo()
+            visitor = visitor_env._get_visitor_from_request(request)
+            if visitor and hasattr(visitor_env, "create_lead_from_page_visit"):
+                try:
+                    lead = visitor_env.create_lead_from_page_visit(visitor, rental_team.id, "/gear-on-rent")
+                except Exception:
+                    lead = False
+        if not lead and rental_team:
+            lead = Lead.search(
+                [
+                    ("team_id", "=", rental_team.id),
+                    ("partner_id", "=", partner.id),
+                ],
+                order="create_date desc",
+                limit=1,
+            )
+        if not lead and rental_team:
+            lead_vals = {
+                "name": f"Rental Estimate - {equipment or product.display_name}",
+                "team_id": rental_team.id,
+                "type": "lead",
+                "partner_id": partner.id,
+                "contact_name": partner.name,
+                "email_from": partner.email,
+                "phone": partner.phone or getattr(partner, "mobile", False),
+                "description": note_text or details,
+                "referred": "/gear-on-rent",
+            }
+            lead = Lead.create(lead_vals)
+        if lead:
+            lead = lead.sudo()
+            if partner and (not lead.partner_id or lead.partner_id != partner):
+                lead.write({"partner_id": partner.id})
+            if lead.type != "opportunity":
+                try:
+                    lead.convert_opportunity(lead.partner_id or partner)
+                except Exception:
+                    lead.write({"type": "opportunity"})
 
         order_vals = {
             "partner_id": partner.id,
@@ -138,6 +227,8 @@ class GearOnRentPortal(http.Controller):
             "rental_start_date": start_date,
             "rental_return_date": return_date,
             "is_rental_order": True,
+            "opportunity_id": lead.id if lead else False,
+            "team_id": lead.team_id.id if lead and lead.team_id else False,
         }
         order = request.env["sale.order"].with_context(in_rental_app=True).sudo().create(order_vals)
 
@@ -152,7 +243,40 @@ class GearOnRentPortal(http.Controller):
             "return_date": return_date,
         })
 
+        if lead:
+            lead.message_post(body=f"Estimator quotation created: {order.name}")
         order.message_post(body="Generated from Gear On Rent estimator on website.")
+
+        if order.state == "draft":
+            try:
+                order.action_quotation_sent()
+            except Exception:
+                _logger.exception("Unable to mark estimator quotation %s as sent", order.name)
+
+        report_service = request.env["ir.actions.report"].sudo()
+        filename = f"{order.name.replace('/', '_')}_quotation.pdf"
+        pdf_bytes = None
+        try:
+            pdf_bytes, _ = report_service._render_qweb_pdf("sale.action_report_saleorder", [order.id])
+        except UserError:
+            pdf_bytes = self._render_basic_estimate_pdf(
+                order,
+                equipment or product.display_name,
+                amount_display,
+                start_display,
+                return_display,
+                note_text,
+            )
+        except Exception:
+            pdf_bytes = None
+
+        if pdf_bytes:
+            headers = {
+                "Content-Type": "application/pdf",
+                "Content-Length": len(pdf_bytes),
+                "Content-Disposition": f"attachment; filename={filename}",
+            }
+            return request.make_response(pdf_bytes, headers=headers)
 
         values = {
             "order": order,
@@ -165,3 +289,179 @@ class GearOnRentPortal(http.Controller):
             "return_date": return_display,
         }
         return request.render("gear_on_rent.quote_request_success", values)
+
+    def _render_basic_estimate_pdf(
+        self,
+        order,
+        equipment_label,
+        amount_display,
+        start_display,
+        return_display,
+        note_text,
+    ):
+        """Provide a minimal PDF when wkhtmltopdf is unavailable."""
+        if not rl_canvas or not rl_letter:
+            return None
+
+        buffer = io.BytesIO()
+        pdf = rl_canvas.Canvas(buffer, pagesize=rl_letter)
+        _, page_height = rl_letter
+        cursor_y = page_height - 60
+
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(40, cursor_y, "Rental Estimate")
+        cursor_y -= 30
+
+        pdf.setFont("Helvetica", 11)
+        summary_lines = [
+            f"Quotation: {order.name or 'Draft'}",
+            f"Customer: {order.partner_id.display_name or ''}",
+            f"Equipment: {equipment_label}",
+            f"Estimated Amount: {amount_display}",
+        ]
+        if start_display and return_display:
+            summary_lines.append(f"Rental Window: {start_display} -> {return_display}")
+
+        for line in summary_lines:
+            if not line.strip():
+                continue
+            pdf.drawString(40, cursor_y, line)
+            cursor_y -= 18
+
+        if note_text:
+            cursor_y -= 10
+            pdf.setFont("Helvetica-Bold", 11)
+            pdf.drawString(40, cursor_y, "Estimator Details")
+            cursor_y -= 18
+            pdf.setFont("Helvetica", 10)
+            for raw_line in note_text.splitlines():
+                wrapped = textwrap.wrap(raw_line, width=88) or [""]
+                for wrap_line in wrapped:
+                    if cursor_y < 60:
+                        pdf.showPage()
+                        pdf.setFont("Helvetica", 10)
+                        cursor_y = page_height - 60
+                    pdf.drawString(45, cursor_y, wrap_line)
+                    cursor_y -= 14
+
+        pdf.save()
+        buffer.seek(0)
+        return buffer.read()
+
+    # ------------------------------------------------------------------
+    # Batching plant portal (new flow only)
+    # ------------------------------------------------------------------
+    def _bp_get_partner(self):
+        return request.env.user.partner_id.commercial_partner_id
+
+    def _bp_get_order(self, order_id):
+        partner = self._bp_get_partner()
+        order = request.env["sale.order"].sudo().browse(int(order_id))
+        if (
+            not order
+            or not order.exists()
+            or order.x_billing_category != "plant"
+            or order.partner_id not in (partner | partner.child_ids)
+        ):
+            return None
+        return order
+
+    def _bp_encode_chart(self, path):
+        if not path:
+            return None
+        try:
+            with open(path, "rb") as handle:
+                data = handle.read()
+            encoded = base64.b64encode(data).decode("ascii")
+            return f"data:image/png;base64,{encoded}"
+        except FileNotFoundError:
+            return None
+
+    @http.route("/my/batching-plant", type="http", auth="user", website=True)
+    def portal_batching_quotes(self, **kwargs):
+        partner = self._bp_get_partner()
+        orders = (
+            request.env["sale.order"]
+            .sudo()
+            .search(
+                [
+                    ("partner_id", "child_of", partner.id),
+                    ("x_billing_category", "=", "plant"),
+                ],
+                order="create_date desc",
+            )
+        )
+        values = {
+            "page_name": "portal_batching_quotes",
+            "orders": orders,
+        }
+        return request.render("gear_on_rent.portal_batching_quote_list", values)
+
+    @http.route("/my/batching-plant/<int:order_id>", type="http", auth="user", website=True)
+    def portal_batching_quote_detail(self, order_id, **kwargs):
+        order = self._bp_get_order(order_id)
+        if not order:
+            return request.not_found()
+
+        pdf_helper = request.env["gear.batching.quotation.pdf"].sudo()
+        pdf_data = pdf_helper.prepare_pdf_assets(order)
+        chart_urls = {
+            key: self._bp_encode_chart(path) for key, path in pdf_data.get("charts", {}).items()
+        }
+
+        values = {
+            "page_name": "portal_batching_quote_detail",
+            "order": order,
+            "pdf_data": pdf_data,
+            "chart_urls": chart_urls,
+        }
+        return request.render("gear_on_rent.portal_batching_quote_detail", values)
+
+    @http.route(
+        ["/my/batching-plant/<int:quote_id>/pdf", "/my/batching-plant/<int:order_id>/pdf"],
+        type="http",
+        auth="user",
+        website=True,
+    )
+    def portal_batching_quote_pdf(self, order_id=None, quote_id=None, **kwargs):
+        order_id = order_id or quote_id
+        order = self._bp_get_order(order_id)
+        if not order:
+            return request.not_found()
+
+        pdf_helper = request.env["gear.batching.quotation.pdf"].sudo()
+        pdf_data = pdf_helper.prepare_pdf_assets(order)
+
+        chart_urls = {
+            key: self._bp_encode_chart(path) for key, path in pdf_data.get("charts", {}).items()
+        }
+
+        report_action = request.env.ref("gear_on_rent.action_report_batching_plant_quote", raise_if_not_found=False)
+        if not report_action:
+            return request.not_found()
+
+        pdf_content, _ = report_action._render_qweb_pdf(report_action.id, [order.id], data={"pdf_data": pdf_data, "chart_urls": chart_urls})
+        filename = f"{order.name.replace('/', '_')}_batching_quote.pdf"
+        headers = {
+            "Content-Type": "application/pdf",
+            "Content-Length": len(pdf_content),
+            "Content-Disposition": f"attachment; filename={filename}",
+        }
+        return request.make_response(pdf_content, headers=headers)
+
+    @http.route(
+        "/my/batching-plant/<int:order_id>/accept",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        website=True,
+    )
+    def portal_batching_quote_accept(self, order_id, **kwargs):
+        order = self._bp_get_order(order_id)
+        if not order:
+            return request.not_found()
+
+        so = order.sudo().action_accept_and_create_so()
+        if so:
+            return request.redirect(f"/my/orders/{so.id}")
+        return request.redirect(f"/my/batching-plant/{order.id}")
