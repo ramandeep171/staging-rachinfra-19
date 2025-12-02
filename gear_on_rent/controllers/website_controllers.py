@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+import inspect
 import logging
 
 from werkzeug.exceptions import NotFound
@@ -264,16 +265,32 @@ class GearOnRentWebsite(http.Controller):
         page = page.sudo()
         if request.env.user._is_public() and not page.is_visible:
             raise NotFound()
-        page_get_response = getattr(page, '_get_response', None)
-        if callable(page_get_response):
-            return page_get_response(request)
-
-        page_generate_response = getattr(page, '_generate_response', None)
-        if callable(page_generate_response):
+        def _call_page_renderer(method):
+            """Call `_get_response`/`_generate_response` regardless of signature."""
+            if not callable(method):
+                return None
             try:
-                return page_generate_response(request)
+                signature = inspect.signature(method)
+            except (TypeError, ValueError):
+                signature = None
+
+            if signature:
+                parameters = signature.parameters
+                # legacy API without the request argument
+                if not parameters:
+                    return method()
+                return method(request)
+
+            try:
+                return method(request)
             except TypeError:
-                return page_generate_response()
+                return method()
+
+        for renderer_name in ('_get_response', '_generate_response'):
+            renderer = getattr(page, renderer_name, None)
+            response = _call_page_renderer(renderer)
+            if response is not None:
+                return response
 
         # As a last resort, render the underlying view so the page still works
         # even if neither of the helper methods exists on this Odoo version.
