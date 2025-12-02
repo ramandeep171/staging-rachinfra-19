@@ -266,7 +266,7 @@ class GearOnRentWebsite(http.Controller):
         if request.env.user._is_public() and not page.is_visible:
             raise NotFound()
         def _call_page_renderer(method):
-            """Call `_get_response`/`_generate_response` regardless of signature."""
+            """Call `_get_response`/`_generate_response` when arguments match."""
             if not callable(method):
                 return None
             try:
@@ -275,16 +275,34 @@ class GearOnRentWebsite(http.Controller):
                 signature = None
 
             if signature:
-                parameters = signature.parameters
-                # legacy API without the request argument
-                if not parameters:
+                params = list(signature.parameters.values())
+                positional = [
+                    param for param in params
+                    if param.kind in (
+                        inspect.Parameter.POSITIONAL_ONLY,
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    )
+                ]
+                required = [param for param in positional if param.default is inspect._empty]
+                if not positional:
                     return method()
-                return method(request)
+                first_name = positional[0].name
+                if first_name in ('request', 'req'):
+                    if len(required) <= 1:
+                        return method(request)
+                    # Additional required params (e.g. placeholders) can't be provided here.
+                    return None
+                if not required:
+                    return method()
+                return None
 
             try:
                 return method(request)
             except TypeError:
-                return method()
+                try:
+                    return method()
+                except TypeError:
+                    return None
 
         for renderer_name in ('_get_response', '_generate_response'):
             renderer = getattr(page, renderer_name, None)
