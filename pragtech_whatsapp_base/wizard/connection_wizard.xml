@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="test_connection_wizard_form" model="ir.ui.view" >
+			<field name="name">test.connection.wizard.wizard.form</field>
+			<field name="model">test.connection.wizard</field>
+			<field name="arch" type="xml">
+				<form string="Whatsapp Message" >
+					<field name="message"/>
+					<footer>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+				</form>
+			</field>
+		</record>
+		<record id="action_test_connection_wizard" model="ir.actions.act_window">
+            <field name="name">Test Connection Wizard</field>
+            <field name="res_model">test.connection.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_whatsapp_form" model="ir.ui.view">
+        <field name="name">view.partner.whatsapp.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="chatId"/>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']" position="after">
+                <page name="partner_whatsapp_messages" string="Whatsapp Messages">
+                    <field name="whatsapp_message_ids" widget="one2many">
+                        <list create="false">
+                            <field name="message_body"/>
+                            <field name="to"/>
+                            <field name="senderName"/>
+                            <field name="time"/>
+                            <field name="state"/>
+                        </list>
+                        <form string="Whatsapp Messages">
+                            <group>
+                                <field name="message_body"/>
+                                <field name="message_id"/>
+                                <field name="fromMe"/>
+                                <field name="to"/>
+                                <field name="chatId"/>
+                                <field name="type"/>
+                                <field name="msg_image" nolabel="1" widget="image"/>
+                                <field name="senderName"/>
+                                <field name="author"/>
+                                <field name="partner_id"/>
+                                <field name="time"/>
+                                <field name="state"/>
+                                <field name="attachment_id"/>
+                            </group>
+                        </form>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

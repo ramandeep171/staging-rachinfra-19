@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_whatsapp_instance_form" model="ir.ui.view">
+        <field name="name">view.whatsapp.instance.form</field>
+        <field name="model">whatsapp.instance</field>
+        <field name="arch" type="xml">
+            <form string="Whatsapp Instance">
+                <sheet>
+                    <div class="oe_button_box" name="button_box" icon="fa-users">
+                        <button name="action_test_connection" type="object" icon="fa-plug" class="oe_stat_button"
+                                string="Test Connection"/>
+                        <button class="oe_stat_button" name="action_import_templates" type="object"
+                                icon="fa-cloud-download" help="Import Templates"
+                                string="Import Templates"/>
+                        <button class="oe_stat_button" name="action_export_templates" type="object"
+                                icon="fa-cloud-upload" help="Export Templates"
+                                string="Export Templates" invisible="provider == 'gupshup'"/>
+                        <button class="oe_stat_button" name="action_create_missing_templates" type="object"
+                                icon="fa-plus"
+                                help="Create Missing Templates"
+                                string="Create Missing Templates"/>
+                        <field string="Enable" name="status" invisible="1"/>
+                        <button class="oe_stat_button" name="action_whatsapp_instance_disable" type="object"
+                                invisible="status == 'disable'"
+                                icon="fa-check-circle" help="Set as Disable" string="Disable">
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="provider" readonly="status == 'enable'"/>
+                            <field name="whatsapp_endpoint" readonly="status == 'enable'"
+                                   invisible="provider != 'whatsapp_chat_api'"/>
+                            <field name="whatsapp_token" password="True" readonly="status == 'enable'"
+                                   invisible="provider != 'whatsapp_chat_api'"/>
+                            <field name="whatsapp_gupshup_app_name" readonly="status == 'enable'"
+                                   invisible="provider != 'gupshup'"/>
+                            <field name="whatsapp_gupshup_api_key" password="True" readonly="status == 'enable'"
+                                   invisible="provider != 'gupshup'"/>
+                            <field name="gupshup_source_number" widget="phone" readonly="status == 'enable'"
+                                   invisible="provider != 'gupshup'"/>
+                            <field name="meta_whatsapp_app_id" readonly="status == 'enable'"
+                                   invisible="provider != 'meta'"/>
+                            <field name="whatsapp_meta_phone_number_id" widget="phone" readonly="status == 'enable'"
+                                   invisible="provider != 'meta'"/>
+                            <field name="meta_whatsapp_business_account_id" readonly="status == 'enable'"
+                                   invisible="provider != 'meta' or send_whatsapp_through_template != True"/>
+                            <field name="whatsapp_meta_api_token" password="True" style="word-break: break-all;"
+                                   readonly="status == 'enable'" invisible="provider != 'meta'"/>
+                            <field name="whatsapp_meta_webhook_token" readonly="status == 'enable'"
+                                   invisible="provider != 'meta'"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="send_whatsapp_through_template"/>
+                            <field name="default_instance"/>
+                            <field name="signed_by_instance"/>
+                            <field name="signature" widget="image"/>
+                        </group>
+                    </group>
+                    <notebook colspan="4">
+                        <page name='whatsapp_users' string="Connected Users">
+                            <field name="user_ids" readonly="True">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="login"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name='whatsapp_users' string="Connected Companies">
+                            <field name="res_company_ids" readonly="True">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name='whatsapp_templates' string="Whatsapp Templates">
+                            <field name="whatsapp_template_ids" readonly="True">
+                                <list editable="bottom"
+                                      decoration-success="approval_state == 'approved' or approval_state == 'APPROVED'"
+                                      decoration-muted="approval_state == ''"
+                                      decoration-info="approval_state == 'submitted' or approval_state == 'PENDING'">
+                                    <field name="name"/>
+                                    <field name="category"/>
+                                    <field name="state"/>
+                                    <field name="approval_state"/>
+                                    <field name="whatsapp_instance_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page name='message_configuration' string="Message Configuration">
+                        </page>
+                        <page string="Terminal Log">
+                            <field name="terminal_log_ids" readonly="True">
+                                <list>
+                                    <field name="timestamp"/>
+                                    <field name="log_message"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_whatsapp_instance_list" model="ir.ui.view">
+        <field name="name">view.whatsapp.instance.list</field>
+        <field name="model">whatsapp.instance</field>
+        <field name="arch" type="xml">
+            <list string="Whatsapp Instance" decoration-success="status == 'enable'"
+                  decoration-muted="status == 'disable'">
+                <field name="name"/>
+                <field name="provider" invisible="1"/>
+                <field name="whatsapp_endpoint" invisible="provider != 'whatsapp_chat_api'"/>
+                <field name="whatsapp_gupshup_app_name" invisible="provider != 'gupshup'"/>
+                <field name="status" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_instance" model="ir.actions.act_window">
+        <field name="name">Whatsapp Instance</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">whatsapp.instance</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_whatsapp_instance" name="Whatsapp Instance" sequence="9" action="action_whatsapp_instance"
+              parent="main_menu_whatsapp"/>
+
+</odoo>

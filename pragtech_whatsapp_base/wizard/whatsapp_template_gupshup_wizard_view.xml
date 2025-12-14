@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="whatsapp_gupshup_templates_wizard_form" model="ir.ui.view">
+            <field name="name">whatsapp.gupshup.templates.wizard.form</field>
+            <field name="model">whatsapp.gupshup.templates</field>
+            <field name="arch" type="xml">
+                <form>
+                    <group>
+                        <group>
+                            <field name="template_labels" readonly="1"/>
+                            <field name="template_type" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="template_category" readonly="1"/>
+                            <field name="languages" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="element_name" readonly="1"/>
+                        <field name="template_format" readonly="1"/>
+                        <field name="interactive_actions" readonly="1"/>
+                        <field name="quick_reply1" readonly="1" invisible="interactive_actions in ['none', 'call_to_action']"/> 
+                        <field name="add_sample_media_message" readonly="1" invisible="template_type in ['text', 'location']"/>
+                        <field name="sample_url" widget="url" readonly="1" invisible="template_type in ['text', 'location']"/>
+
+                        <field name="sample_message" readonly="1"/>
+                        <footer>
+                            <button string="Cancel" class="btn-secondary" special="cancel"/>
+                        </footer>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+
+        <record id="action_export_template_wizard" model="ir.actions.act_window">
+            <field name="name">View Gupshup Template1112</field>
+            <field name="res_model">whatsapp.gupshup.templates</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>

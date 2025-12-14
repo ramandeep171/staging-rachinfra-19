@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_whatsapp_template_form" model="ir.ui.view">
+        <field name="name">view.whatsapp.templates.form</field>
+        <field name="model">whatsapp.templates</field>
+        <field name="arch" type="xml">
+            <form string="Whatsapp template" create="0" edit="1">
+                <header>
+                    <button string="Export Template" type="object" class="btn-primary" name="action_export_template"
+                            invisible="state != 'draft' or provider != 'whatsapp_chat_api'"/>
+                    <button string="Import Template" type="object" class="btn-primary" name="action_import_template"/>
+                    <!-- <button string="View Gupshup Template" type="object" class="btn-primary" name="action_view_gupshup_template"
+                            invisible="provider == 'whatsapp_chat_api'"/>
+                    <field name="state" widget="statusbar"/> -->
+                    <field name="status" widget="statusbar" statusbar_visible="draft,imported,exported"/>
+
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" default_focus="1" placeholder="Name" required="1"
+                                   readonly="state == 'post'"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="provider" readonly="state == 'post'"/>
+                            <field name="send_template" readonly="1" invisible="1"/>
+                            <field name="whatsapp_instance_id"/>
+                            <field name="model_id" placeholder="e.g. Users" required="1" options="{'no_create': True}"/>
+                            <field name="category" readonly="state == 'post'"/>
+                            <field name="gupshup_template_labels" invisible="provider != 'gupshup'"/>
+                            <field name="languages" readonly="state == 'post'"/>
+                            <field name="header" readonly="state == 'post'"/>
+
+                            <field name="header_attachment_ids"
+                                   widget="many2many_binary"
+                                   options="{'accepted_file_extensions': 'image/jpeg, image/png', 'number_of_files': 1}"
+                                   invisible="header != 'media_image'"/>
+
+                            <field name="header_attachment_ids"
+                                   widget="many2many_binary"
+                                   options="{
+                                    'accepted_file_extensions': 'text/plain, application/pdf, application/vnd.ms-powerpoint, application/msword, application/vnd.ms-excel,
+                                    application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.presentationml.presentation,
+                                    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                    'number_of_files': 1
+                                }"
+                                   invisible="header != 'media_document'"/>
+
+                            <field name="header_attachment_ids"
+                                   widget="many2many_binary"
+                                   options="{'accepted_file_extensions': 'video/mp4', 'number_of_files': 1}"
+                                   invisible="header != 'media_video'"/>
+
+                            <field name="body" readonly="state == 'post'"/>
+                            <field name="footer" readonly="state == 'post'" invisible="provider == 'gupshup'"/>
+                            <field name="interactive_actions" readonly="state == 'post'"/>
+                            <field name="quick_reply1" readonly="state == 'post'"
+                                   invisible="interactive_actions in ['none', 'call_to_action']"/>
+                            <field name="quick_reply2" readonly="state == 'post'"
+                                   invisible="interactive_actions in ['none', 'call_to_action']"/>
+                            <field name="quick_reply3" readonly="state == 'post'"
+                                   invisible="interactive_actions in ['none', 'call_to_action']"/>
+                        </group>
+                        <group>
+                            <field name="template_id" readonly="state == 'post'"
+                                   invisible="provider == 'whatsapp_chat_api'"/>
+                            <field name="namespace" readonly="state == 'post'"/>
+                            <field name="default_template" readonly="state == 'post'"/>
+                            <field name="approval_state" readonly="state == 'post'"/>
+                            <field name="sample_message" readonly="state == 'post'" invisible="provider == 'gupshup'"/>
+                            <field name="sample_url" readonly="state == 'post'"
+                                   invisible="header in ['text', 'location']"
+                                   widget="url"/>
+                            <field name="gupshup_sample_message" invisible="provider == 'whatsapp_chat_api'"/>
+                            <field name="header_text" readonly="state == 'post'"
+                                   invisible="header != 'text'"
+                                   placeholder="e.g. Invitation for {{1}}"
+                            />
+                        </group>
+                    </group>
+                    <group colspan="4" string="Call To Action"
+                           invisible="interactive_actions in ['none', 'quick_replies']">
+                        <field name="whatsapp_call_to_action_ids" readonly="state == 'post'" nolabel="1" colspan="4">
+                            <list editable="bottom">
+                                <field name="call_action"/>
+                                <field name="button_name"/>
+                                <field name="phone" readonly="call_action == 'url'"/>
+                                <field name="url" readonly="call_action == 'phone'"/>
+                                <field name="url_type" readonly="call_action == 'phone'"/>
+                            </list>
+                        </field>
+                    </group>
+
+                    <notebook>
+                        <!--                        <page string="Body" name="Template Body">-->
+                        <!--                            <field name="body" widget="whatsapp_text_variables" readonly="state == 'post'"/>-->
+                        <!--                        </page>-->
+                        <page string="Parameter Mapping" name="parameter_mapping">
+                            <field name="parameter_mapping_ids">
+                                <list editable="bottom" create="false" delete="false">
+                                    <!--                                    <field name="template_id" column_invisible="True"/>-->
+                                    <field name="template_id" readonly="1" column_invisible="True"/>
+                                    <field name="parameter_name" readonly="1"/>
+                                    <field name="field_id"/>
+                                    <field name="field_type"/>
+                                    <field name="related_field_id"/>
+                                    <field name="final_path" readonly="1"/>
+                                    <field name="sample_value"/>
+                                </list>
+                            </field>
+                            <div class="text-muted mt-3">
+                                <center>
+                                    Map template parameters (like {{1}}, {{2}}) to specific fields from the selected
+                                    model.
+                                    <br/>When sending a template, these fields will be filled from the record data.
+
+                                </center>
+                            </div>
+                        </page>
+
+                        <page string="Buttons" name="cta_buttons">
+                            <field name="button_ids">
+                                <list editable="bottom">
+                                    <field name="type"/>
+                                    <field name="text"/>
+                                    <field name="url" placeholder="e.g https://"
+                                           readonly="type != 'visit_website'" required="type == 'visit_website'"
+                                           invisible="type != 'visit_website'"/>
+                                    <field name="url_type" readonly="type != 'visit_website'"
+                                           required="type == 'visit_website'"
+                                           invisible="type != 'visit_website'"/>
+                                    <field name="phone_number" placeholder="e.g 919876543210"
+                                           readonly="type != 'call_phone'" required="type == 'call_phone'"
+                                           invisible="type != 'call_phone'"/>
+                                    <field name="offer_code"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_whatsapp_template_list" model="ir.ui.view">
+        <field name="name">view.whatsapp.templates.list</field>
+        <field name="model">whatsapp.templates</field>
+        <field name="arch" type="xml">
+            <list string="Whatsapp template"
+                  decoration-success="approval_state == 'approved' or approval_state == 'APPROVED'"
+                  decoration-muted="approval_state == ''"
+                  decoration-info="approval_state == 'submitted' or approval_state == 'PENDING'">
+                <field name="name"/>
+                <field name="category"/>
+                <field name="state"/>
+                <field name="approval_state"/>
+                <field name="whatsapp_instance_id"/>
+                <field name="status"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_whatsapp_template" model="ir.actions.act_window">
+        <field name="name">Whatsapp Templates</field>
+        <field name="res_model">whatsapp.templates</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
+    </record>
+
+    <menuitem id="main_menu_whatsapp" name="WhatsApp" web_icon="pragtech_whatsapp_base,static/img/whatsapp_logo.png"
+              groups="pragtech_whatsapp_base.group_whatsApp_template"/>
+    <menuitem id="menu_whatsapp_template" name="Templates" action="action_whatsapp_template" sequence="10"
+              parent="main_menu_whatsapp"/>
+
+</odoo>
