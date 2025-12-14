@@ -1,6 +1,6 @@
 {
     'name': 'Whatsapp Base',
-    'version': '19.0.0.0',
+    'version': '19.0.1.0',
     'category': 'Services',
     'author': 'Pragmatic TechSoft Pvt Ltd.',
     'website': 'pragtech.co.in',

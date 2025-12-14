@@ -428,7 +428,7 @@ class WhatsappInstance(models.Model):
                         elif mapped_type == 'call_phone':
                             button_vals['phone_number'] = button.get('phone_number')
 
-                        self.env['whatsapp.template.button'].create(button_vals)
+                        self.env['whatsapp.templates.button'].create(button_vals)
 
         return True
 

@@ -5,7 +5,7 @@ import re
 
 # Template Call-To-Action Buttons
 class WhatsAppTemplateButton(models.Model):
-    _name = 'whatsapp.template.button'
+    _name = 'whatsapp.templates.button'
     _description = 'WhatsApp Template Buttons'
 
     template_id = fields.Many2one('whatsapp.templates', string="WhatsApp Template", required=True, ondelete="cascade")

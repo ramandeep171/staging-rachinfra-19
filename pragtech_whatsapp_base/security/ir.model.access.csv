@@ -9,4 +9,4 @@ pragtech_whatsapp_base.access_whatsapp_gupshup_templates,access_whatsapp_gupshup
 pragtech_whatsapp_base.access_terminal_log,access_terminal_log,pragtech_whatsapp_base.model_terminal_log,base.group_user,1,1,1,1
 
 access_whatsapp_template_mapping,access.whatsapp.template.mapping,model_whatsapp_template_mapping,base.group_user,1,1,1,1
-access_whatsapp_template_button,access.whatsapp.template.button,model_whatsapp_template_button,base.group_user,1,1,1,1
+access_whatsapp_template_button,access.whatsapp.templates.button,model_whatsapp_templates_button,base.group_user,1,1,1,1

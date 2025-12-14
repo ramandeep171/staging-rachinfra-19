@@ -55,7 +55,7 @@ class WhatsappTemplates(models.Model):
 
     parameter_mapping_ids = fields.One2many('whatsapp.template.mapping', 'template_id', string="Parameter Mappings")
 
-    button_ids = fields.One2many('whatsapp.template.button', 'template_id', string="CTA Buttons")
+    button_ids = fields.One2many('whatsapp.templates.button', 'template_id', string="CTA Buttons")
 
     status = fields.Selection([
         ('draft', 'Draft'),
