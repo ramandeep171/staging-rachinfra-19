@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="job_detail_multi_company_context" inherit_id="website_hr_recruitment.detail">
+        <xpath expr="//t[@t-call='website.layout']/*[1]" position="before">
+            <t t-set="job_company_ctx"
+               t-value="job.company_id or (request.website and request.website.company_id)"/>
+            <t t-set="job"
+               t-value="job_company_ctx and job.sudo().with_company(job_company_ctx) or job.sudo()"/>
+            <t t-set="main_object" t-value="job"/>
+        </xpath>
+    </template>
+    <template id="job_detail_share_buttons" inherit_id="website_hr_recruitment.detail">
+        <xpath expr="//section[@class='pb32']//div[@class='row']/div[@class='col-md-9']" position="inside">
+            <div class="d-flex flex-wrap gap-2 mt-3 o_job_share_buttons">
+                <t t-set="_" t-value="request.env._"/>
+                <t t-set="has_share_slug" t-value="bool(job.share_slug)"/>
+                <t t-set="canonical_url" t-value="job.website_url or ('/jobs/detail/%s' % job.id)"/>
+                <t t-set="linkedin_link" t-value="has_share_slug and '/jobs/share/%s/%s' % ('linkedin', job.share_slug) or canonical_url"/>
+                <t t-set="whatsapp_link" t-value="has_share_slug and '/jobs/share/%s/%s' % ('whatsapp', job.share_slug) or canonical_url"/>
+                <t t-set="email_link" t-value="has_share_slug and '/jobs/share/%s/%s' % ('email', job.share_slug) or canonical_url"/>
+                <t t-set="fallback_title" t-value="_('Short link unavailable; redirecting to job page.')"/>
+                <a role="button"
+                   t-att-href="linkedin_link"
+                   t-att-title="has_share_slug and False or fallback_title"
+                   class="btn btn-outline-primary">
+                    <i class="fa fa-linkedin me-1"/> <t t-esc="_('LinkedIn')"/>
+                </a>
+                <a role="button"
+                   t-att-href="whatsapp_link"
+                   t-att-title="has_share_slug and False or fallback_title"
+                   class="btn btn-outline-success">
+                    <i class="fa fa-whatsapp me-1"/> <t t-esc="_('WhatsApp')"/>
+                </a>
+                <a role="button"
+                   t-att-href="email_link"
+                   t-att-title="has_share_slug and False or fallback_title"
+                   class="btn btn-outline-secondary">
+                    <i class="fa fa-envelope me-1"/> <t t-esc="_('Email')"/>
+                </a>
+            </div>
+            <div t-if="not has_share_slug" class="text-muted small mt-1">
+                <t t-esc="_('Share buttons will use the job page until a short link is generated.')"/>
+            </div>
+        </xpath>
+    </template>
+</odoo>

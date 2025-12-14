@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_job_share_log_tree" model="ir.ui.view">
+        <field name="name">hr.job.share.log.list</field>
+        <field name="model">hr.job.share.log</field>
+        <field name="arch" type="xml">
+            <list string="Share Logs" create="false">
+                <field name="shared_at"/>
+                <field name="job_id"/>
+                <field name="channel"/>
+                <field name="origin"/>
+                <field name="user_id"/>
+                <field name="url_used"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="hr_job_share_log_form" model="ir.ui.view">
+        <field name="name">hr.job.share.log.form</field>
+        <field name="model">hr.job.share.log</field>
+        <field name="arch" type="xml">
+            <form string="Share Log">
+                <group>
+                    <field name="shared_at"/>
+                    <field name="job_id"/>
+                    <field name="channel"/>
+                    <field name="origin"/>
+                    <field name="user_id"/>
+                    <field name="url_used"/>
+                    <field name="company_id" readonly="1"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_job_share_log_search" model="ir.ui.view">
+        <field name="name">hr.job.share.log.search</field>
+        <field name="model">hr.job.share.log</field>
+        <field name="arch" type="xml">
+            <search string="Search Share Logs">
+                <field name="job_id"/>
+                <field name="user_id"/>
+                <field name="channel"/>
+                <field name="origin"/>
+                <field name="company_id" string="Company"/>
+                <filter name="my_company" string="My Company" domain="[('company_id', '=', context.get('company_id'))]"/>
+                <group>
+                    <filter name="group_channel" string="Channel" context="{'group_by': 'channel'}"/>
+                    <filter name="group_origin" string="Origin" context="{'group_by': 'origin'}"/>
+                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="hr_job_share_log_action" model="ir.actions.act_window">
+        <field name="name">Share Logs</field>
+        <field name="res_model">hr.job.share.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_job_id': active_id, 'search_default_my_company': 1}</field>
+        <field name="domain">[('job_id', '=', active_id)]</field>
+    </record>
+</odoo>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_job_form_share_buttons" model="ir.ui.view">
+        <field name="name">hr.job.form.share.buttons</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_share_linkedin"
+                        type="object"
+                        string="Share LinkedIn"
+                        class="oe_highlight"
+                        icon="fa-linkedin"
+                        invisible="not website_published"/>
+                <button name="action_share_whatsapp"
+                        type="object"
+                        string="Share WhatsApp"
+                        icon="fa-whatsapp"
+                        invisible="not website_published"/>
+                <button name="action_share_email"
+                        type="object"
+                        string="Share Email"
+                        icon="fa-envelope"
+                        invisible="not website_published"/>
+            </xpath>
+
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Sharing">
+                    <group>
+                        <field name="share_slug" readonly="1"/>
+                        <field name="short_url" readonly="1"/>
+                    </group>
+                </page>
+            </xpath>
+
+            <xpath expr="//div[@class='oe_button_box']" position="inside">
+                <button class="oe_stat_button"
+                        type="action"
+                        name="%(hr_job_share_log_action)d"
+                        invisible="not website_published">
+                    <field name="share_log_count" widget="statinfo" string="Share Logs"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>
