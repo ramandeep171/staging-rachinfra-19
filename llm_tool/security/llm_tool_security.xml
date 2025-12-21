@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="llm_tool_rule_user" model="ir.rule">
+        <field name="name">LLM Tools: user access limited to company</field>
+        <field name="model_id" ref="model_llm_tool" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_tool_rule_system" model="ir.rule">
+        <field name="name">LLM Tools: system/company isolation</field>
+        <field name="model_id" ref="model_llm_tool" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('base.group_system'))]" />
+    </record>
+
+    <record id="llm_tool_consent_rule_user" model="ir.rule">
+        <field name="name">LLM Tool Consent: user access limited to company</field>
+        <field name="model_id" ref="model_llm_tool_consent_config" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_tool_consent_rule_system" model="ir.rule">
+        <field name="name">LLM Tool Consent: system/company isolation</field>
+        <field name="model_id" ref="model_llm_tool_consent_config" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('base.group_system'))]" />
+    </record>
+
+    <record id="llm_tool_definition_rule_user" model="ir.rule">
+        <field name="name">LLM Tool Definition: user access limited to company</field>
+        <field name="model_id" ref="model_llm_tool_definition" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_tool_definition_rule_manager" model="ir.rule">
+        <field name="name">LLM Tool Definition: full access for managers</field>
+        <field name="model_id" ref="model_llm_tool_definition" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm.group_llm_manager'))]" />
+    </record>
+
+    <record id="llm_tool_version_rule_user" model="ir.rule">
+        <field name="name">LLM Tool Version: user access limited to company</field>
+        <field name="model_id" ref="model_llm_tool_version" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_tool_version_rule_manager" model="ir.rule">
+        <field name="name">LLM Tool Version: full access for managers</field>
+        <field name="model_id" ref="model_llm_tool_version" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm.group_llm_manager'))]" />
+    </record>
+
+    <record id="llm_tool_binding_rule_user" model="ir.rule">
+        <field name="name">LLM Tool Binding: user access limited to company</field>
+        <field name="model_id" ref="model_llm_tool_binding" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_tool_binding_rule_manager" model="ir.rule">
+        <field name="name">LLM Tool Binding: full access for managers</field>
+        <field name="model_id" ref="model_llm_tool_binding" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm.group_llm_manager'))]" />
+    </record>
+
+    <record id="llm_tool_runner_rule_manager" model="ir.rule">
+        <field name="name">LLM Tool Runner: full access for managers</field>
+        <field name="model_id" ref="model_llm_tool_runner" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm.group_llm_manager'))]" />
+    </record>
+
+    <record id="llm_tool_tag_rule_manager" model="ir.rule">
+        <field name="name">LLM Tool Tag: full access for managers</field>
+        <field name="model_id" ref="model_llm_tool_tag" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm.group_llm_manager'))]" />
+    </record>
+</odoo>

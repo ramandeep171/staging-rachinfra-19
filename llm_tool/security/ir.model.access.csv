@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_llm_tool_user,llm.tool.user,model_llm_tool,base.group_user,1,0,0,0
+access_llm_tool_system,llm.tool.system,model_llm_tool,base.group_system,1,1,1,1
+access_llm_tool_consent_config_user,llm.tool.consent.config.user,model_llm_tool_consent_config,base.group_user,1,0,0,0
+access_llm_tool_consent_config_system,llm.tool.consent.config.system,model_llm_tool_consent_config,base.group_system,1,1,1,1
+access_llm_tool_definition_user,llm.tool.definition.user,model_llm_tool_definition,base.group_user,1,0,0,0
+access_llm_tool_definition_manager,llm.tool.definition.manager,model_llm_tool_definition,llm.group_llm_manager,1,1,1,1
+access_llm_tool_version_user,llm.tool.version.user,model_llm_tool_version,base.group_user,1,0,0,0
+access_llm_tool_version_manager,llm.tool.version.manager,model_llm_tool_version,llm.group_llm_manager,1,1,1,1
+access_llm_tool_binding_user,llm.tool.binding.user,model_llm_tool_binding,base.group_user,1,0,0,0
+access_llm_tool_binding_manager,llm.tool.binding.manager,model_llm_tool_binding,llm.group_llm_manager,1,1,1,1
+access_llm_tool_tag_manager,llm.tool.tag.manager,model_llm_tool_tag,llm.group_llm_manager,1,1,1,1
+access_llm_tool_runner_manager,llm.tool.runner.manager,model_llm_tool_runner,llm.group_llm_manager,1,1,1,1

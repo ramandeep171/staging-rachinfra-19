@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_llm_mcp_server_user,llm.mcp.server.user,model_llm_mcp_server,base.group_user,1,0,0,0
+access_llm_mcp_server_system,llm.mcp.server.system,model_llm_mcp_server,llm_mcp.group_llm_mcp_admin,1,1,1,1
+access_llm_mcp_command_runner_user,llm.mcp.command.runner.user,model_llm_mcp_command_runner,base.group_user,1,0,0,0
+access_llm_mcp_command_runner_manager,llm.mcp.command.runner.manager,model_llm_mcp_command_runner,llm_mcp.group_llm_mcp_admin,1,1,1,1
+access_llm_mcp_consent_template_manager,llm.mcp.consent.template.manager,model_llm_mcp_consent_template,base.group_system,1,1,1,1
+access_llm_mcp_consent_ledger_user,llm.mcp.consent.ledger.user,model_llm_mcp_consent_ledger,base.group_user,1,0,0,0
+access_llm_mcp_consent_ledger_manager,llm.mcp.consent.ledger.manager,model_llm_mcp_consent_ledger,base.group_system,1,1,1,1
+access_llm_mcp_invocation_record_admin,llm.mcp.invocation.record.admin,model_llm_mcp_invocation_record,base.group_system,1,1,1,1
+access_llm_mcp_audit_trail_admin,llm.mcp.audit.trail.admin,model_llm_mcp_audit_trail,base.group_system,1,1,1,1

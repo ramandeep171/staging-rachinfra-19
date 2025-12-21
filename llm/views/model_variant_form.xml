@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="llm_model_variant_view_form" model="ir.ui.view">
+        <field name="name">llm.model.variant.view.form</field>
+        <field name="model">llm.model.variant</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Model Variant" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="provider_id" />
+                            <field name="enabled" />
+                            <field name="capabilities" />
+                        </group>
+                        <group>
+                            <field name="context_window" />
+                            <field name="function_calling" />
+                            <field name="vision_enabled" />
+                        </group>
+                    </group>
+                    <group string="Pricing">
+                        <field name="pricing_json" widget="json_editor" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="llm_model_variant_view_tree" model="ir.ui.view">
+        <field name="name">llm.model.variant.view.tree</field>
+        <field name="model">llm.model.variant</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="provider_id" />
+                <field name="capabilities" />
+                <field name="function_calling" />
+                <field name="vision_enabled" />
+                <field name="enabled" />
+            </list>
+        </field>
+    </record>
+
+    <record id="llm_model_variant_action" model="ir.actions.act_window">
+        <field name="name">Model Variants</field>
+        <field name="res_model">llm.model.variant</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_enabled': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add the available LLM model variants for each provider.
+            </p>
+        </field>
+    </record>
+</odoo>

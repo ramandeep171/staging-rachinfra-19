@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Menu Item -->
+    <menuitem
+    id="menu_llm_tool_definition"
+    name="Tool Definitions"
+    parent="llm.menu_llm_config"
+    action="action_llm_tool_definition"
+    sequence="15"
+  />
+
+    <menuitem
+    id="menu_llm_tool_binding"
+    name="Tool Bindings"
+    parent="llm.menu_llm_config"
+    action="action_llm_tool_binding"
+    sequence="17"
+  />
+
+    <menuitem
+    id="menu_llm_tool_runner"
+    name="Runners"
+    parent="llm.menu_llm_config"
+    action="action_llm_tool_runner"
+    sequence="18"
+  />
+
+    <menuitem
+    id="menu_llm_tool"
+    name="Tools"
+    parent="llm.menu_llm_config"
+    action="action_llm_tool"
+    sequence="20"
+  />
+
+    <!-- Tool Consent Config Menu Item -->
+    <menuitem
+    id="menu_llm_tool_consent_config"
+    name="Tool Consent"
+    parent="llm.menu_llm_config"
+    action="action_llm_tool_consent_config"
+    sequence="25"
+  />
+</odoo>

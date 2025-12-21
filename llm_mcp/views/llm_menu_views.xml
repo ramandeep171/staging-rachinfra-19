@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Menu Item for MCP Servers -->
+    <menuitem
+    id="menu_llm_mcp_server"
+    name="MCP Servers"
+    parent="llm.menu_llm_config"
+    action="action_llm_mcp_server"
+    groups="llm_mcp.group_llm_mcp_admin"
+    sequence="26"
+  />
+    <menuitem
+        id="menu_llm_mcp_command_runner"
+        name="Command Runners"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_command_runner"
+        groups="llm_mcp.group_llm_mcp_admin"
+        sequence="27"
+    />
+    <menuitem
+        id="menu_llm_mcp_consent_template"
+        name="Consent Templates"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_consent_template"
+        sequence="28"
+    />
+    <menuitem
+        id="menu_llm_mcp_consent_ledger"
+        name="Consent Ledger"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_consent_ledger"
+        sequence="29"
+    />
+    <menuitem
+        id="menu_llm_mcp_invocation_record"
+        name="Invocation Records"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_invocation_record"
+        sequence="30"
+    />
+    <menuitem
+        id="menu_llm_mcp_audit_trail"
+        name="Audit Trail"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_audit_trail"
+        sequence="31"
+    />
+</odoo>

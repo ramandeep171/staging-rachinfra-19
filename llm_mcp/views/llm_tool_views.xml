@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_llm_tool_definition_tree_mcp" model="ir.ui.view">
+        <field name="name">llm.tool.definition.tree.mcp</field>
+        <field name="model">llm.tool.definition</field>
+        <field name="inherit_id" ref="llm_tool.view_llm_tool_definition_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='consent_template_id']" position="after">
+                <field name="mcp_consent_template_id" />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_llm_tool_definition_form_mcp" model="ir.ui.view">
+        <field name="name">llm.tool.definition.form.mcp</field>
+        <field name="model">llm.tool.definition</field>
+        <field name="inherit_id" ref="llm_tool.view_llm_tool_definition_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='consent_template_id']" position="after">
+                <field name="mcp_consent_template_id" />
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

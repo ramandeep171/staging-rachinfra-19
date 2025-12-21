@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_llm_tool_definition_tree" model="ir.ui.view">
+        <field name="name">llm.tool.definition.tree</field>
+        <field name="model">llm.tool.definition</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="action_type" />
+                <field name="target_model" />
+                <field name="enabled" />
+                <field name="is_open_world" />
+                <field name="consent_template_id" />
+                <field name="latest_version_id" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_tool_definition_form" model="ir.ui.view">
+        <field name="name">llm.tool.definition.form</field>
+        <field name="model">llm.tool.definition</field>
+        <field name="arch" type="xml">
+            <form string="LLM Tool Definition">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" />
+                        <h1>
+                            <field name="name" placeholder="e.g. record_retriever" />
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                <field name="action_type" />
+                <field
+                    name="target_model"
+                    invisible="action_type == 'external_api'"
+                    required="action_type in ['read','create','update','method']"
+                />
+                <field name="enabled" />
+                <field name="company_id" groups="base.group_multi_company" />
+            </group>
+            <group>
+                <field name="consent_template_id" />
+                <field name="tag_ids" widget="many2many_tags" />
+                <field name="is_open_world" />
+                <field name="access_group_ids" widget="many2many_tags" />
+            </group>
+        </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" placeholder="Describe what this tool does" />
+                        </page>
+                        <page string="Schema">
+                            <field name="schema_json" widget="json_editor" />
+                            <field
+                                name="redaction_policy_json"
+                                widget="json_editor"
+                                placeholder='{ "fields": ["api_key", "phone_number"] }'
+                                help="Fields listed here will be redacted from invocation params and results"
+                            />
+                        </page>
+                        <page string="Versions">
+                            <field name="version_ids" context="{'default_tool_id': id}">
+                                <list string="Versions">
+                                    <field name="version" />
+                                    <field name="schema_hash" />
+                                    <field name="created_at" />
+                                    <field name="change_log" />
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Bindings">
+                            <field name="binding_ids" context="{'default_tool_id': id}">
+                                <list editable="bottom">
+                                    <field name="name" />
+                                    <field name="runner_id" />
+                                    <field name="executor_path" />
+                                    <field name="timeout" />
+                                    <field name="max_retries" />
+                                    <field name="retry_interval" />
+                                    <field name="retry_strategy" />
+                                    <field name="rate_limit" />
+                                    <field name="sandbox_mode" />
+                                    <field name="dry_run" />
+                                    <field name="version_id" readonly="1" />
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_tool_definition" model="ir.actions.act_window">
+        <field name="name">Tool Definitions</field>
+        <field name="res_model">llm.tool.definition</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_enabled': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Define LLM tools that can be exposed to agents.</p>
+        </field>
+    </record>
+</odoo>

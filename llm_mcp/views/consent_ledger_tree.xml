@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_llm_mcp_consent_ledger_tree" model="ir.ui.view">
+        <field name="name">llm.mcp.consent.ledger.tree</field>
+        <field name="model">llm.mcp.consent.ledger</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="timestamp" />
+                <field name="user_id" />
+                <field name="tool_id" />
+                <field name="template_id" />
+                <field name="decision" />
+                <field name="expired" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_mcp_consent_ledger_form" model="ir.ui.view">
+        <field name="name">llm.mcp.consent.ledger.form</field>
+        <field name="model">llm.mcp.consent.ledger</field>
+        <field name="arch" type="xml">
+            <form string="Consent Ledger">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="timestamp" />
+                            <field name="user_id" />
+                            <field name="tool_id" />
+                            <field name="template_id" />
+                        </group>
+                        <group>
+                            <field name="decision" />
+                            <field name="expired" />
+                            <field name="context_payload" widget="json_editor" />
+                        </group>
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_mcp_consent_ledger" model="ir.actions.act_window">
+        <field name="name">Consent Ledger</field>
+        <field name="res_model">llm.mcp.consent.ledger</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_expired': 0}</field>
+    </record>
+</odoo>

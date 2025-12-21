@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_llm_mcp_server_wizard" model="ir.ui.view">
+        <field name="name">llm.mcp.server.wizard.form</field>
+        <field name="model">llm.mcp.server.wizard</field>
+        <field name="arch" type="xml">
+            <form string="New MCP Server" create="false" edit="false" delete="false">
+                <group>
+                    <field name="name"/>
+                    <field name="transport_types"/>
+                    <field name="audit_flags"/>
+                </group>
+                <group>
+                    <group string="Transport Configuration">
+                        <field
+                            name="command"
+                            required="transport_types == 'stdio'"
+                            invisible="transport_types != 'stdio'"
+                        />
+                        <field
+                            name="args"
+                            invisible="transport_types != 'stdio'"
+                        />
+                        <field
+                            name="host_config_json"
+                            invisible="transport_types == 'stdio'"
+                        />
+                        <field name="provider_whitelist_ids" widget="many2many_tags"/>
+                    </group>
+                </group>
+                <notebook>
+                    <page string="Runners">
+                        <field name="runner_line_ids" context="{'default_runner_type': 'remote_api'}" editable="bottom">
+                            <list string="Runner Binding">
+                                <field name="name" required="1"/>
+                                <field name="runner_type"/>
+                                <field name="entrypoint"/>
+                                <field name="sandbox_mode"/>
+                                <field name="enabled"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+                <footer>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    <button name="action_create_server" type="object" string="Create Server" class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_mcp_server_wizard" model="ir.actions.act_window">
+        <field name="name">Register MCP Server</field>
+        <field name="res_model">llm.mcp.server.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

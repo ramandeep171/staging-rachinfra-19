@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_llm_tool_binding_tree" model="ir.ui.view">
+        <field name="name">llm.tool.binding.tree</field>
+        <field name="model">llm.tool.binding</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="tool_id" />
+                <field name="runner_id" />
+                <field name="executor_path" />
+                <field name="timeout" />
+                <field name="max_retries" />
+                <field name="retry_interval" />
+                <field name="retry_strategy" />
+                <field name="rate_limit" />
+                <field name="sandbox_mode" />
+                <field name="dry_run" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_tool_binding_form" model="ir.ui.view">
+        <field name="name">llm.tool.binding.form</field>
+        <field name="model">llm.tool.binding</field>
+        <field name="arch" type="xml">
+            <form string="LLM Tool Binding">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" />
+                            <field name="tool_id" />
+                            <field name="version_id" readonly="1" />
+                            <field name="runner_id" />
+                            <field name="executor_path" />
+                        </group>
+                        <group>
+                            <field name="timeout" />
+                            <field name="max_retries" />
+                            <field name="retry_interval" />
+                            <field name="retry_strategy" />
+                            <field name="rate_limit" />
+                            <field name="sandbox_mode" />
+                            <field name="dry_run" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_tool_binding" model="ir.actions.act_window">
+        <field name="name">Tool Bindings</field>
+        <field name="res_model">llm.tool.binding</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_llm_tool_runner_tree" model="ir.ui.view">
+        <field name="name">llm.tool.runner.tree</field>
+        <field name="model">llm.tool.runner</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="runner_type" />
+                <field name="company_id" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_tool_runner_form" model="ir.ui.view">
+        <field name="name">llm.tool.runner.form</field>
+        <field name="model">llm.tool.runner</field>
+        <field name="arch" type="xml">
+            <form string="Runner">
+                <sheet>
+                    <group>
+                        <field name="name" />
+                        <field name="runner_type" />
+                        <field name="company_id" groups="base.group_multi_company" />
+                    </group>
+                    <group>
+                        <field name="notes" />
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_tool_runner" model="ir.actions.act_window">
+        <field name="name">Runners</field>
+        <field name="res_model">llm.tool.runner</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

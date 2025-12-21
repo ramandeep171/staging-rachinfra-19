@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_llm_mcp_invocation_record_tree" model="ir.ui.view">
+        <field name="name">llm.mcp.invocation.record.tree</field>
+        <field name="model">llm.mcp.invocation.record</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="session_id" />
+                <field name="tool_id" />
+                <field name="tool_version_id" />
+                <field name="runner_id" />
+                <field name="status" />
+                <field name="start_time" />
+                <field name="end_time" />
+                <field name="latency_ms" />
+                <field name="consent_ledger_id" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_mcp_invocation_record_form" model="ir.ui.view">
+        <field name="name">llm.mcp.invocation.record.form</field>
+        <field name="model">llm.mcp.invocation.record</field>
+        <field name="arch" type="xml">
+            <form string="Invocation Record">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="session_id" placeholder="Session identifier"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="tool_id" readonly="1" />
+                            <field name="tool_version_id" />
+                            <field name="runner_id" />
+                            <field name="consent_ledger_id" />
+                        </group>
+                        <group>
+                            <field name="status" />
+                            <field name="start_time" />
+                            <field name="end_time" />
+                            <field name="latency_ms" readonly="1" />
+                        </group>
+                    </group>
+                    <group string="Payload">
+                        <field name="params_redacted" widget="json" />
+                        <field name="result_json" widget="json" />
+                        <field name="exception_trace" />
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_mcp_invocation_record" model="ir.actions.act_window">
+        <field name="name">Invocation Records</field>
+        <field name="res_model">llm.mcp.invocation.record</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_status': 'success'}</field>
+    </record>
+</odoo>

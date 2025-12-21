@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_llm_mcp_consent_template_tree" model="ir.ui.view">
+        <field name="name">llm.mcp.consent.template.tree</field>
+        <field name="model">llm.mcp.consent.template</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="scope" />
+                <field name="default_opt" />
+                <field name="ttl_days" />
+                <field name="active" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_mcp_consent_template_form" model="ir.ui.view">
+        <field name="name">llm.mcp.consent.template.form</field>
+        <field name="model">llm.mcp.consent.template</field>
+        <field name="arch" type="xml">
+            <form string="Consent Template">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" />
+                            <field name="scope" />
+                            <field name="default_opt" />
+                            <field name="ttl_days" />
+                            <field name="active" />
+                        </group>
+                        <group>
+                            <field
+                                name="tag_ids"
+                                widget="many2many_tags"
+                                invisible="scope != 'tag'"
+                            />
+                            <field name="company_id" groups="base.group_multi_company" />
+                        </group>
+                    </group>
+                    <group>
+                        <field name="message_html" widget="html" />
+                    </group>
+                </sheet>
+                <chatter />
+            </form>
+        </field>
+    </record>
+
+    <record id="action_llm_mcp_consent_template" model="ir.actions.act_window">
+        <field name="name">Consent Templates</field>
+        <field name="res_model">llm.mcp.consent.template</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

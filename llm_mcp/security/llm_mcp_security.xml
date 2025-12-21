@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_llm_mcp_admin" model="res.groups">
+        <field name="name">MCP Admin/Developer</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_system'))]"/>
+    </record>
+    <record id="llm_mcp_server_rule_user" model="ir.rule">
+        <field name="name">LLM MCP Server: user read access limited to company</field>
+        <field name="model_id" ref="model_llm_mcp_server" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_mcp_server_rule_system" model="ir.rule">
+        <field name="name">LLM MCP Server: system/company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_server" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm_mcp.group_llm_mcp_admin'))]" />
+    </record>
+
+    <record id="llm_mcp_command_runner_rule_user" model="ir.rule">
+        <field name="name">LLM MCP Command Runner: user company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_command_runner" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_mcp_command_runner_rule_system" model="ir.rule">
+        <field name="name">LLM MCP Command Runner: system/company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_command_runner" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm_mcp.group_llm_mcp_admin'))]" />
+    </record>
+
+    <record id="llm_mcp_consent_template_rule_system" model="ir.rule">
+        <field name="name">LLM MCP Consent Template: system/company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_consent_template" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('base.group_system'))]" />
+    </record>
+
+    <record id="llm_mcp_consent_ledger_rule_user" model="ir.rule">
+        <field name="name">LLM MCP Consent Ledger: user company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_consent_ledger" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_mcp_consent_ledger_rule_system" model="ir.rule">
+        <field name="name">LLM MCP Consent Ledger: system/company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_consent_ledger" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('base.group_system'))]" />
+    </record>
+</odoo>

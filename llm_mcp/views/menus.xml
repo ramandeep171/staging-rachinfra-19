@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <menuitem
+        id="menu_llm_mcp_server_wizard"
+        name="Register MCP Server"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_server_wizard"
+        groups="llm_mcp.group_llm_mcp_admin"
+        sequence="25"
+    />
+</odoo>
