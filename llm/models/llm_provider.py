@@ -1,5 +1,12 @@
+import logging
+from datetime import datetime
+
+import requests
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 class LLMProvider(models.Model):
@@ -104,6 +111,164 @@ class LLMProvider(models.Model):
             ("anthropic", "Anthropic"),
             ("custom", "Custom"),
         ]
+
+    # -------------------------------------------------------------------------
+    # OpenAI helpers and service implementation
+    # -------------------------------------------------------------------------
+
+    def _openai_api_base(self):
+        """Return the OpenAI API base URL for this provider."""
+        self.ensure_one()
+        base = self.api_base or "https://api.openai.com/v1"
+        return base.rstrip("/")
+
+    def _openai_request(self, method, endpoint, payload=None, params=None, stream=False):
+        """Execute an HTTP request against the OpenAI REST API."""
+        self.ensure_one()
+        if not self.api_key:
+            raise UserError(
+                _("An API key is required to communicate with OpenAI for provider %s.")
+                % self.display_name
+            )
+
+        url = "%s/%s" % (self._openai_api_base(), endpoint.lstrip("/"))
+        headers = {
+            "Authorization": f"Bearer {self.api_key.strip()}",
+            "Content-Type": "application/json",
+        }
+
+        request_kwargs = {
+            "headers": headers,
+            "timeout": 60,
+            "stream": stream,
+        }
+        if payload is not None:
+            request_kwargs["json"] = payload
+        if params:
+            request_kwargs["params"] = params
+
+        try:
+            response = requests.request(method, url, **request_kwargs)
+        except requests.exceptions.RequestException as exc:
+            _logger.exception("OpenAI request failed: %s", exc)
+            raise UserError(_("Failed to reach OpenAI: %s") % exc) from exc
+
+        if response.status_code >= 400:
+            error_message = self._extract_openai_error(response)
+            raise UserError(error_message)
+
+        if stream:
+            return response
+
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise UserError(_("OpenAI returned an invalid JSON response.")) from exc
+
+    @staticmethod
+    def _extract_openai_error(response):
+        """Return a readable error message from an HTTP error response."""
+        status_message = _("OpenAI API call failed with status %s") % response.status_code
+        try:
+            payload = response.json()
+        except ValueError:
+            return status_message
+
+        if not isinstance(payload, dict):
+            return status_message
+
+        error = payload.get("error")
+        if isinstance(error, dict):
+            return error.get("message") or error.get("code") or status_message
+        return payload.get("message") or status_message
+
+    def _normalize_openai_model(self, model_payload):
+        """Normalize OpenAI model data to the structure expected by the wizard."""
+        created_ts = model_payload.get("created")
+        created_at = None
+        if isinstance(created_ts, (int, float)):
+            created_at = datetime.utcfromtimestamp(created_ts)
+
+        permissions = model_payload.get("permission")
+        if permissions is None:
+            permissions = model_payload.get("permissions")
+
+        details = {
+            "id": model_payload.get("id"),
+            "object": model_payload.get("object"),
+            "type": model_payload.get("type"),
+            "owned_by": model_payload.get("owned_by"),
+            "root": model_payload.get("root"),
+            "parent": model_payload.get("parent"),
+            "created_at": created_at,
+            "permission": permissions,
+            "capabilities": self._openai_detect_capabilities(
+                model_payload.get("id"), model_payload
+            ),
+        }
+
+        description = model_payload.get("description")
+        if description:
+            details["description"] = description
+
+        status = model_payload.get("status")
+        if status:
+            details["status"] = status
+
+        return self.serialize_model_data(
+            {key: value for key, value in details.items() if value not in (None, [], {})}
+        )
+
+    @staticmethod
+    def _openai_detect_capabilities(model_name, payload=None):
+        """Derive high-level capabilities for an OpenAI model."""
+        payload = payload or {}
+        name = (model_name or "").lower()
+        model_type = (payload.get("type") or "").lower()
+
+        capabilities = set()
+
+        if "embedding" in name or model_type == "embedding":
+            capabilities.add("embedding")
+
+        if any(token in name for token in ["vision", "multimodal", "4o", "omni", "realtime"]):
+            capabilities.add("multimodal")
+
+        if any(token in name for token in ["audio", "tts", "speech"]):
+            capabilities.add("audio")
+
+        if "reasoning" in name or name.startswith("o1") or name.startswith("o3"):
+            capabilities.add("reasoning")
+
+        if "embedding" not in capabilities:
+            capabilities.add("chat")
+
+        return sorted(capabilities)
+
+    def openai_models(self, model_id=None):
+        """Fetch models from the OpenAI API."""
+        self.ensure_one()
+        endpoint = f"models/{model_id}" if model_id else "models"
+        response = self._openai_request("GET", endpoint)
+
+        if model_id:
+            models_data = [response]
+        else:
+            models_data = response.get("data", [])
+
+        payload = []
+        for model_payload in models_data:
+            name = model_payload.get("id")
+            if not name:
+                continue
+            payload.append(
+                {
+                    "name": name,
+                    "details": self._normalize_openai_model(model_payload),
+                }
+            )
+
+        return payload
 
     @api.constrains("max_tokens")
     def _check_max_tokens(self):
