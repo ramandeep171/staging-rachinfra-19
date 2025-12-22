@@ -30,7 +30,6 @@
     "data": [
         "views/init.xml",
         "security/ir.model.access.csv",
-        "views/infinys_whatsapp_config_views.xml",
         "views/infinys_whatsapp_contact_views.xml",
         "views/infinys_whatsapp_mailinglist_views.xml",
         "views/infinys_whatsapp_mailing_views.xml",

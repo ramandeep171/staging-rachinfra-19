@@ -18,7 +18,7 @@ class WhatsappAccount(models.Model):
             ("meta", "Meta Cloud API (Facebook)"),
         ],
         string="Provider",
-        default="waha",
+        default="meta",
         required=True,
         help="Select the transport you configured in Odoo's default WhatsApp module.",
     )

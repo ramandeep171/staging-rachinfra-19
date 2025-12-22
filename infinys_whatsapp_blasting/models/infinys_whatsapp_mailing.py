@@ -403,45 +403,15 @@ class WhatsappMailing(models.Model):
     def _execute_enqueue(self):
         _logger.info("__execute_queue")
         
-        payload = {}
-        contact_data={}
         records = self.env['infinys.whatsapp.sent'].search([('is_queued', '=', True)],limit=10)
         
         for record in records:
             try:
                 record.error_msg = ""
-
-                contact_data = ({
-                   "sent_id" : f"{record.id}",
-                   "contact_id" : f"{record.contact_id.id}", 
-                   "contact_name" : f"{record.name}",
-                   "contact_whatsapp" : f"{record.from_number}",
-                    "message" : f"{record.body}",
-                })
-                _logger.info(f"Sending contact_data: {contact_data}")
-
-                payload = {
-                    "jsonrpc": "2.0",
-                    "wa_config_id": f"{record.config_id.id}",
-                    "wa_config_name": f"{record.config_id.name}",
-                    "mailing_id": f"{record.mailing_id.id}" if record.mailing_id else "0",
-                    "mailing_list": f"{record.mailing_list_id.id}" if record.mailing_list_id else "0",
-                    "mailing_list_name": f"{record.mailing_list_id.name}" if record.mailing_list_id else "",
-                    "mailing_log_id": f"{record.mailing_log_id.id}" if record.mailing_log_id else "0",
-                    "session" : "default",
-                    "reply_to": f"{record.to_number}",
-                    "contact": f"{json.dumps(contact_data)}"
-                }
-
-                _logger.info(f"Sending payload: {payload}")
-                            
-                n8n_utils.send_message(
-                    record,
-                    record.config_id.webhook_url,
-                    record.config_id.authentication_user,
-                    record.config_id.authentication_password,
-                    payload,
-                )
+                if self._should_use_waha(record.config_id):
+                    self._send_via_waha(record)
+                else:
+                    self._send_via_meta(record)
                 record.is_queued = False
 
             except Exception as e:
@@ -450,6 +420,72 @@ class WhatsappMailing(models.Model):
                 record.is_queued = True
 
         return True
+
+    def _should_use_waha(self, account):
+        return bool(account and getattr(account, 'provider', False) == 'waha' and account.webhook_url)
+
+    def _send_via_waha(self, record):
+        contact = record.contact_id
+        contact_data = ({
+           "sent_id" : f"{record.id}",
+           "contact_id" : f"{contact.id if contact else 0}", 
+           "contact_name" : f"{record.name}",
+           "contact_whatsapp" : f"{record.from_number}",
+            "message" : f"{record.body}",
+        })
+        _logger.info(f"Sending contact_data: {contact_data}")
+
+        payload = {
+            "jsonrpc": "2.0",
+            "wa_config_id": f"{record.config_id.id}",
+            "wa_config_name": f"{record.config_id.name}",
+            "mailing_id": f"{record.mailing_id.id}" if record.mailing_id else "0",
+            "mailing_list": f"{record.mailing_list_id.id}" if record.mailing_list_id else "0",
+            "mailing_list_name": f"{record.mailing_list_id.name}" if record.mailing_list_id else "",
+            "mailing_log_id": f"{record.mailing_log_id.id}" if record.mailing_log_id else "0",
+            "session" : "default",
+            "reply_to": f"{record.to_number}",
+            "contact": f"{json.dumps(contact_data)}"
+        }
+
+        _logger.info(f"Sending payload: {payload}")
+                    
+        n8n_utils.send_message(
+            record,
+            record.config_id.webhook_url,
+            record.config_id.authentication_user,
+            record.config_id.authentication_password,
+            payload,
+        )
+
+    def _send_via_meta(self, record):
+        contact = record.contact_id
+        if not contact or not contact.whatsapp_number:
+            raise UserError(_("Missing WhatsApp number on contact."))
+        partner = contact.partner_id
+        if not partner:
+            partner = self.env['res.partner'].with_context(skip_partner_creation=True).sudo().create({
+                'name': contact.name or contact.full_name or _("WhatsApp Contact"),
+                'phone': contact.whatsapp_number,
+            })
+            contact.partner_id = partner.id
+        subtype = self.env.ref('mail.mt_note')
+        body_html = tools.plaintext2html(record.body or "")
+        mail_message = self.env['mail.message'].sudo().create({
+            'model': 'res.partner',
+            'res_id': partner.id,
+            'body': body_html,
+            'message_type': 'comment',
+            'subtype_id': subtype.id if subtype else False,
+            'author_id': self.env.user.partner_id.id,
+            'partner_ids': [(4, partner.id)],
+        })
+        whatsapp_message = self.env['whatsapp.message'].sudo().create({
+            'mail_message_id': mail_message.id,
+            'mobile_number': contact.whatsapp_number,
+            'wa_account_id': record.config_id.id,
+        })
+        whatsapp_message._send_message()
     
     def copy(self, default=None):
         self.ensure_one()

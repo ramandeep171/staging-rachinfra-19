@@ -20,14 +20,9 @@ Every place where the UI requests a “WhatsApp Account” is pointing to *Whats
 ### 2. Configure transport (one-time per phone number)
 
 1. Go to *WhatsApp ‣ Configuration ‣ WhatsApp Business Accounts*.  
-2. Create or open an account and fill the standard Meta fields.  
-3. Scroll to the **Infinys Gateway** section that this module injects and fill:
-   - **Provider** – choose `WAHA` for on-prem WAHA or `Meta` to continue using Meta Cloud.
-   - **WhatsApp API URL / Webhook URL** – WAHA base URL and the N8n (or similar) webhook that will receive payloads.
-   - **Authentication User / Password** – WAHA credentials.
-   - **Phone Number ID (WAHA)** – identifier provided by WAHA (defaults to the same phone UID that Odoo requires).  
-   - Optional **Welcome Message** template.
-4. Click **Test WAHA Credentials** (visible for provider = WAHA) to validate access. Re-use this screen whenever credentials change.
+2. Create or open an account and fill the standard Meta fields (App ID, App Secret, Access Token, Phone Number ID).  
+3. Nothing else to configure—broadcasts reuse this same account. The “Infinys Gateway” extra fields are now hidden by default and only used if you explicitly enable WAHA/N8n via developer mode.  
+4. Optional: if you still need WAHA, enable the extra fields, fill the webhook URL plus credentials, and click **Test WAHA Credentials**. When left empty, the system automatically sends through Meta Cloud.  
 5. Multi-company rules, allowed users, and access rights are inherited from the default WhatsApp configuration.
 
 ### 3. Prepare contacts and lists
@@ -45,8 +40,8 @@ Every place where the UI requests a “WhatsApp Account” is pointing to *Whats
    - **WhatsApp Account** is a direct link to the default WhatsApp configuration; creation/quickedits are disabled to guarantee a single source of truth.  
    - Choose **Recipients** = Mailing List or Manual Contacts.  
    - Select the Mailing List or the Contact records, then set the **Schedule Date** (must be >= current datetime).  
-3. Click **Submit to Scheduler** to move the mailing to the queue or **Send Now** to push it immediately.  
-4. Use *Broadcasts ‣ Mailing Log* to follow the status. Each log entry references outgoing messages, the WhatsApp account, and any error message returned by WAHA/Meta.
+3. Click **Submit to Scheduler** to move the mailing to the queue or **Send Now** to push it immediately. When no WAHA webhook is configured, both actions call Odoo’s native WhatsApp API and send messages through Meta Cloud.  
+4. Use *Broadcasts ‣ Mailing Log* to follow the status. Each log entry references outgoing messages, the WhatsApp account, and any error message returned by Meta (or WAHA, if enabled).
 
 ### 5. Monitor traffic
 
@@ -56,11 +51,11 @@ Every place where the UI requests a “WhatsApp Account” is pointing to *Whats
 
 ### 6. Automation / cron
 
-- **Infinys Whatsapp Blasting : Scheduler Send** – runs every minute; releases mailings whose schedule date has been reached.  
-- **Infinys Whatsapp Blasting : Scheduler Enqueue** – disabled by default; enable when you want the system to push queued payloads to WAHA/N8n automatically in batches.
+- **Infinys Whatsapp Blasting : Scheduler Send** – runs every minute; releases mailings whose schedule date has been reached and, when no WAHA webhook is provided, flushes the queue through Odoo’s native WhatsApp API automatically.  
+- **Infinys Whatsapp Blasting : Scheduler Enqueue** – keep it disabled for pure Meta setups; enable only if you’re still pushing payloads to WAHA/N8n.
 
 ## Tips & troubleshooting
 
-- Keep the WAHA/N8n endpoints reachable from the Odoo server; failed webhooks surface in the Mailing Log’s `Error Message` column.  
+- When WAHA/N8n is enabled, keep those endpoints reachable from the Odoo server; failed webhooks surface in the Mailing Log’s `Error Message` column.  
 - If contact imports fail, double-check that numbers are stripped from spaces/`+` (the form auto-normalises input).  
 - Because the module reuses default WhatsApp accounts, any transport-level issue can be debugged from *Discuss > WhatsApp* logs or the standard WhatsApp module tools.
