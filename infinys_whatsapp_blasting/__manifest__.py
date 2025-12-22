@@ -24,13 +24,13 @@
     "live_test_url": "https://odoo-ce.atisicloud.com/",
     "icon": "/infinys_whatsapp_blasting/static/description/icon.png",
     # any module necessary for this one to work correctly
-    "depends": ["base", "mail", "mass_mailing"],
+    "depends": ["base", "mail", "mass_mailing", "whatsapp"],
     #'external_dependencies': {'python': ['pyshorteners']},
     # always loaded
     "data": [
         "views/init.xml",
         "security/ir.model.access.csv",
-        "views/res_config_settings_views.xml",
+        "views/infinys_whatsapp_config_views.xml",
         "views/infinys_whatsapp_contact_views.xml",
         "views/infinys_whatsapp_mailinglist_views.xml",
         "views/infinys_whatsapp_mailing_views.xml",

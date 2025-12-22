@@ -104,7 +104,7 @@ class WhatsappIncomingMessage(models.Model):
             if not text_message:
                 raise UserError("Please input message.")
 
-            config_id = self.env['infinys.whatsapp.config'].search([('whatsapp_number', '=', self.to_number)],limit=1)
+            config_id = self.env['whatsapp.account'].search([('whatsapp_number', '=', self.to_number)], limit=1)
             contact_id = self.contact_id
             
             if not config_id:

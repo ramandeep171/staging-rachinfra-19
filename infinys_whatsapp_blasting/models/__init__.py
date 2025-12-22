@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from . import infinys_whatsapp_config
-from . import res_config_settings
+from . import infinys_whatsapp_config 
 from . import infinys_whatsapp_contact
 from . import infinys_whatsapp_incoming
 from . import infinys_whatsapp_mailinglist

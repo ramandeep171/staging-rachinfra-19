@@ -25,7 +25,8 @@
                         </div>
                         <group>
                             <group>
-                                <field name="whatsapp_config_id" placeholder="Whatsapp Account" required="1" readonly="state != 'draft' and state != 'canceled'" />
+                                <field name="company_id" placeholder="Company" required="1" readonly="state != 'draft' and state != 'canceled'" />
+                                <field name="whatsapp_config_id" placeholder="Whatsapp Account" required="1" readonly="state != 'draft' and state != 'canceled'" options="{'no_create': True, 'no_quick_create': True, 'no_create_edit': True}" domain="[('active', '=', True), '|', ('allowed_company_ids', '=', False), ('allowed_company_ids', 'in', allowed_company_ids)]" />
                                 <field name="responsible_id" placeholder="Responsible" readonly="state != 'draft'"/>
                                 <field name="recipients" required="1" placeholder="Recipients" readonly="state != 'draft' and state != 'canceled'" />
                                 <field name="mailing_list_id" required="1" invisible="recipients != 'mailinglist'" placeholder="Mailing List" domain="[('status', '=', 'active')]" readonly="state != 'draft' and state != 'canceled'" />
@@ -114,7 +115,8 @@
             <field name="model">infinys.whatsapp.mailing</field>
             <field name="arch" type="xml">
                 <list string="Mailings">
-                    <field name="schedule_date"/> 
+                    <field name="company_id"/>
+                    <field name="schedule_date"/>
                     <field name="name" string="Subject"/>
                     <field name="responsible_id" string="Responsible"/>
                     <field name="mailing_list_id" string="Mailing List"/>
@@ -159,4 +161,3 @@
 
     </data>
 </odoo>
-

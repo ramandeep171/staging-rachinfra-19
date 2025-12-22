@@ -96,7 +96,7 @@ class WebhookController(http.Controller):
                         substr_to_remove = '@'
                         from_number = records.from_number
                         to_number = records.to_number
-                        rec_wahaconfig = request.env['infinys.whatsapp.config'].sudo().search([('whatsapp_number','=',to_number)], limit=1)
+                        rec_wahaconfig = request.env['whatsapp.account'].sudo().search([('whatsapp_number', '=', to_number)], limit=1)
 
                         if substr_to_remove in from_number:
                             from_number = from_number.split(substr_to_remove, 1)[0]
@@ -147,7 +147,7 @@ class WebhookController(http.Controller):
                     if substr_to_remove in to_number:
                         to_number = to_number.split(substr_to_remove, 1)[0]
                     
-                    rec_wahaconfig = request.env['infinys.whatsapp.config'].sudo().search([('whatsapp_number','=',to_number)], limit=1)
+                    rec_wahaconfig = request.env['whatsapp.account'].sudo().search([('whatsapp_number', '=', to_number)], limit=1)
                     
                     records = request.env['infinys.whatsapp.incoming'].sudo().create({
                         'name': message.get('name'),
@@ -222,7 +222,7 @@ class WebhookController(http.Controller):
                 return {'status': 'error', 'message': 'No Whatsapp Number provided'}
             
             _logger.info("get_whatsappconfig with whatsappnumber: %s", whatsappnumber)
-            rec_wahaconfig = request.env['infinys.whatsapp.config'].sudo().search([('whatsapp_number','=',whatsappnumber)], limit=1)
+            rec_wahaconfig = request.env['whatsapp.account'].sudo().search([('whatsapp_number', '=', whatsappnumber)], limit=1)
             
             if token and rec_wahaconfig:
                 _logger.info("Found Whatsapp Config: %s", rec_wahaconfig.name)  

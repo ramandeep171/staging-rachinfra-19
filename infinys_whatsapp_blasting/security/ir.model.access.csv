@@ -1,5 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_infinys_whatsapp_config_user,infinys.whatsapp.config,infinys_whatsapp_blasting.model_infinys_whatsapp_config,base.group_user,1,1,1,1
 access_infinys_whatsapp_contact_user,infinys.whatsapp.contact,infinys_whatsapp_blasting.model_infinys_whatsapp_contact,base.group_user,1,1,1,1
 access_infinys_whatsapp_incoming_user,infinys.whatsapp.incoming,infinys_whatsapp_blasting.model_infinys_whatsapp_incoming,base.group_user,1,1,1,1
 access_infinys_whatsapp_mailinglist_user,infinys.whatsapp.mailinglist,infinys_whatsapp_blasting.model_infinys_whatsapp_mailinglist,base.group_user,1,1,1,1

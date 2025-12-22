@@ -19,7 +19,7 @@ class WhatsappSentMessage(models.Model):
     is_queued = fields.Boolean(string="Is Queued", default=True)
     quotedMsgId = fields.Char(string="Quoted Message ID")
 
-    config_id = fields.Many2one('infinys.whatsapp.config', string="Whatsapp Config", required=True, ondelete='cascade')
+    config_id = fields.Many2one('whatsapp.account', string="WhatsApp Account", required=True, ondelete='cascade')
     contact_id = fields.Many2one('infinys.whatsapp.contact', string="Whatsapp Contact", ondelete='cascade')
     mailing_id = fields.Many2one('infinys.whatsapp.mailing', string="Mailing", ondelete='cascade')
     mailing_list_id = fields.Many2one('infinys.whatsapp.mailinglist', string="Mailing List", ondelete='cascade')

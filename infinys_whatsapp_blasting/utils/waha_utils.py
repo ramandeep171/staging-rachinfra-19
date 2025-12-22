@@ -67,7 +67,7 @@ def test_send_message(self,idwaconfig, wanumberto, replyto, message):
     payload = { }
     
     try:
-        wa_config = self.env['infinys.whatsapp.config'].sudo().search([('id','=',idwaconfig)], limit=1)
+        wa_config = self.env['whatsapp.account'].sudo().search([('id', '=', idwaconfig)], limit=1)
 
         if wa_config :
             whatapp_api_url = wa_config.whatsapp_api_url

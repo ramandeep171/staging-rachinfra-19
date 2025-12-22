@@ -17,14 +17,24 @@ class WhatsappMailing(models.Model):
     _name = 'infinys.whatsapp.mailing'
     _description = 'WhatsApp Mass Messaging'
     _order = 'id desc, state_idx asc, name asc'
+    _check_company_auto = True
 
     name = fields.Char(string='Subject',  required=True, store=True, index=True)
     error_msg = fields.Char(string="Error Message", default="")
+    company_id = fields.Many2one(
+        'res.company',
+        string='Company',
+        required=True,
+        default=lambda self: self.env.company,
+    )
+
     whatsapp_config_id = fields.Many2one(
-        'infinys.whatsapp.config', 
-        string='Whatsapp Account', 
-        domain=[('active', '=', True)], 
-        required=True)
+        'whatsapp.account',
+        string='WhatsApp Account',
+        domain="[('active', '=', True), '|', ('allowed_company_ids', '=', False), ('allowed_company_ids', 'in', allowed_company_ids)]",
+        required=True,
+        help='Select one of the WhatsApp Business Accounts configured in the native WhatsApp app. No extra configuration model exists for broadcasts.',
+    )
     
     responsible_id = fields.Many2one(
         'res.users', 
