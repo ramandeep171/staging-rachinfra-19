@@ -32,8 +32,8 @@ Every place where the UI requests a “WhatsApp Account” is pointing to *Whats
 
 ### 3. Prepare contacts and lists
 
-1. Navigate to *WhatsApp ‣ Contacts ‣ Recipients*.  
-2. Create or import contacts (international format, numbers only). The form includes country, tags, and an Incoming/Outgoing history similar to the standard Contacts app.  
+1. Navigate to *WhatsApp ‣ Contacts ‣ Recipients*. This view mirrors the standard Contacts app: every `res.partner` is automatically available as a WhatsApp recipient, so existing address book entries appear instantly.  
+2. Update or import contacts directly from either module—changes stay in sync (names, country, tags, WhatsApp number/mobile, etc.).  
 3. Build mailing lists from *WhatsApp ‣ Contacts ‣ Mailing Lists* and add contacts to each list.  
 4. Use the *Incoming* and *Outgoing* menu items to inspect automatically captured messages and confirm opt-outs.
 

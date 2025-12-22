@@ -7,3 +7,4 @@ from . import infinys_whatsapp_mailing
 from . import infinys_whatsapp_sent
 from . import infinys_whatsapp_mailing_log
 from . import infinys_whatsapp_mailing_recepient
+from . import res_partner
