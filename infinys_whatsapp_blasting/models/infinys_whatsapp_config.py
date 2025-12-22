@@ -88,13 +88,11 @@ class InfinysWhatsappConfig(models.Model):
             }
         }
 
+    @api.depends_context('uid')
     def _compute_ir_deployment(self):
         ir_deployment = self.env['ir.config_parameter'].sudo().get_param('infinys_whatsapp_blasting.deployment')
         for rec in self:
-            self.ir_deployment= ir_deployment
-            if ir_deployment.lower() == 'trial' or ir_deployment == 'Trial':
-                rec.invisible_trial = True
-            else:
-                rec.invisible_trial = False
+            rec.ir_deployment = ir_deployment or ''
+            rec.invisible_trial = bool(ir_deployment and ir_deployment.lower() == 'trial')
 
         

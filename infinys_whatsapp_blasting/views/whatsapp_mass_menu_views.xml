@@ -34,12 +34,6 @@
             sequence="20"
         />
 
-        <menuitem id="menu_configuration_root"
-            name="Configuration"
-            parent="menu_infinys_whatsapp_root"
-            sequence="30"
-        />
-
         <menuitem
             id="menu_infinys_whatsapp_mailinglist"
             name="Mailing Lists"
@@ -72,11 +66,4 @@
             sequence="4"   
         />
 
-        <menuitem
-            id="menu_infinys_whatsapp_config"
-            name="Settings"
-            parent="menu_configuration_root"
-            action="action_infinys_whatsapp_config"
-            sequence="1"
-        />
-</odoo>
+    </odoo>
