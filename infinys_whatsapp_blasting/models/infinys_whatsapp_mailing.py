@@ -239,6 +239,8 @@ class WhatsappMailing(models.Model):
                 raise UserError(_("No active contacts found !!."))
 
             self.mailing_queue(record, contact_ids, 'send now') 
+            # Immediately flush the queue so recipients are actually contacted.
+            self._execute_enqueue()
             message = f"Processing message from {self.whatsapp_config_id.whatsapp_number} with total recipients: {total_contact} on queue"
             _logger.info(f"Sending message to {self.whatsapp_config_id.whatsapp_number} ")
             
@@ -380,6 +382,7 @@ class WhatsappMailing(models.Model):
             ('schedule_date', '<=', one_minute_after)
         ])
 
+        enqueue_needed = False
         if records:
             _logger.info("Found records to process: %s", records)
             for record in records:
@@ -390,6 +393,10 @@ class WhatsappMailing(models.Model):
                     record.write({'state': 'failed', 'error_msg': str(exc)})
                     continue
                 self.mailing_queue(record, contacts, record.state)
+                enqueue_needed = True
+
+        if enqueue_needed:
+            self._execute_enqueue()
 
         return True
     
