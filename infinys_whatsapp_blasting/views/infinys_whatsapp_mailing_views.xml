@@ -50,6 +50,8 @@
                         </group>
                         <notebook>
                             <page string="Message">
+                                <field name="wa_template_preview" widget="html" class="mb-3"
+                                    readonly="1" invisible="wa_template_preview == False"/>
                                 <field name="message" readonly="state != 'draft' and state != 'canceled'"/>
                             </page>
                             <page string="Variables">

@@ -52,6 +52,11 @@ class WhatsappMailing(models.Model):
         string='WhatsApp Template',
         help="Optional Meta template to send instead of a free-text body. Requires an approved template linked to the selected WhatsApp account.",
     )
+    wa_template_preview = fields.Html(
+        string='Template Preview',
+        compute='_compute_wa_template_preview',
+        help="Shortcut preview of the selected WhatsApp Template header/body/footer.",
+    )
 
     sent_date = fields.Datetime(string='Sent Date')
         
@@ -406,6 +411,22 @@ class WhatsappMailing(models.Model):
             self._execute_enqueue()
 
         return True
+
+    @api.depends('wa_template_id')
+    def _compute_wa_template_preview(self):
+        for mailing in self:
+            template = mailing.wa_template_id
+            if not template:
+                mailing.wa_template_preview = False
+                continue
+            parts = []
+            if template.header_text:
+                parts.append("<strong>%s</strong>" % tools.html_escape(template.header_text))
+            if template.body:
+                parts.append(tools.html_escape(template.body).replace('\n', '<br/>'))
+            if template.footer_text:
+                parts.append("<em>%s</em>" % tools.html_escape(template.footer_text))
+            mailing.wa_template_preview = '<br/>'.join(parts)
     
     def _execute_enqueue(self):
         _logger.info("__execute_queue")
