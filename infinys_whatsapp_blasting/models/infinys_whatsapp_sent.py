@@ -23,6 +23,7 @@ class WhatsappSentMessage(models.Model):
     contact_id = fields.Many2one('infinys.whatsapp.contact', string="Whatsapp Contact", ondelete='cascade')
     mailing_id = fields.Many2one('infinys.whatsapp.mailing', string="Mailing", ondelete='cascade')
     mailing_list_id = fields.Many2one('infinys.whatsapp.mailinglist', string="Mailing List", ondelete='cascade')
+    wa_template_id = fields.Many2one('whatsapp.template', string="WhatsApp Template")
     error_msg = fields.Text(string="Error Message", help="Error message if sending fails.")
     
     hasmedia = fields.Boolean(string="Has Media", default=False)

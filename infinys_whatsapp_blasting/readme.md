@@ -38,6 +38,7 @@ Every place where the UI requests a “WhatsApp Account” is pointing to *Whats
 2. Fill the form:
    - **Subject** and **Message/Header/Footer** fields support the placeholders listed in the Variables tab (e.g., `{{contact.name}}`).  
    - **WhatsApp Account** is a direct link to the default WhatsApp configuration; creation/quickedits are disabled to guarantee a single source of truth.  
+   - **WhatsApp Template** (optional) lets you select any approved template of the chosen account (currently limited to `res.partner` templates). Pick one whenever Meta requires a template for marketing broadcasts; leave empty to send a free-text body inside the existing 24h conversation window.  
    - Choose **Recipients** = Mailing List or Manual Contacts.  
    - Select the Mailing List or the Contact records, then set the **Schedule Date** (must be >= current datetime).  
 3. Click **Submit to Scheduler** to move the mailing to the queue or **Send Now** to push it immediately. When no WAHA webhook is configured, both actions call Odoo’s native WhatsApp API and send messages through Meta Cloud.  

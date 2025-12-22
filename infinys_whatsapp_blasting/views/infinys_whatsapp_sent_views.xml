@@ -14,6 +14,7 @@
                             <field name="name" string="From" readonly="1"/>
                             <field name="from_number" readonly="1" />
                             <field name="mailing_id"/>   
+                            <field name="wa_template_id" readonly="1"/>
                             <field name="hasmedia" readonly="1" />
                             <field name="mime_type" readonly="1" />
                             <field name="body" string="Message" widget="text"/>
@@ -32,6 +33,7 @@
                 <list string="Whatsapp Sent">
                     <field name="create_date" string="Received At"/> 
                     <field name="contact_id"/>
+                    <field name="wa_template_id" optional="show"/>
                     <field name="to_number" />   
                     <field name="mailing_id"/>
                     <field name="mailing_list_id"/>
@@ -79,4 +81,3 @@
 
     </data>
 </odoo>
-

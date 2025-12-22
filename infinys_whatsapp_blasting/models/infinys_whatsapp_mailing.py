@@ -47,6 +47,12 @@ class WhatsappMailing(models.Model):
         string='Mailing List'
     )
 
+    wa_template_id = fields.Many2one(
+        'whatsapp.template',
+        string='WhatsApp Template',
+        help="Optional Meta template to send instead of a free-text body. Requires an approved template linked to the selected WhatsApp account.",
+    )
+
     sent_date = fields.Datetime(string='Sent Date')
         
     state = fields.Selection([
@@ -347,6 +353,7 @@ class WhatsappMailing(models.Model):
                         'config_id' : mailing_record.whatsapp_config_id.id,
                         'mailing_id': mailing_record.id,
                         'mailing_list_id': mailing_record.mailing_list_id.id if mailing_record.mailing_list_id else False,
+                        'wa_template_id': mailing_record.wa_template_id.id if mailing_record.wa_template_id else False,
                         'mailing_log_id': rec_mailing_log.id,
                         'contact_id': contact.id,
                         'from_number': contact.whatsapp_number,
@@ -469,11 +476,15 @@ class WhatsappMailing(models.Model):
                 'phone': contact.whatsapp_number,
             })
             contact.partner_id = partner.id
+        template = record.wa_template_id or (record.mailing_id.wa_template_id if record.mailing_id else False)
         subtype = self.env.ref('mail.mt_note')
-        body_html = tools.plaintext2html(record.body or "")
+        body_source = record.body or (template.body if template else "")
+        body_html = tools.plaintext2html(body_source or "")
+        model_name = template.model if template else 'res.partner'
+        res_id = partner.id
         mail_message = self.env['mail.message'].sudo().create({
-            'model': 'res.partner',
-            'res_id': partner.id,
+            'model': model_name,
+            'res_id': res_id,
             'body': body_html,
             'message_type': 'comment',
             'subtype_id': subtype.id if subtype else False,
@@ -484,6 +495,7 @@ class WhatsappMailing(models.Model):
             'mail_message_id': mail_message.id,
             'mobile_number': contact.whatsapp_number,
             'wa_account_id': record.config_id.id,
+            'wa_template_id': template.id if template else False,
         })
         whatsapp_message._send_message()
     

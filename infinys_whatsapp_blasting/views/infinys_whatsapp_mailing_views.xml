@@ -31,6 +31,12 @@
                                 <field name="recipients" required="1" placeholder="Recipients" readonly="state != 'draft' and state != 'canceled'" />
                                 <field name="mailing_list_id" required="1" invisible="recipients != 'mailinglist'" placeholder="Mailing List" domain="[('status', '=', 'active')]" readonly="state != 'draft' and state != 'canceled'" />
                                 <field name="contact_ids" required="1" widget="many2many_tags" invisible="recipients != 'mailinglistcontact'" placeholder="Contact List" domain="[('is_active', '=', True)]" readonly="state != 'draft' and state != 'canceled'" />
+                                <field name="wa_template_id"
+                                    placeholder="Select WhatsApp Template"
+                                    optional="show"
+                                    domain="[('status', '=', 'approved'), ('wa_account_id', '=', whatsapp_config_id), ('model', '=', 'res.partner')]"
+                                    context="{'default_wa_account_id': whatsapp_config_id}"
+                                    readonly="state != 'draft' and state != 'canceled'"/>
                             </group>
                             <group>
                                 <field name="schedule_date" placeholder="Schedule Date" widget="datetime" readonly="state != 'draft' and state != 'canceled'" />
