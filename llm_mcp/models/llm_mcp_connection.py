@@ -29,7 +29,7 @@ class LLMMCPConnection(models.Model):
     )
     token = fields.Char(
         string="Token",
-        required=True,
+        required=False,
         copy=False,
         encryption="fernet",
         searchable=False,
