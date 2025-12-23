@@ -4,6 +4,9 @@
         <field name="name">MCP Admin/Developer</field>
         <field name="implied_ids" eval="[(4, ref('base.group_system'))]"/>
     </record>
+    <record id="llm.group_llm_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('llm_mcp.group_llm_mcp_admin'))]"/>
+    </record>
     <record id="llm_mcp_server_rule_user" model="ir.rule">
         <field name="name">LLM MCP Server: user read access limited to company</field>
         <field name="model_id" ref="model_llm_mcp_server" />
@@ -79,5 +82,27 @@
         <field name="perm_create" eval="True" />
         <field name="perm_unlink" eval="True" />
         <field name="groups" eval="[(4, ref('base.group_system'))]" />
+    </record>
+
+    <record id="llm_mcp_connection_rule_user" model="ir.rule">
+        <field name="name">LLM MCP Connection: user read access limited to company</field>
+        <field name="model_id" ref="model_llm_mcp_connection" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="False" />
+        <field name="perm_create" eval="False" />
+        <field name="perm_unlink" eval="False" />
+        <field name="groups" eval="[(4, ref('base.group_user'))]" />
+    </record>
+
+    <record id="llm_mcp_connection_rule_admin" model="ir.rule">
+        <field name="name">LLM MCP Connection: admin/company isolation</field>
+        <field name="model_id" ref="model_llm_mcp_connection" />
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+        <field name="perm_read" eval="True" />
+        <field name="perm_write" eval="True" />
+        <field name="perm_create" eval="True" />
+        <field name="perm_unlink" eval="True" />
+        <field name="groups" eval="[(4, ref('llm_mcp.group_llm_mcp_admin'))]" />
     </record>
 </odoo>

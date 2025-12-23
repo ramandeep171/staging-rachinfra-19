@@ -45,4 +45,12 @@
         action="action_llm_mcp_audit_trail"
         sequence="31"
     />
+    <menuitem
+        id="menu_llm_mcp_connection"
+        name="MCP Connections"
+        parent="llm.menu_llm_config"
+        action="action_llm_mcp_connection"
+        groups="llm_mcp.group_llm_mcp_admin"
+        sequence="32"
+    />
 </odoo>

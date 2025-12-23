@@ -30,6 +30,7 @@
         "views/invocation_record_tree.xml",
         "views/audit_trail_tree.xml",
         "views/llm_mcp_server_views.xml",
+        "views/llm_mcp_connection_views.xml",
         "views/command_runner_views.xml",
         "views/mcp_server_wizard_views.xml",
         "views/llm_tool_views.xml",

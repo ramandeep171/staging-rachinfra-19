@@ -8,3 +8,5 @@ access_llm_mcp_consent_ledger_user,llm.mcp.consent.ledger.user,model_llm_mcp_con
 access_llm_mcp_consent_ledger_manager,llm.mcp.consent.ledger.manager,model_llm_mcp_consent_ledger,base.group_system,1,1,1,1
 access_llm_mcp_invocation_record_admin,llm.mcp.invocation.record.admin,model_llm_mcp_invocation_record,base.group_system,1,1,1,1
 access_llm_mcp_audit_trail_admin,llm.mcp.audit.trail.admin,model_llm_mcp_audit_trail,base.group_system,1,1,1,1
+access_llm_mcp_connection_user,llm.mcp.connection.user,model_llm_mcp_connection,base.group_user,1,0,0,0
+access_llm_mcp_connection_admin,llm.mcp.connection.admin,model_llm_mcp_connection,base.group_system,1,1,1,1

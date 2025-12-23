@@ -5,7 +5,6 @@ from odoo.exceptions import UserError
 class MCPExecutionRouter(models.AbstractModel):
     _name = "llm.mcp.execution.router"
     _description = "MCP Execution Router"
-
     _rate_counters = {}
 
     @api.model

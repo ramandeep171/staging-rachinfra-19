@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_llm_mcp_connection_tree" model="ir.ui.view">
+        <field name="name">llm.mcp.connection.tree</field>
+        <field name="model">llm.mcp.connection</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name" />
+                <field name="active" widget="boolean_toggle" />
+                <field name="last_used_at" />
+                <field name="last_test_status" />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_llm_mcp_connection_form" model="ir.ui.view">
+        <field name="name">llm.mcp.connection.form</field>
+        <field name="model">llm.mcp.connection</field>
+        <field name="arch" type="xml">
+            <form string="MCP Connection">
+                <header>
+                    <button name="action_generate_token" type="object" string="Generate Token" class="oe_highlight" groups="llm_mcp.group_llm_mcp_admin" />
+                    <button name="action_test_connection" type="object" string="Test Connection" class="oe_link" groups="llm_mcp.group_llm_mcp_admin" />
+                    <field name="active" widget="boolean_toggle" class="oe_inline" groups="llm_mcp.group_llm_mcp_admin" />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" />
+                        <h1><field name="name" required="1" /></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" />
+                            <field name="revoked" />
+                        </group>
+                        <group>
+                            <field name="token" readonly="1" />
+                            <field name="token_last4" readonly="1" />
+                        </group>
+                    </group>
+                    <group string="How to Connect">
+                        <group>
+                            <field name="sse_url" readonly="1" widget="copy" />
+                            <field name="tools_url" readonly="1" widget="copy" />
+                            <field name="execute_url" readonly="1" widget="copy" />
+                        </group>
+                        <group>
+                            <field name="request_header_json" readonly="1" widget="copy" />
+                        </group>
+                    </group>
+                    <group string="Audit">
+                        <group>
+                            <field name="created_at" readonly="1" />
+                            <field name="last_used_at" readonly="1" />
+                        </group>
+                        <group>
+                            <field name="last_test_at" readonly="1" />
+                            <field name="last_test_status" readonly="1" />
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Internal notes" />
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_llm_mcp_connection_search" model="ir.ui.view">
+        <field name="name">llm.mcp.connection.search</field>
+        <field name="model">llm.mcp.connection</field>
+        <field name="arch" type="xml">
+            <search string="Search MCP Connections">
+                <field name="name" />
+                <filter string="Active" name="active" domain="[('active', '=', True)]" />
+                <filter string="Revoked" name="revoked" domain="[('revoked', '=', True)]" />
+                <group name="group_by">
+                    <filter string="Company" name="group_company" context="{'group_by': 'company_id'}" />
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_llm_mcp_connection" model="ir.actions.act_window">
+        <field name="name">MCP Connections</field>
+        <field name="res_model">llm.mcp.connection</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create a new MCP Connection</p>
+            <p>Connections allow external MCP clients to authenticate against the Odoo MCP gateway.</p>
+        </field>
+    </record>
+</odoo>
