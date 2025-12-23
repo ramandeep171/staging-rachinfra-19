@@ -118,7 +118,7 @@ class MCPGatewayController(http.Controller):
         )
 
     @http.route(
-        ["/mcp/tools", "/<path:prefix>/mcp/tools"],
+        ["/mcp/tools", "/odoo/mcp/tools", "/<path:prefix>/mcp/tools"],
         type="http",
         auth="public",
         methods=["GET"],
@@ -164,7 +164,7 @@ class MCPGatewayController(http.Controller):
             )
 
     @http.route(
-        ["/mcp/execute", "/<path:prefix>/mcp/execute"],
+        ["/mcp/execute", "/odoo/mcp/execute", "/<path:prefix>/mcp/execute"],
         type="json",
         auth="public",
         methods=["POST"],
@@ -217,7 +217,7 @@ class MCPGatewayController(http.Controller):
         return self._json_response(result)
 
     @http.route(
-        ["/mcp/tools", "/<path:prefix>/mcp/tools"],
+        ["/mcp/tools", "/odoo/mcp/tools", "/<path:prefix>/mcp/tools"],
         type="http",
         auth="none",
         methods=["OPTIONS"],
@@ -263,7 +263,7 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        ["/mcp/sse", "/<path:prefix>/mcp/sse"],
+        ["/mcp/sse", "/odoo/mcp/sse", "/<path:prefix>/mcp/sse"],
         type="http",
         auth="public",
         methods=["GET"],
@@ -303,7 +303,7 @@ class MCPGatewayController(http.Controller):
         )
 
     @http.route(
-        ["/mcp/sse", "/<path:prefix>/mcp/sse"],
+        ["/mcp/sse", "/odoo/mcp/sse", "/<path:prefix>/mcp/sse"],
         type="http",
         auth="none",
         methods=["OPTIONS"],
@@ -313,7 +313,7 @@ class MCPGatewayController(http.Controller):
         return self._cors_preflight()
 
     @http.route(
-        ["/mcp/execute", "/<path:prefix>/mcp/execute"],
+        ["/mcp/execute", "/odoo/mcp/execute", "/<path:prefix>/mcp/execute"],
         type="http",
         auth="none",
         methods=["OPTIONS"],
