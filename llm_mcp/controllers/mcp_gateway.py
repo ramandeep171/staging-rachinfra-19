@@ -107,6 +107,16 @@ class MCPGatewayController(http.Controller):
         request.update_env(user=user.id, context=context)
         return request.env
 
+    def _cors_preflight(self):
+        return request.make_response(
+            "",
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                "Access-Control-Allow-Headers": "Authorization,Content-Type,Accept,Origin",
+            },
+        )
+
     @http.route(
         "/mcp/tools",
         type="http",
@@ -206,6 +216,16 @@ class MCPGatewayController(http.Controller):
 
         return self._json_response(result)
 
+    @http.route(
+        "/mcp/tools",
+        type="http",
+        auth="none",
+        methods=["OPTIONS"],
+        csrf=False,
+    )
+    def tools_preflight(self, **kwargs):  # noqa: D401 - simple passthrough
+        return self._cors_preflight()
+
     def _sse_event(self, event: str, data) -> str:
         payload = data if isinstance(data, str) else json.dumps(data)
         return f"event: {event}\ndata: {payload}\n\n"
@@ -281,3 +301,23 @@ class MCPGatewayController(http.Controller):
                 "Connection": "keep-alive",
             },
         )
+
+    @http.route(
+        "/mcp/sse",
+        type="http",
+        auth="none",
+        methods=["OPTIONS"],
+        csrf=False,
+    )
+    def sse_preflight(self, **kwargs):  # noqa: D401 - simple passthrough
+        return self._cors_preflight()
+
+    @http.route(
+        "/mcp/execute",
+        type="http",
+        auth="none",
+        methods=["OPTIONS"],
+        csrf=False,
+    )
+    def execute_preflight(self, **kwargs):  # noqa: D401 - simple passthrough
+        return self._cors_preflight()
