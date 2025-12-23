@@ -192,7 +192,17 @@ class LLMMCPConnection(models.Model):
         scheme = parsed.scheme or "https"
         netloc = parsed.netloc or parsed.path
         path = parsed.path if parsed.netloc else ""
-        normalized = urlunparse((scheme, netloc, path.rstrip("/"), "", "", ""))
+        cleaned_path = path.rstrip("/")
+        # Odoo reserves the /web and /odoo prefixes for the web client.
+        # MCP endpoints are mounted at the root, so strip those prefixes
+        # from the configured base URL to avoid redirect loops.
+        reserved_prefixes = ("/odoo", "/web")
+        if any(
+            cleaned_path == prefix or cleaned_path.startswith(f"{prefix}/")
+            for prefix in reserved_prefixes
+        ):
+            cleaned_path = ""
+        normalized = urlunparse((scheme, netloc, cleaned_path, "", "", ""))
         return normalized
 
     def _get_stored_token(self) -> str:
