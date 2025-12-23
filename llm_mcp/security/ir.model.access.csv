@@ -10,3 +10,4 @@ access_llm_mcp_invocation_record_admin,llm.mcp.invocation.record.admin,model_llm
 access_llm_mcp_audit_trail_admin,llm.mcp.audit.trail.admin,model_llm_mcp_audit_trail,base.group_system,1,1,1,1
 access_llm_mcp_connection_user,llm.mcp.connection.user,model_llm_mcp_connection,base.group_user,1,0,0,0
 access_llm_mcp_connection_admin,llm.mcp.connection.admin,model_llm_mcp_connection,base.group_system,1,1,1,1
+access_llm_mcp_connection_token_wizard,llm.mcp.connection.token.wizard,model_llm_mcp_connection_token_wizard,llm_mcp.group_llm_mcp_admin,1,1,1,1
