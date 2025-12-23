@@ -113,6 +113,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        cors="*",
     )
     def list_tools(self, **params):
         try:
@@ -158,6 +159,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["POST"],
         csrf=False,
+        cors="*",
     )
     def execute(self, **payload):
         data = payload or request.jsonrequest or {}
@@ -246,6 +248,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        cors="*",
     )
     def sse(self, **params):
         try:
