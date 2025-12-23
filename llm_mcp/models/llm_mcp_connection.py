@@ -77,7 +77,11 @@ class LLMMCPConnection(models.Model):
         if not fields or "token" in fields:
             for values in results:
                 if "token" in values:
-                    values["token"] = self._mask_token(values.get("token")) if values.get("token") else False
+                    values["token"] = (
+                        self._mask_token(values.get("token"))
+                        if values.get("token")
+                        else False
+                    )
         return results
 
     def action_generate_token(self):
@@ -174,6 +178,27 @@ class LLMMCPConnection(models.Model):
         if token_value.startswith("****"):
             return ""
         return token_value
+
+    @api.model
+    def authenticate_token(self, token: str):
+        token = (token or "").strip()
+        if not token:
+            return self.browse()
+
+        connection = (
+            self.sudo()
+            .search(
+                [
+                    ("token_hash", "=", self._compute_token_hash(token)),
+                    ("active", "=", True),
+                    ("revoked", "=", False),
+                ],
+                limit=1,
+            )
+        )
+        if connection:
+            connection.sudo().write({"last_used_at": fields.Datetime.now()})
+        return connection
 
     def action_test_connection(self):
         self.ensure_one()

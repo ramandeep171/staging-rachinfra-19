@@ -23,11 +23,20 @@ class MCPGatewayController(http.Controller):
     @staticmethod
     def _require_token() -> str:
         token = MCPGatewayController._extract_token()
-        expected = request.env["ir.config_parameter"].sudo().get_param(
-            "llm_mcp.api_token"
-        )
-        if not token or token != expected:
+        if not token:
             raise Unauthorized("Invalid or missing token")
+
+        env = request.env
+        config = env["ir.config_parameter"].sudo()
+        expected = (config.get_param("llm_mcp.api_token") or "").strip()
+        if expected and token == expected:
+            return token
+
+        connection = env["llm.mcp.connection"].sudo().authenticate_token(token)
+        if not connection:
+            raise Unauthorized("Invalid or missing token")
+
+        request.mcp_connection = connection
         return token
 
     @staticmethod
