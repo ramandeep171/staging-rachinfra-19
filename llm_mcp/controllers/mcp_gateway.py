@@ -118,14 +118,14 @@ class MCPGatewayController(http.Controller):
         )
 
     @http.route(
-        "/mcp/tools",
+        ["/mcp/tools", "/<path:prefix>/mcp/tools"],
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
         cors="*",
     )
-    def list_tools(self, **params):
+    def list_tools(self, _prefix=None, **params):
         try:
             connection, _token = self._require_connection()
             user = self._resolve_user(connection, params.get("user_id"))
@@ -164,14 +164,14 @@ class MCPGatewayController(http.Controller):
             )
 
     @http.route(
-        "/mcp/execute",
+        ["/mcp/execute", "/<path:prefix>/mcp/execute"],
         type="json",
         auth="public",
         methods=["POST"],
         csrf=False,
         cors="*",
     )
-    def execute(self, **payload):
+    def execute(self, _prefix=None, **payload):
         data = payload or request.jsonrequest or {}
 
         try:
@@ -217,13 +217,13 @@ class MCPGatewayController(http.Controller):
         return self._json_response(result)
 
     @http.route(
-        "/mcp/tools",
+        ["/mcp/tools", "/<path:prefix>/mcp/tools"],
         type="http",
         auth="none",
         methods=["OPTIONS"],
         csrf=False,
     )
-    def tools_preflight(self, **kwargs):  # noqa: D401 - simple passthrough
+    def tools_preflight(self, _prefix=None, **kwargs):  # noqa: D401 - simple passthrough
         return self._cors_preflight()
 
     def _sse_event(self, event: str, data) -> str:
@@ -263,14 +263,14 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        "/mcp/sse",
+        ["/mcp/sse", "/<path:prefix>/mcp/sse"],
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
         cors="*",
     )
-    def sse(self, **params):
+    def sse(self, _prefix=None, **params):
         try:
             connection, _token = self._require_connection()
             user = self._resolve_user(connection, params.get("user_id"))
@@ -303,21 +303,21 @@ class MCPGatewayController(http.Controller):
         )
 
     @http.route(
-        "/mcp/sse",
+        ["/mcp/sse", "/<path:prefix>/mcp/sse"],
         type="http",
         auth="none",
         methods=["OPTIONS"],
         csrf=False,
     )
-    def sse_preflight(self, **kwargs):  # noqa: D401 - simple passthrough
+    def sse_preflight(self, _prefix=None, **kwargs):  # noqa: D401 - simple passthrough
         return self._cors_preflight()
 
     @http.route(
-        "/mcp/execute",
+        ["/mcp/execute", "/<path:prefix>/mcp/execute"],
         type="http",
         auth="none",
         methods=["OPTIONS"],
         csrf=False,
     )
-    def execute_preflight(self, **kwargs):  # noqa: D401 - simple passthrough
+    def execute_preflight(self, _prefix=None, **kwargs):  # noqa: D401 - simple passthrough
         return self._cors_preflight()
