@@ -5,7 +5,7 @@ import logging
 import re
 import secrets
 from hashlib import sha256
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
 from psycopg2 import errors
@@ -152,17 +152,28 @@ class LLMMCPConnection(models.Model):
         return slug or "connection"
 
     @api.depends("token")
+    def _append_db_param(self, url):
+        dbname = self.env.cr.dbname
+        if not url or not dbname:
+            return url
+        parts = list(urlparse(url))
+        query = dict(parse_qsl(parts[4], keep_blank_values=True))
+        if query.get("db") == dbname:
+            return url
+        query.setdefault("db", dbname)
+        parts[4] = urlencode(query)
+        return urlunparse(parts)
+
     def _compute_connection_endpoints(self):
         base_url = self._compute_https_base_url()
         for connection in self:
             normalized_base = base_url.rstrip("/") if base_url else ""
-            connection.sse_url = f"{normalized_base}/mcp/sse" if normalized_base else False
-            connection.tools_url = (
-                f"{normalized_base}/mcp/tools" if normalized_base else False
-            )
-            connection.execute_url = (
-                f"{normalized_base}/mcp/execute" if normalized_base else False
-            )
+            sse = f"{normalized_base}/mcp/sse" if normalized_base else False
+            tools = f"{normalized_base}/mcp/tools" if normalized_base else False
+            execute = f"{normalized_base}/mcp/execute" if normalized_base else False
+            connection.sse_url = self._append_db_param(sse)
+            connection.tools_url = self._append_db_param(tools)
+            connection.execute_url = self._append_db_param(execute)
             masked_token = self._mask_token(connection.token) or "****"
             headers = {
                 "Authorization": f"Bearer {masked_token}",
