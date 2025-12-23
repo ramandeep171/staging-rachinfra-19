@@ -85,12 +85,11 @@ class LLMMCPConnection(models.Model):
         token = self._generate_token()
         token_hash = self._compute_token_hash(token)
         token_last4 = token[-4:]
-        masked_token = self._mask_token(token)
         self.write(
             {
                 "token_hash": token_hash,
                 "token_last4": token_last4,
-                "token": masked_token,
+                "token": token,
                 "revoked": False,
             }
         )
