@@ -211,7 +211,12 @@ class LLMMCPConnection(models.Model):
         if connection:
             try:
                 with self.env.cr.savepoint():
-                    connection.sudo().write({"last_used_at": fields.Datetime.now()})
+                    timestamp = fields.Datetime.now()
+                    self.env.cr.execute(
+                        "UPDATE llm_mcp_connection SET last_used_at=%s WHERE id=%s",
+                        (timestamp, connection.id),
+                    )
+                    connection.invalidate_cache(["last_used_at"])
             except errors.SerializationFailure:
                 _logger.debug(
                     "Concurrent MCP connection update skipped for %s", connection.id
