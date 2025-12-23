@@ -12,6 +12,7 @@ class ToolRegistryService(models.AbstractModel):
         latest_version = tool.latest_version_id
         return {
             "tool_key": tool.name,
+            "description": tool.description or "",
             "version": latest_version.version if latest_version else 1,
             "schema": tool.schema_json or {},
             "tags": tool.tag_ids.mapped("name"),

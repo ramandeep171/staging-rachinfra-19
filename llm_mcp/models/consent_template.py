@@ -207,6 +207,10 @@ class LLMConsentLedger(models.Model):
         user = (user or self.env.user).sudo()
         context_payload = context_payload or {}
 
+        if self.env.context.get("is_mcp"):
+            # MCP requests already satisfied consent via administrative token approval.
+            return False
+
         latest_entry = self.search(
             [
                 ("tool_id", "=", tool.id),

@@ -27,6 +27,13 @@ class LLMMCPConnection(models.Model):
         default=lambda self: self.env.company,
         index=True,
     )
+    user_id = fields.Many2one(
+        "res.users",
+        string="Service User",
+        required=True,
+        default=lambda self: self.env.user,
+        help="Requests authenticated with this token run using this user's security context.",
+    )
     token = fields.Char(
         string="Token",
         required=False,
