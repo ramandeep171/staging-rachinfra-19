@@ -33,7 +33,7 @@ class LLMMCPConnection(models.Model):
         copy=False,
         encryption="fernet",
         searchable=False,
-        groups="base.group_system",
+        groups="base.group_system,llm_mcp.group_llm_mcp_admin",
     )
     token_hash = fields.Char(index=True, copy=False)
     token_last4 = fields.Char(copy=False)
