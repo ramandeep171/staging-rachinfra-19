@@ -1,14 +1,19 @@
 # Copyright 2024 Rachin Infrastructure
 # License LGPL-3.0 or later (https://www.gnu.org/licenses/lgpl-3.0.html)
 import json
+import logging
 import re
 import secrets
 from hashlib import sha256
 from urllib.parse import urlparse, urlunparse
 
 import requests
+from psycopg2 import errors
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+
+_logger = logging.getLogger(__name__)
 
 
 class LLMMCPConnection(models.Model):
@@ -204,7 +209,13 @@ class LLMMCPConnection(models.Model):
             )
         )
         if connection:
-            connection.sudo().write({"last_used_at": fields.Datetime.now()})
+            try:
+                with self.env.cr.savepoint():
+                    connection.sudo().write({"last_used_at": fields.Datetime.now()})
+            except errors.SerializationFailure:
+                _logger.debug(
+                    "Concurrent MCP connection update skipped for %s", connection.id
+                )
         return connection
 
     def action_test_connection(self):
