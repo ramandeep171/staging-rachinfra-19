@@ -45,7 +45,7 @@ class LLMToolRegistryController(http.Controller):
         self._require_token()
 
         user = self._resolve_user(params.get("user_id"))
-        env = request.env(user=user.id).sudo()
+        env = request.env(user=user.id)
 
         tags_param = params.get("tags") or ""
         tags = [tag.strip() for tag in tags_param.split(",") if tag.strip()]

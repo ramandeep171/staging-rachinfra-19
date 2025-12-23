@@ -104,7 +104,8 @@ class MCPGatewayController(http.Controller):
         )
         request.mcp_context = context
         request.mcp_company = company
-        return request.env(user=user.id, context=context).sudo()
+        request.update_env(user=user.id, context=context)
+        return request.env
 
     @http.route(
         "/mcp/tools",

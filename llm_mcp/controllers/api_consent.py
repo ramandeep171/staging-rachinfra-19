@@ -55,7 +55,7 @@ class LLMConsentController(http.Controller):
 
         data = payload or request.jsonrequest or {}
         user = self._resolve_user(data.get("user_id"))
-        env = request.env(user=user.id).sudo()
+        env = request.env(user=user.id)
 
         tool = env["llm.tool.definition"].browse(data.get("tool_id"))
         if not tool.exists():
@@ -81,7 +81,7 @@ class LLMConsentController(http.Controller):
 
         data = payload or request.jsonrequest or {}
         user = self._resolve_user(data.get("user_id"))
-        env = request.env(user=user.id).sudo()
+        env = request.env(user=user.id)
 
         ledger = None
         ledger_id = data.get("ledger_id")
@@ -103,4 +103,3 @@ class LLMConsentController(http.Controller):
             tool=tool,
         )
         return self._json_response(result)
-
