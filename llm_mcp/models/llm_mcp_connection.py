@@ -166,7 +166,7 @@ class LLMMCPConnection(models.Model):
         if not base_url.startswith(("http://", "https://")):
             base_url = f"https://{base_url}"
         parsed = urlparse(base_url)
-        scheme = "https"
+        scheme = parsed.scheme or "https"
         netloc = parsed.netloc or parsed.path
         path = parsed.path if parsed.netloc else ""
         normalized = urlunparse((scheme, netloc, path.rstrip("/"), "", "", ""))
