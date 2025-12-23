@@ -1,6 +1,7 @@
 import json
 
 import requests
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -84,7 +85,7 @@ class LLMCommandRunner(models.Model):
                 % (tool.display_name, self.display_name)
             )
 
-    def _execute_payload(self, payload):
+    def _execute_payload(self, payload, timeout=None):
         """Placeholder for actual execution; override or extend when wiring runners."""
         if self.runner_type in {"remote_api", "http", "websocket"}:
             if not self.entrypoint:
@@ -95,7 +96,7 @@ class LLMCommandRunner(models.Model):
                 self.entrypoint,
                 json=payload or {},
                 headers=headers,
-                timeout=payload.get("timeout") if isinstance(payload, dict) else None,
+                timeout=timeout,
             )
 
             try:
@@ -115,7 +116,7 @@ class LLMCommandRunner(models.Model):
             raise UserError("Simulated failure for testing")
         return {"status": "ok", "payload": payload}
 
-    def run_command(self, tool, payload=None):
+    def run_command(self, tool, payload=None, timeout=None):
         self.ensure_one()
         payload = payload or {}
 
@@ -132,7 +133,11 @@ class LLMCommandRunner(models.Model):
         attempt = 0
         while True:
             try:
-                return self._execute_payload(payload)
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(self._execute_payload, payload, timeout)
+                    return future.result(timeout=timeout)
+            except FuturesTimeout as exc:
+                raise TimeoutError(str(exc)) from exc
             except Exception as exc:
                 attempt += 1
                 if attempt > retries:

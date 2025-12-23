@@ -20,7 +20,7 @@ class MCPRetryManager(models.AbstractModel):
             time.sleep(delay)
 
     @api.model
-    def execute_with_retry(self, tool, runner, binding, payload, invocation):
+    def execute_with_retry(self, tool, runner, binding, payload, invocation, timeout=None):
         max_retries = max(binding.max_retries or 0, 0)
         interval = max(binding.retry_interval or 0, 0)
         strategy = binding.retry_strategy or "fixed"
@@ -28,7 +28,7 @@ class MCPRetryManager(models.AbstractModel):
         attempt = 0
         while True:
             try:
-                return runner.run_command(tool, payload)
+                return runner.run_command(tool, payload, timeout=timeout)
             except Exception as exc:  # noqa: BLE001 - propagate for visibility
                 if attempt >= max_retries:
                     invocation._log_event(

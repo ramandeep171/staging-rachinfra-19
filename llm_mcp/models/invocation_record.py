@@ -60,6 +60,7 @@ class LLMMCPInvocationRecord(models.Model):
         ondelete="set null",
         tracking=True,
     )
+    timeout_flag = fields.Boolean(default=False, help="Set when execution timed out")
     parent_invocation_id = fields.Many2one(
         "llm.mcp.invocation.record",
         string="Parent Invocation",
@@ -192,6 +193,7 @@ class LLMMCPAuditTrail(models.Model):
             ("retry", "Retry"),
             ("retry_exhausted", "Retry Exhausted"),
             ("consent", "Consent"),
+            ("timeout", "Timeout"),
             ("warning", "Warning"),
         ],
         required=True,
