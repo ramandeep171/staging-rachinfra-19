@@ -668,7 +668,7 @@ class MCPGatewayController(http.Controller):
     @http.route(
         mcp_route_paths("/mcp/sse"),
         type="http",
-        auth="public",
+        auth="none",
         methods=["GET"],
         csrf=False,
         priority=30,
