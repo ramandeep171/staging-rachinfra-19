@@ -20,7 +20,6 @@ try:
     from odoo import http
     from odoo.exceptions import UserError
     from odoo.http import request
-    from odoo.addons.web.controllers.utils import ensure_db
 
     _ODOO_RUNTIME = True
 except ImportError:
@@ -64,9 +63,6 @@ except ImportError:
 
     class UserError(Exception):
         pass
-
-    def ensure_db(*_args, **_kwargs):
-        return None
 
     request = RequestStub()
 
@@ -672,7 +668,7 @@ class MCPGatewayController(http.Controller):
     @http.route(
         mcp_route_paths("/mcp/sse"),
         type="http",
-        auth="none",
+        auth="public",
         methods=["GET"],
         csrf=False,
         save_session=False,
@@ -681,9 +677,6 @@ class MCPGatewayController(http.Controller):
     def sse(self, mcp_proxy_prefix=None, **params):
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
-
-        if not getattr(request, "db", None):
-            ensure_db()
 
         client_id = None
         try:
