@@ -605,7 +605,34 @@ class MCPGatewayController(http.Controller):
         payload = data if isinstance(data, str) else json.dumps(data)
         return f"event: {event}\ndata: {payload}\n\n"
 
-    def _stream(self, env, user, session_id=None) -> Generator[bytes, None, None]:
+    def _sse_response(self, stream, *, status=200):
+        response = request.make_response(
+            stream,
+            headers={
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+            status=status,
+        )
+        return self._with_cors(response)
+
+    def _sse_error_response(self, message, *, code="MCP_SSE_ERROR", status=400):
+        def stream():
+            yield self._sse_event(
+                "error",
+                {
+                    "error": {
+                        "code": code,
+                        "message": message,
+                    }
+                },
+            ).encode()
+
+        return self._sse_response(stream(), status=status)
+
+    def _stream(self) -> Generator[bytes, None, None]:
         """Emit the ready event immediately and follow with heartbeat events."""
         yield self._sse_event("ready", {"ok": True}).encode()
         try:
@@ -618,9 +645,8 @@ class MCPGatewayController(http.Controller):
                 time.sleep(self.HEARTBEAT_SLEEP_SLICE)
         except Exception:  # noqa: BLE001 - streaming must terminate gracefully
             _logger.exception(
-                "SSE stream failed for connection %s (session: %s)",
+                "SSE stream failed for connection %s",
                 getattr(request, "mcp_connection", False) and request.mcp_connection.id,
-                session_id,
             )
             yield self._sse_event(
                 "error",
@@ -644,20 +670,28 @@ class MCPGatewayController(http.Controller):
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 
         try:
-            connection, _token = self._require_connection()
-            user = self._resolve_user(connection, params.get("user_id"))
-            env = self._build_mcp_env(connection, user)
+            connection, _token = self._require_connection(allow_no_auth=True)
+            if connection:
+                user = self._resolve_user(connection, params.get("user_id"))
+                self._build_mcp_env(connection, user)
+                request.mcp_user = user
+            else:
+                request.mcp_user = None
         except Unauthorized as exc:
-            return self._with_cors(self._json_error(str(exc), code="MCP_AUTH_ERROR", status=401))
+            response = self._sse_error_response(str(exc), code="MCP_AUTH_ERROR", status=401)
+            self._log_access("/mcp/sse", status=response.get("status", 401), outcome="unauthorized")
+            return response
         except TooManyRequests as exc:
-            return self._with_cors(self._json_error(str(exc), code="MCP_RATE_LIMIT", status=429))
-
-        request.mcp_user = user
+            response = self._sse_error_response(str(exc), code="MCP_RATE_LIMIT", status=429)
+            self._log_access("/mcp/sse", status=response.get("status", 429), outcome="rate_limited")
+            return response
 
         try:
             client_id = self._register_sse()
         except TooManyRequests as exc:
-            return self._with_cors(self._json_error(str(exc), code="MCP_RATE_LIMIT", status=429))
+            response = self._sse_error_response(str(exc), code="MCP_RATE_LIMIT", status=429)
+            self._log_access("/mcp/sse", status=response.get("status", 429), outcome="rate_limited")
+            return response
 
         start_time = time.time()
         _logger.info(
@@ -674,7 +708,7 @@ class MCPGatewayController(http.Controller):
         def guarded_stream():
             reason = "complete"
             try:
-                yield from self._stream(env, user, params.get("session_id"))
+                yield from self._stream()
             except GeneratorExit:
                 reason = "client_disconnect"
                 raise
@@ -698,16 +732,6 @@ class MCPGatewayController(http.Controller):
                 )
 
         stream = guarded_stream()
-        response = self._with_cors(
-            request.make_response(
-                stream,
-                headers={
-                    "Content-Type": "text/event-stream",
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                    "X-Accel-Buffering": "no",
-                },
-            )
-        )
+        response = self._sse_response(stream)
         self._log_access("/mcp/sse", status=response.get("status", 200), outcome="ok")
         return response
