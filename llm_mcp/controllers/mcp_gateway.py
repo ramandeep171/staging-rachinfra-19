@@ -606,20 +606,15 @@ class MCPGatewayController(http.Controller):
         return f"event: {event}\ndata: {payload}\n\n"
 
     def _stream(self, env, user, session_id=None) -> Generator[bytes, None, None]:
-        yield self._sse_event("ready", {"protocol": "mcp/1.0", "status": "ok"}).encode()
+        """Emit the ready event immediately and follow with heartbeat events."""
+        yield self._sse_event("ready", {"ok": True}).encode()
         try:
-            tools = env["llm.tool.registry.service"].list_tools(
-                user=user, tags=None, action_types=None, session_id=session_id
-            )
-            serialized = self._serialize_tools(tools)
-            yield self._sse_event("tools", {"tools": serialized}).encode()
-
             last_ping = time.time()
             while True:
                 now = time.time()
                 if now - last_ping >= self.HEARTBEAT_INTERVAL:
                     last_ping = now
-                    yield self._sse_event("heartbeat", {"ts": now}).encode()
+                    yield self._sse_event("heartbeat", {}).encode()
                 time.sleep(self.HEARTBEAT_SLEEP_SLICE)
         except Exception:  # noqa: BLE001 - streaming must terminate gracefully
             _logger.exception(
