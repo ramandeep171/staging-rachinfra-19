@@ -1,6 +1,7 @@
 import json
-import os
 from types import SimpleNamespace
+
+from .route_utils import mcp_route_paths
 
 try:
     from odoo import http
@@ -92,7 +93,7 @@ class LLMConsentController(http.Controller):
         )
 
     @http.route(
-        "/mcp/consent/request",
+        mcp_route_paths("/mcp/consent/request"),
         type="json",
         auth="public",
         methods=["POST"],
@@ -118,7 +119,7 @@ class LLMConsentController(http.Controller):
         return self._json_response(result)
 
     @http.route(
-        "/mcp/consent/revoke",
+        mcp_route_paths("/mcp/consent/revoke"),
         type="json",
         auth="public",
         methods=["POST"],

@@ -1,6 +1,7 @@
 import json
-import os
 from types import SimpleNamespace
+
+from .route_utils import mcp_route_paths
 
 try:
     from odoo import http
@@ -82,7 +83,7 @@ class LLMToolRegistryController(http.Controller):
         return request.env.user
 
     @http.route(
-        "/mcp/tool_registry",
+        mcp_route_paths("/mcp/tool_registry"),
         type="http",
         auth="public",
         methods=["GET"],

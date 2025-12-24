@@ -5,6 +5,8 @@ import time
 from types import SimpleNamespace
 from typing import Generator, Iterable, Optional
 
+from .route_utils import mcp_route_paths
+
 try:
     from werkzeug.exceptions import Unauthorized, TooManyRequests
 except ImportError:
@@ -263,7 +265,7 @@ class MCPGatewayController(http.Controller):
         return "https://localhost"
 
     @http.route(
-        "/.well-known/oauth-authorization-server",
+        mcp_route_paths("/.well-known/oauth-authorization-server"),
         type="http",
         auth="public",
         methods=["GET"],
@@ -281,7 +283,7 @@ class MCPGatewayController(http.Controller):
         return self._json_response(payload)
 
     @http.route(
-        "/.well-known/openid-configuration",
+        mcp_route_paths("/.well-known/openid-configuration"),
         type="http",
         auth="public",
         methods=["GET"],
@@ -367,7 +369,7 @@ class MCPGatewayController(http.Controller):
         return serialized
 
     @http.route(
-        "/oauth/token",
+        mcp_route_paths("/oauth/token"),
         type="json",
         auth="public",
         methods=["POST"],
@@ -440,7 +442,7 @@ class MCPGatewayController(http.Controller):
         return request.env
 
     @http.route(
-        "/mcp/tools",
+        mcp_route_paths("/mcp/tools"),
         type="http",
         auth="public",
         methods=["GET"],
@@ -504,7 +506,7 @@ class MCPGatewayController(http.Controller):
             return response
 
     @http.route(
-        "/mcp/execute",
+        mcp_route_paths("/mcp/execute"),
         type="json",
         auth="public",
         methods=["POST"],
@@ -659,7 +661,7 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        "/mcp/sse",
+        mcp_route_paths("/mcp/sse"),
         type="http",
         auth="public",
         methods=["GET"],
