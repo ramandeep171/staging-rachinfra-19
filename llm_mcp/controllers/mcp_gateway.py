@@ -107,25 +107,14 @@ class MCPGatewayController(http.Controller):
         request.update_env(user=user.id, context=context)
         return request.env
 
-    def _cors_preflight(self):
-        return request.make_response(
-            "",
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-                "Access-Control-Allow-Headers": "Authorization,Content-Type,Accept,Origin",
-            },
-        )
-
     @http.route(
-        ["/mcp/tools", "/odoo/mcp/tools", "/<path:prefix>/mcp/tools"],
+        "/mcp/tools",
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
-        cors="*",
     )
-    def list_tools(self, _prefix=None, **params):
+    def list_tools(self, **params):
         try:
             connection, _token = self._require_connection()
             user = self._resolve_user(connection, params.get("user_id"))
@@ -164,14 +153,13 @@ class MCPGatewayController(http.Controller):
             )
 
     @http.route(
-        ["/mcp/execute", "/odoo/mcp/execute", "/<path:prefix>/mcp/execute"],
+        "/mcp/execute",
         type="json",
         auth="public",
         methods=["POST"],
         csrf=False,
-        cors="*",
     )
-    def execute(self, _prefix=None, **payload):
+    def execute(self, **payload):
         data = payload or request.jsonrequest or {}
 
         try:
@@ -216,16 +204,6 @@ class MCPGatewayController(http.Controller):
 
         return self._json_response(result)
 
-    @http.route(
-        ["/mcp/tools", "/odoo/mcp/tools", "/<path:prefix>/mcp/tools"],
-        type="http",
-        auth="none",
-        methods=["OPTIONS"],
-        csrf=False,
-    )
-    def tools_preflight(self, _prefix=None, **kwargs):  # noqa: D401 - simple passthrough
-        return self._cors_preflight()
-
     def _sse_event(self, event: str, data) -> str:
         payload = data if isinstance(data, str) else json.dumps(data)
         return f"event: {event}\ndata: {payload}\n\n"
@@ -263,14 +241,13 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        ["/mcp/sse", "/odoo/mcp/sse", "/<path:prefix>/mcp/sse"],
+        "/mcp/sse",
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
-        cors="*",
     )
-    def sse(self, _prefix=None, **params):
+    def sse(self, **params):
         try:
             connection, _token = self._require_connection()
             user = self._resolve_user(connection, params.get("user_id"))
@@ -301,23 +278,3 @@ class MCPGatewayController(http.Controller):
                 "Connection": "keep-alive",
             },
         )
-
-    @http.route(
-        ["/mcp/sse", "/odoo/mcp/sse", "/<path:prefix>/mcp/sse"],
-        type="http",
-        auth="none",
-        methods=["OPTIONS"],
-        csrf=False,
-    )
-    def sse_preflight(self, _prefix=None, **kwargs):  # noqa: D401 - simple passthrough
-        return self._cors_preflight()
-
-    @http.route(
-        ["/mcp/execute", "/odoo/mcp/execute", "/<path:prefix>/mcp/execute"],
-        type="http",
-        auth="none",
-        methods=["OPTIONS"],
-        csrf=False,
-    )
-    def execute_preflight(self, _prefix=None, **kwargs):  # noqa: D401 - simple passthrough
-        return self._cors_preflight()
