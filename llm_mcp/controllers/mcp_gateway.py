@@ -668,9 +668,10 @@ class MCPGatewayController(http.Controller):
     @http.route(
         mcp_route_paths("/mcp/sse"),
         type="http",
-        auth="none",
+        auth="public",
         methods=["GET"],
         csrf=False,
+        save_session=False,
         priority=30,
     )
     def sse(self, mcp_proxy_prefix=None, **params):
