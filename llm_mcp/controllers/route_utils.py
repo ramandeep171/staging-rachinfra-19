@@ -13,6 +13,7 @@ except ImportError:  # pragma: no cover - used only when Odoo isn't installed (t
 
 
 MCP_ROUTE_PREFIX_PARAM = "mcp_proxy_prefix"
+_DEFAULT_PROXY_PREFIXES = ("odoo",)
 
 
 def _split_prefixes(raw_value: str):
@@ -49,6 +50,12 @@ def _configured_prefixes() -> List[str]:
                 continue
             seen.add(prefix)
             prefixes.append(prefix)
+
+    for default in _DEFAULT_PROXY_PREFIXES:
+        if default in seen:
+            continue
+        seen.add(default)
+        prefixes.append(default)
     return prefixes
 
 

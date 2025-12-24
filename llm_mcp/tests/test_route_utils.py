@@ -13,6 +13,7 @@ def test_route_paths_default(monkeypatch):
     monkeypatch.setattr(route_utils, "odoo_config", {}, raising=False)
     assert route_utils.mcp_route_paths("/mcp/sse") == [
         "/mcp/sse",
+        "/odoo/mcp/sse",
         "/<path:mcp_proxy_prefix>/mcp/sse",
     ]
 
