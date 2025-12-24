@@ -1,6 +1,13 @@
 import json
 
+import pytest
+
+import odoo
 from odoo.tests import HttpCase
+
+
+IS_ODOO_STUB = getattr(odoo, "__is_stub__", False)
+pytestmark = pytest.mark.skipif(IS_ODOO_STUB, reason="Requires real Odoo runtime")
 
 
 class TestToolRegistryAPI(HttpCase):

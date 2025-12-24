@@ -1,8 +1,55 @@
 import json
+import os
+from types import SimpleNamespace
 
-from odoo import http
-from odoo.exceptions import AccessDenied
-from odoo.http import request
+try:
+    from odoo import http
+    from odoo.exceptions import AccessDenied
+    from odoo.http import request
+    _ODOO_RUNTIME = True
+except ImportError:
+
+    _ODOO_RUNTIME = False
+
+    class EnvStub(dict):
+        def __init__(self):
+            super().__init__()
+            self.context = {}
+            self.user = None
+
+        def __call__(self, *args, **kwargs):
+            return self
+
+    class RequestStub:
+        def __init__(self):
+            self.httprequest = SimpleNamespace(headers={}, method=None)
+            self.env = EnvStub()
+            self.context = {}
+
+        def make_response(self, body, headers=None, status=200):
+            return {"body": body, "headers": headers or {}, "status": status}
+
+        def update_env(self, user=None, context=None):
+            if user is not None:
+                self.env.user = user
+            if context is not None:
+                self.env.context = context
+
+    class http:  # type: ignore
+        class Controller:  # pragma: no cover - minimal stub for pytest
+            pass
+
+        @staticmethod
+        def route(*_args, **_kwargs):  # pragma: no cover - minimal stub for pytest
+            def decorator(func):
+                return func
+
+            return decorator
+
+    class AccessDenied(Exception):
+        pass
+
+    request = RequestStub()
 
 
 class LLMToolRegistryController(http.Controller):

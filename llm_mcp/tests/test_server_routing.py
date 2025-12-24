@@ -1,5 +1,26 @@
-from odoo.exceptions import UserError, ValidationError
-from odoo.tests import SavepointCase
+import pytest
+
+import odoo
+
+try:
+    from odoo.exceptions import UserError, ValidationError
+except ImportError:
+    class UserError(Exception):
+        pass
+
+    class ValidationError(Exception):
+        pass
+try:
+    from odoo.tests import SavepointCase
+except ImportError:
+    class SavepointCase:  # pragma: no cover - pytest stub
+        pass
+
+
+IS_ODOO_STUB = getattr(odoo, "__is_stub__", False)
+
+
+@pytest.mark.skipif(IS_ODOO_STUB, reason="Requires real Odoo runtime")
 
 
 class TestMCPServerRouting(SavepointCase):

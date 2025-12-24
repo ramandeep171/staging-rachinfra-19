@@ -1,10 +1,71 @@
 import json
+import os
 
-import requests
+try:
+    import requests
+except ImportError:
+    class _RequestsStub:
+        def __getattr__(self, _name):  # pragma: no cover - pytest stub
+            raise ImportError("requests not available in test environment")
+
+    requests = _RequestsStub()
+
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 
-from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+try:
+    from odoo import _, api, fields, models
+    from odoo.exceptions import UserError, ValidationError
+except ImportError:
+
+    def _(message):
+        return message
+
+    class _ApiStub:
+        def __getattr__(self, _name):
+            def decorator(*_args, **_kwargs):
+                def wrapper(method):
+                    return method
+
+                return wrapper
+
+            return decorator
+
+    class _FieldFactory:
+        def __init__(self, _name):
+            self._name = _name
+
+        def __call__(self, *args, **kwargs):
+            return None
+
+        def __getattr__(self, _attr):
+            def _inner(*_args, **_kwargs):
+                return None
+
+            return _inner
+
+    class _FieldsStub:
+        def __getattr__(self, _name):
+            return _FieldFactory(_name)
+
+    class _ModelsStub:
+        class Model:
+            pass
+
+        class TransientModel:
+            pass
+
+        class AbstractModel:
+            pass
+
+    class UserError(Exception):
+        pass
+
+    class ValidationError(Exception):
+        pass
+
+    api = _ApiStub()
+    fields = _FieldsStub()
+    models = _ModelsStub()
 
 
 class LLMCommandRunner(models.Model):

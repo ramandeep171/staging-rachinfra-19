@@ -1,7 +1,14 @@
 from unittest.mock import patch
 
+import pytest
+
+import odoo
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import SavepointCase
+
+
+IS_ODOO_STUB = getattr(odoo, "__is_stub__", False)
+pytestmark = pytest.mark.skipif(IS_ODOO_STUB, reason="Requires real Odoo runtime")
 
 
 class TestCalendarTool(SavepointCase):

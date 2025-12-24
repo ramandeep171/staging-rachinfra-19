@@ -1,4 +1,11 @@
+import pytest
+
+import odoo
 from odoo.tests import TransactionCase
+
+
+IS_ODOO_STUB = getattr(odoo, "__is_stub__", False)
+pytestmark = pytest.mark.skipif(IS_ODOO_STUB, reason="Requires real Odoo runtime")
 
 
 class TestRedaction(TransactionCase):
