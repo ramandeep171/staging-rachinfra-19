@@ -669,6 +669,7 @@ class MCPGatewayController(http.Controller):
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 
+        client_id = None
         try:
             connection, _token = self._require_connection(allow_no_auth=True)
             if connection:
@@ -677,6 +678,51 @@ class MCPGatewayController(http.Controller):
                 request.mcp_user = user
             else:
                 request.mcp_user = None
+
+            client_id = self._register_sse()
+
+            start_time = time.time()
+            _logger.info(
+                "sse_open %s",
+                json.dumps(
+                    {
+                        "client_ip": client_id,
+                        "auth_mode": getattr(request, "auth_mode", None),
+                        "active": self._SSE_ACTIVE.get(client_id, 0),
+                    }
+                ),
+            )
+
+            def guarded_stream():
+                reason = "complete"
+                try:
+                    yield from self._stream()
+                except GeneratorExit:
+                    reason = "client_disconnect"
+                    raise
+                except Exception:
+                    reason = "error"
+                    raise
+                finally:
+                    MCPGatewayController._release_sse(client_id)
+                    duration = time.time() - start_time
+                    _logger.info(
+                        "sse_close %s",
+                        json.dumps(
+                            {
+                                "client_ip": client_id,
+                                "auth_mode": getattr(request, "auth_mode", None),
+                                "duration": round(duration, 3),
+                                "reason": reason,
+                                "active": self._SSE_ACTIVE.get(client_id, 0),
+                            }
+                        ),
+                    )
+
+            stream = guarded_stream()
+            response = self._sse_response(stream)
+            self._log_access("/mcp/sse", status=response.get("status", 200), outcome="ok")
+            return response
         except Unauthorized as exc:
             response = self._sse_error_response(str(exc), code="MCP_AUTH_ERROR", status=401)
             self._log_access("/mcp/sse", status=response.get("status", 401), outcome="unauthorized")
@@ -685,53 +731,17 @@ class MCPGatewayController(http.Controller):
             response = self._sse_error_response(str(exc), code="MCP_RATE_LIMIT", status=429)
             self._log_access("/mcp/sse", status=response.get("status", 429), outcome="rate_limited")
             return response
-
-        try:
-            client_id = self._register_sse()
-        except TooManyRequests as exc:
-            response = self._sse_error_response(str(exc), code="MCP_RATE_LIMIT", status=429)
-            self._log_access("/mcp/sse", status=response.get("status", 429), outcome="rate_limited")
-            return response
-
-        start_time = time.time()
-        _logger.info(
-            "sse_open %s",
-            json.dumps(
-                {
-                    "client_ip": client_id,
-                    "auth_mode": getattr(request, "auth_mode", None),
-                    "active": self._SSE_ACTIVE.get(client_id, 0),
-                }
-            ),
-        )
-
-        def guarded_stream():
-            reason = "complete"
-            try:
-                yield from self._stream()
-            except GeneratorExit:
-                reason = "client_disconnect"
-                raise
-            except Exception:
-                reason = "error"
-                raise
-            finally:
+        except Exception:
+            if client_id:
                 MCPGatewayController._release_sse(client_id)
-                duration = time.time() - start_time
-                _logger.info(
-                    "sse_close %s",
-                    json.dumps(
-                        {
-                            "client_ip": client_id,
-                            "auth_mode": getattr(request, "auth_mode", None),
-                            "duration": round(duration, 3),
-                            "reason": reason,
-                            "active": self._SSE_ACTIVE.get(client_id, 0),
-                        }
-                    ),
-                )
-
-        stream = guarded_stream()
-        response = self._sse_response(stream)
-        self._log_access("/mcp/sse", status=response.get("status", 200), outcome="ok")
-        return response
+            _logger.exception(
+                "Unexpected error while establishing MCP SSE stream for %s",
+                MCPGatewayController._client_id(),
+            )
+            response = self._sse_error_response(
+                "Unable to establish the MCP stream. Please retry shortly.",
+                code="MCP_SSE_ERROR",
+                status=500,
+            )
+            self._log_access("/mcp/sse", status=response.get("status", 500), outcome="error")
+            return response
