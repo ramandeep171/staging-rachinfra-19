@@ -98,6 +98,7 @@ class LLMConsentController(http.Controller):
         auth="public",
         methods=["POST"],
         csrf=False,
+        priority=30,
     )
     def request_consent(self, mcp_proxy_prefix=None, **payload):
         self._require_token()
@@ -124,6 +125,7 @@ class LLMConsentController(http.Controller):
         auth="public",
         methods=["POST"],
         csrf=False,
+        priority=30,
     )
     def revoke_consent(self, mcp_proxy_prefix=None, **payload):
         self._require_token()

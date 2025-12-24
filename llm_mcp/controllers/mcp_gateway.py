@@ -270,6 +270,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=30,
     )
     def oauth_authorization_server(self, mcp_proxy_prefix=None):
         base = self._issuer_base_url()
@@ -288,6 +289,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=30,
     )
     def openid_configuration(self, mcp_proxy_prefix=None):
         base = self._issuer_base_url()
@@ -374,6 +376,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["POST"],
         csrf=False,
+        priority=30,
     )
     def oauth_token(self, mcp_proxy_prefix=None, **payload):
         # Soft OAuth handler: issues short-lived access tokens that internally map to
@@ -447,6 +450,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=30,
     )
     def list_tools(self, mcp_proxy_prefix=None, **params):
         if request.httprequest.method == "OPTIONS":
@@ -511,6 +515,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["POST"],
         csrf=False,
+        priority=30,
     )
     def execute(self, mcp_proxy_prefix=None, **payload):
         if request.httprequest.method == "OPTIONS":
@@ -666,6 +671,7 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=30,
     )
     def sse(self, mcp_proxy_prefix=None, **params):
         if request.httprequest.method == "OPTIONS":

@@ -88,6 +88,7 @@ class LLMToolRegistryController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=30,
     )
     def tool_registry(self, mcp_proxy_prefix=None, **params):
         self._require_token()
