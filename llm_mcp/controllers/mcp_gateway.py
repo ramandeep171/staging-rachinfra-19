@@ -671,10 +671,22 @@ class MCPGatewayController(http.Controller):
         auth="public",
         methods=["GET"],
         csrf=False,
-        save_session=False,
         priority=30,
     )
     def sse(self, mcp_proxy_prefix=None, **params):
+        _logger.info(
+            "mcp_sse_request %s",
+            json.dumps(
+                {
+                    "path": request.httprequest.path,
+                    "host": request.httprequest.host_url,
+                    "db": getattr(request, "db", None),
+                    "session_db": getattr(getattr(request, "session", None), "db", None),
+                    "auth": getattr(request, "auth_mode", None),
+                }
+            ),
+        )
+        ensure_db()
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 
