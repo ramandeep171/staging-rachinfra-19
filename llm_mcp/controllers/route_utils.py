@@ -12,6 +12,9 @@ except ImportError:  # pragma: no cover - used only when Odoo isn't installed (t
     odoo_config = _FallbackConfig()  # type: ignore
 
 
+MCP_ROUTE_PREFIX_PARAM = "mcp_proxy_prefix"
+
+
 def _split_prefixes(raw_value: str):
     for chunk in raw_value.split(","):
         cleaned = chunk.strip().strip("/")
@@ -57,4 +60,7 @@ def mcp_route_paths(path: str) -> List[str]:
     routes = []
     for prefix in _configured_prefixes():
         routes.append(f"/{prefix}{path}" if prefix else path)
+    trimmed = path.lstrip("/")
+    if trimmed:
+        routes.append(f"/<path:{MCP_ROUTE_PREFIX_PARAM}>/{trimmed}")
     return routes
