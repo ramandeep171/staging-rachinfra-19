@@ -99,7 +99,7 @@ class LLMConsentController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def request_consent(self, **payload):
+    def request_consent(self, mcp_proxy_prefix=None, **payload):
         self._require_token()
 
         data = payload or request.jsonrequest or {}
@@ -125,7 +125,7 @@ class LLMConsentController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def revoke_consent(self, **payload):
+    def revoke_consent(self, mcp_proxy_prefix=None, **payload):
         self._require_token()
 
         data = payload or request.jsonrequest or {}

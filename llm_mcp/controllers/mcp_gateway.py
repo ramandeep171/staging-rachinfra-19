@@ -271,7 +271,7 @@ class MCPGatewayController(http.Controller):
         methods=["GET"],
         csrf=False,
     )
-    def oauth_authorization_server(self):
+    def oauth_authorization_server(self, mcp_proxy_prefix=None):
         base = self._issuer_base_url()
         payload = {
             "issuer": base,
@@ -289,7 +289,7 @@ class MCPGatewayController(http.Controller):
         methods=["GET"],
         csrf=False,
     )
-    def openid_configuration(self):
+    def openid_configuration(self, mcp_proxy_prefix=None):
         base = self._issuer_base_url()
         payload = {
             "issuer": base,
@@ -375,7 +375,7 @@ class MCPGatewayController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def oauth_token(self, **payload):
+    def oauth_token(self, mcp_proxy_prefix=None, **payload):
         # Soft OAuth handler: issues short-lived access tokens that internally map to
         # existing MCP bearer tokens. No refresh or persistence is provided.
         data = payload or request.jsonrequest or {}
@@ -448,7 +448,7 @@ class MCPGatewayController(http.Controller):
         methods=["GET"],
         csrf=False,
     )
-    def list_tools(self, **params):
+    def list_tools(self, mcp_proxy_prefix=None, **params):
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 
@@ -512,7 +512,7 @@ class MCPGatewayController(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def execute(self, **payload):
+    def execute(self, mcp_proxy_prefix=None, **payload):
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 
@@ -667,7 +667,7 @@ class MCPGatewayController(http.Controller):
         methods=["GET"],
         csrf=False,
     )
-    def sse(self, **params):
+    def sse(self, mcp_proxy_prefix=None, **params):
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 

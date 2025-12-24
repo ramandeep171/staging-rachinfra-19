@@ -89,7 +89,7 @@ class LLMToolRegistryController(http.Controller):
         methods=["GET"],
         csrf=False,
     )
-    def tool_registry(self, **params):
+    def tool_registry(self, mcp_proxy_prefix=None, **params):
         self._require_token()
 
         user = self._resolve_user(params.get("user_id"))
