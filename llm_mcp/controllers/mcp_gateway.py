@@ -682,7 +682,8 @@ class MCPGatewayController(http.Controller):
         if request.httprequest.method == "OPTIONS":
             return self._with_cors(request.make_response("", headers=self._cors_headers(), status=204))
 
-        ensure_db()
+        if not getattr(request, "db", None):
+            ensure_db()
 
         client_id = None
         try:
