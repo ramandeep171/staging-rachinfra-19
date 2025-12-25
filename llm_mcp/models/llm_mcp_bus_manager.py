@@ -1,18 +1,12 @@
 import json
 import logging
-import os
 import select
 import shlex
 import subprocess
 import threading
 import time
 
-try:
-    from odoo.exceptions import UserError
-except ImportError:
-
-    class UserError(Exception):
-        pass
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 

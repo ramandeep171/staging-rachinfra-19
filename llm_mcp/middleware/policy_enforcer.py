@@ -1,37 +1,5 @@
-import os
-
-try:
-    from odoo import _, api, models
-    from odoo.exceptions import UserError
-except ImportError:
-    def _(message):
-        return message
-
-    class _ApiStub:
-        def __getattr__(self, _name):
-            def decorator(*_args, **_kwargs):
-                def wrapper(method):
-                    return method
-
-                return wrapper
-
-            return decorator
-
-    class _ModelsStub:
-        class Model:
-            pass
-
-        class TransientModel:
-            pass
-
-        class AbstractModel:
-            pass
-
-    class UserError(Exception):
-        pass
-
-    api = _ApiStub()
-    models = _ModelsStub()
+from odoo import _, api, models
+from odoo.exceptions import UserError
 
 
 class MCPPolicyEnforcer(models.AbstractModel):

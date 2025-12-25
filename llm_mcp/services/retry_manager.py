@@ -1,32 +1,6 @@
-import os
 import time
 
-try:
-    from odoo import api, models
-except ImportError:
-
-    class _ApiStub:
-        def __getattr__(self, _name):
-            def decorator(*_args, **_kwargs):
-                def wrapper(method):
-                    return method
-
-                return wrapper
-
-            return decorator
-
-    class _ModelsStub:
-        class Model:
-            pass
-
-        class TransientModel:
-            pass
-
-        class AbstractModel:
-            pass
-
-    api = _ApiStub()
-    models = _ModelsStub()
+from odoo import api, models
 
 
 class MCPRetryManager(models.AbstractModel):

@@ -1,83 +1,12 @@
 import json
 import logging
-import os
 import shlex
 import subprocess
 import threading
 from contextlib import contextmanager
 
-try:
-    import odoo
-    from odoo import api, models
-    _ODOO_RUNTIME = True
-except ImportError:
-
-    _ODOO_RUNTIME = False
-
-    class _DummyCursor:
-        def close(self):
-            return None
-
-        def commit(self):
-            return None
-
-        def rollback(self):
-            return None
-
-    class _DummyEnvironment(dict):
-        def __init__(self, *args, **kwargs):
-            super().__init__()
-            self.cr = _DummyCursor()
-
-        def __getitem__(self, item):
-            return lambda *args, **kwargs: None
-
-    class _DummyAPI:
-        class Environment(_DummyEnvironment):
-            pass
-
-        def __getattr__(self, _name):
-            def decorator(*_args, **_kwargs):  # pragma: no cover - pytest stub
-                def wrapper(method):
-                    return method
-
-                return wrapper
-
-            return decorator
-
-    class _DummyRegistry:
-        def cursor(self):
-            return _DummyCursor()
-
-    class _DummyServiceDB:
-        @staticmethod
-        def db_list():
-            return ["test"]
-
-    class _DummyService:
-        db = _DummyServiceDB()
-
-    class _DummyOdoo:
-        api = _DummyAPI()
-        service = _DummyService()
-        SUPERUSER_ID = 1
-
-        def registry(self, _dbname):
-            return _DummyRegistry()
-
-    class _ModelsStub:
-        class Model:
-            pass
-
-        class TransientModel:
-            pass
-
-        class AbstractModel:
-            pass
-
-    odoo = _DummyOdoo()
-    api = odoo.api
-    models = _ModelsStub()
+import odoo
+from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 

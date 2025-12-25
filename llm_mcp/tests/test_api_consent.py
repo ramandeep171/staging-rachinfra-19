@@ -1,15 +1,8 @@
 import json
 from datetime import timedelta
 
-import pytest
-
-import odoo
 from odoo import fields
 from odoo.tests import HttpCase
-
-
-IS_ODOO_STUB = getattr(odoo, "__is_stub__", False)
-pytestmark = pytest.mark.skipif(IS_ODOO_STUB, reason="Requires real Odoo runtime")
 
 
 class TestConsentAPI(HttpCase):

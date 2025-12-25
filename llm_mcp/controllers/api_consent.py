@@ -1,57 +1,8 @@
 import json
-from types import SimpleNamespace
 
-from .route_utils import mcp_route_paths
-
-try:
-    from odoo import http
-    from odoo.exceptions import AccessDenied
-    from odoo.http import request
-    _ODOO_RUNTIME = True
-except ImportError:
-
-    _ODOO_RUNTIME = False
-
-    class EnvStub(dict):
-        def __init__(self):
-            super().__init__()
-            self.context = {}
-            self.user = None
-
-        def __call__(self, *args, **kwargs):
-            return self
-
-    class RequestStub:
-        def __init__(self):
-            self.httprequest = SimpleNamespace(headers={}, method=None)
-            self.env = EnvStub()
-            self.jsonrequest = {}
-            self.context = {}
-
-        def make_response(self, body, headers=None, status=200):
-            return {"body": body, "headers": headers or {}, "status": status}
-
-        def update_env(self, user=None, context=None):
-            if user is not None:
-                self.env.user = user
-            if context is not None:
-                self.env.context = context
-
-    class http:  # type: ignore
-        class Controller:  # pragma: no cover - minimal stub for pytest
-            pass
-
-        @staticmethod
-        def route(*_args, **_kwargs):  # pragma: no cover - minimal stub for pytest
-            def decorator(func):
-                return func
-
-            return decorator
-
-    class AccessDenied(Exception):
-        pass
-
-    request = RequestStub()
+from odoo import http
+from odoo.exceptions import AccessDenied
+from odoo.http import request
 
 
 class LLMConsentController(http.Controller):
@@ -93,14 +44,13 @@ class LLMConsentController(http.Controller):
         )
 
     @http.route(
-        mcp_route_paths("/mcp/consent/request"),
+        "/mcp/consent/request",
         type="json",
         auth="public",
         methods=["POST"],
         csrf=False,
-        priority=30,
     )
-    def request_consent(self, mcp_proxy_prefix=None, **payload):
+    def request_consent(self, **payload):
         self._require_token()
 
         data = payload or request.jsonrequest or {}
@@ -120,14 +70,13 @@ class LLMConsentController(http.Controller):
         return self._json_response(result)
 
     @http.route(
-        mcp_route_paths("/mcp/consent/revoke"),
+        "/mcp/consent/revoke",
         type="json",
         auth="public",
         methods=["POST"],
         csrf=False,
-        priority=30,
     )
-    def revoke_consent(self, mcp_proxy_prefix=None, **payload):
+    def revoke_consent(self, **payload):
         self._require_token()
 
         data = payload or request.jsonrequest or {}

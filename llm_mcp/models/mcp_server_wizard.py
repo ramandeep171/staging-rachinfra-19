@@ -1,41 +1,4 @@
-import os
-
-try:
-    from odoo import _, fields, models
-except ImportError:
-
-    def _(message):
-        return message
-
-    class _FieldFactory:
-        def __init__(self, _name):
-            self._name = _name
-
-        def __call__(self, *args, **kwargs):
-            return None
-
-        def __getattr__(self, _attr):
-            def _inner(*_args, **_kwargs):
-                return None
-
-            return _inner
-
-    class _FieldsStub:
-        def __getattr__(self, _name):
-            return _FieldFactory(_name)
-
-    class _ModelsStub:
-        class Model:
-            pass
-
-        class TransientModel:
-            pass
-
-        class AbstractModel:
-            pass
-
-    fields = _FieldsStub()
-    models = _ModelsStub()
+from odoo import _, fields, models
 
 
 class LLMMCPServerWizard(models.TransientModel):
