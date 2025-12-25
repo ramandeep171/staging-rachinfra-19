@@ -108,7 +108,7 @@ class MCPGatewayController(http.Controller):
         return request.env
 
     @http.route(
-        ["/mcp/tools", "/odoo/mcp/tools", "/<path:_proxy_path>/mcp/tools"],
+        ["/mcp/tools", "/<path:_proxy_path>/mcp/tools"],
         type="http",
         auth="public",
         methods=["GET"],
@@ -154,7 +154,7 @@ class MCPGatewayController(http.Controller):
             )
 
     @http.route(
-        ["/mcp/execute", "/odoo/mcp/execute", "/<path:_proxy_path>/mcp/execute"],
+        ["/mcp/execute", "/<path:_proxy_path>/mcp/execute"],
         type="json",
         auth="public",
         methods=["POST"],
@@ -243,7 +243,7 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        ["/mcp/sse", "/odoo/mcp/sse", "/<path:_proxy_path>/mcp/sse"],
+        ["/mcp/sse", "/<path:_proxy_path>/mcp/sse"],
         type="http",
         auth="public",
         methods=["GET"],
