@@ -108,11 +108,12 @@ class MCPGatewayController(http.Controller):
         return request.env
 
     @http.route(
-        ["/mcp/tools", "/<path:_proxy_path>/mcp/tools"],
+        ["/mcp/tools", "/odoo/mcp/tools", "/<path:_proxy_path>/mcp/tools"],
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=100,
     )
     def list_tools(self, _proxy_path=None, **params):
         try:
@@ -153,11 +154,12 @@ class MCPGatewayController(http.Controller):
             )
 
     @http.route(
-        ["/mcp/execute", "/<path:_proxy_path>/mcp/execute"],
+        ["/mcp/execute", "/odoo/mcp/execute", "/<path:_proxy_path>/mcp/execute"],
         type="json",
         auth="public",
         methods=["POST"],
         csrf=False,
+        priority=100,
     )
     def execute(self, _proxy_path=None, **payload):
         data = payload or request.jsonrequest or {}
@@ -241,11 +243,12 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        ["/mcp/sse", "/<path:_proxy_path>/mcp/sse"],
+        ["/mcp/sse", "/odoo/mcp/sse", "/<path:_proxy_path>/mcp/sse"],
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
+        priority=100,
     )
     def sse(self, _proxy_path=None, **params):
         try:
