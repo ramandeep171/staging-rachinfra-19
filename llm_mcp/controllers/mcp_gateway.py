@@ -20,6 +20,7 @@ try:
     from odoo import http
     from odoo.exceptions import UserError
     from odoo.http import request
+    from odoo.addons.web.controllers.utils import ensure_db
 
     _ODOO_RUNTIME = True
 except ImportError:
@@ -64,6 +65,9 @@ except ImportError:
     class UserError(Exception):
         pass
 
+    def ensure_db(*_args, **_kwargs):  # pragma: no cover - not needed in pytest stub
+        return None
+
     request = RequestStub()
 
 
@@ -96,16 +100,25 @@ class MCPGatewayController(http.Controller):
 
     @staticmethod
     def _set_auth_mode(mode: str):
-        context = getattr(request, "context", None)
-        if isinstance(context, dict):
-            updated = dict(context)
-            updated["auth_mode"] = mode
-            request.context = updated
-        elif context is None:
-            request.context = {"auth_mode": mode}
+        if _ODOO_RUNTIME:
+            if hasattr(request, "update_context"):
+                try:
+                    request.update_context(auth_mode=mode)
+                except Exception:  # pragma: no cover - defensive logging only
+                    _logger.debug("Failed to update request context auth flag", exc_info=True)
+            else:  # pragma: no cover - unexpected in runtime but keep traceability
+                _logger.debug("Request lacks update_context; auth_mode will be stored on request only.")
         else:
-            setattr(context, "auth_mode", mode)
-            request.context = context
+            context = getattr(request, "context", None)
+            if isinstance(context, dict):
+                updated = dict(context)
+                updated["auth_mode"] = mode
+                setattr(request, "context", updated)
+            elif context is None:
+                setattr(request, "context", {"auth_mode": mode})
+            else:
+                setattr(context, "auth_mode", mode)
+                setattr(request, "context", context)
 
         setattr(request, "auth_mode", mode)
 
