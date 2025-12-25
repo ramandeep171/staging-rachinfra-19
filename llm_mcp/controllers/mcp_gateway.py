@@ -108,13 +108,13 @@ class MCPGatewayController(http.Controller):
         return request.env
 
     @http.route(
-        "/mcp/tools",
+        ["/mcp/tools", "/<path:_proxy_path>/mcp/tools"],
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
     )
-    def list_tools(self, **params):
+    def list_tools(self, _proxy_path=None, **params):
         try:
             connection, _token = self._require_connection()
             user = self._resolve_user(connection, params.get("user_id"))
@@ -153,13 +153,13 @@ class MCPGatewayController(http.Controller):
             )
 
     @http.route(
-        "/mcp/execute",
+        ["/mcp/execute", "/<path:_proxy_path>/mcp/execute"],
         type="json",
         auth="public",
         methods=["POST"],
         csrf=False,
     )
-    def execute(self, **payload):
+    def execute(self, _proxy_path=None, **payload):
         data = payload or request.jsonrequest or {}
 
         try:
@@ -241,13 +241,13 @@ class MCPGatewayController(http.Controller):
             ).encode()
 
     @http.route(
-        "/mcp/sse",
+        ["/mcp/sse", "/<path:_proxy_path>/mcp/sse"],
         type="http",
         auth="public",
         methods=["GET"],
         csrf=False,
     )
-    def sse(self, **params):
+    def sse(self, _proxy_path=None, **params):
         try:
             connection, _token = self._require_connection()
             user = self._resolve_user(connection, params.get("user_id"))
