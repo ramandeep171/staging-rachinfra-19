@@ -1,1 +1,1 @@
-from . import policy_enforcer
+from . import policy_enforcer, db_resolver

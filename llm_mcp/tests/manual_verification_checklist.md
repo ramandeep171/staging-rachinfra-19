@@ -6,7 +6,7 @@
 - [ ] Confirm the form now shows the token masked (e.g., `****abcd`) and that reopening the record never reveals the full token.
 
 ## 2) SSE connects using MCP Connection token
-- [ ] From a shell, connect with curl: `curl -H "Authorization: Bearer <TOKEN>" -H "Accept:text/event-stream" https://<domain>/mcp/sse`.
+- [ ] From a shell, connect with curl: `curl -H "Authorization: Bearer <TOKEN>" -H "Accept:text/event-stream" "https://<domain>/mcp/sse?db=<database>"`.
 - [ ] Verify response headers include `Content-Type: text/event-stream`, `Cache-Control: no-cache`, and `Connection: keep-alive`.
 - [ ] Observe an initial `event: tools` payload followed by periodic `event: ping` heartbeats without the connection closing.
 

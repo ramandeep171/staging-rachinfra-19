@@ -154,19 +154,22 @@ class LLMMCPConnection(models.Model):
     @api.depends("token")
     def _compute_connection_endpoints(self):
         base_url = self._compute_https_base_url()
+        db_name = self.env.cr.dbname
         for connection in self:
             normalized_base = base_url.rstrip("/") if base_url else ""
-            connection.sse_url = f"{normalized_base}/mcp/sse" if normalized_base else False
+            suffix = f"?db={db_name}" if normalized_base else ""
+            connection.sse_url = f"{normalized_base}/mcp/sse{suffix}" if normalized_base else False
             connection.tools_url = (
-                f"{normalized_base}/mcp/tools" if normalized_base else False
+                f"{normalized_base}/mcp/tools{suffix}" if normalized_base else False
             )
             connection.execute_url = (
-                f"{normalized_base}/mcp/execute" if normalized_base else False
+                f"{normalized_base}/mcp/execute{suffix}" if normalized_base else False
             )
             masked_token = self._mask_token(connection.token) or "****"
             headers = {
                 "Authorization": f"Bearer {masked_token}",
                 "Content-Type": "application/json",
+                "X-Odoo-Database": db_name,
             }
             connection.request_header_json = json.dumps(headers, indent=4)
 

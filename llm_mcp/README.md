@@ -25,6 +25,7 @@ Model Context Protocol (MCP) integration that lets the Odoo 19 Enterprise LLM st
    - Go to *LLM → Configuration → MCP Servers*.
    - Choose the transport (`Standard IO` for external processes, `Internal` for in-database tooling).
    - Provide the command, arguments, and mark the server as *Active*.
+   - Keep the generated `/mcp/*` URLs exactly as displayed (they include `?db=<name>` so stateless clients pick the right database when multiple DBs live on the same instance).
 2. **Start and validate**
    - Click **Start Server**; the process manager will spawn the command and initialize the MCP handshake.
    - Use **List Tools** to fetch remote tool definitions. Imported tools are linked via `mcp_server_id` and visible under *LLM → Configuration → Tools*.
