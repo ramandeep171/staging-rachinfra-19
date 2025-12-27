@@ -110,7 +110,7 @@ class MCPGatewayController(http.Controller):
     @http.route(
         ["/mcp/tools", "/<path:_proxy_path>/mcp/tools"],
         type="http",
-        auth="public",
+        auth="none",
         methods=["GET"],
         csrf=False,
         priority=100,
@@ -156,7 +156,7 @@ class MCPGatewayController(http.Controller):
     @http.route(
         ["/mcp/execute", "/<path:_proxy_path>/mcp/execute"],
         type="json",
-        auth="public",
+        auth="none",
         methods=["POST"],
         csrf=False,
         priority=100,
@@ -245,7 +245,7 @@ class MCPGatewayController(http.Controller):
     @http.route(
         ["/mcp/sse", "/<path:_proxy_path>/mcp/sse"],
         type="http",
-        auth="public",
+        auth="none",
         methods=["GET"],
         csrf=False,
         priority=100,
