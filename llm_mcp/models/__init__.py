@@ -9,3 +9,4 @@ from . import invocation_record
 from . import mcp_server_wizard
 from . import tool_definition
 from . import llm_mcp_connection
+from . import ir_http
