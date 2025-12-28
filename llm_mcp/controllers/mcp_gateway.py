@@ -1,14 +1,17 @@
 import json
 import logging
 import time
+from time import monotonic
 from typing import Generator, Iterable, Optional
 
+import gevent
 from werkzeug.exceptions import Unauthorized, TooManyRequests
 
 from odoo import http
 from odoo.exceptions import UserError
 from odoo.http import request
 
+from ..security.tool_sanitizer import DEFAULT_TOOL_SANITIZER
 
 _logger = logging.getLogger(__name__)
 
@@ -17,6 +20,7 @@ class MCPGatewayController(http.Controller):
     """Public MCP gateway with strict auth + permission enforcement."""
 
     HEARTBEAT_INTERVAL = 15
+    MAX_STREAM_SECONDS = 300
 
     @staticmethod
     def _extract_token() -> Optional[str]:
@@ -73,18 +77,24 @@ class MCPGatewayController(http.Controller):
 
     @staticmethod
     def _serialize_tools(tools_payload):
-        serialized = []
-        for tool in tools_payload or []:
-            name = tool.get("name") or tool.get("tool_key") or ""
-            schema = tool.get("input_schema") or tool.get("schema") or {}
-            serialized.append(
-                {
-                    "name": name,
-                    "description": tool.get("description") or "",
-                    "input_schema": schema,
-                }
-            )
-        return serialized
+        if not tools_payload:
+            return []
+
+        sanitized = []
+        for tool in tools_payload:
+            sanitized.append(DEFAULT_TOOL_SANITIZER.sanitize_tool(tool))
+
+        return sanitized
+
+    @staticmethod
+    def _parse_list_params(params):
+        tags_param = params.get("tags") or ""
+        tags: Iterable[str] = [tag.strip() for tag in tags_param.split(",") if tag.strip()]
+        action_types_param = params.get("action_type") or ""
+        action_types: Iterable[str] = [
+            action.strip() for action in action_types_param.split(",") if action.strip()
+        ]
+        return tags, action_types
 
     @staticmethod
     def _build_mcp_env(connection, user):
@@ -114,7 +124,7 @@ class MCPGatewayController(http.Controller):
         methods=["GET"],
         csrf=False,
         priority=100,
-    )
+        )
     def list_tools(self, _proxy_path=None, **params):
         try:
             connection, _token = self._require_connection()
@@ -125,12 +135,7 @@ class MCPGatewayController(http.Controller):
 
         request.mcp_user = user
 
-        tags_param = params.get("tags") or ""
-        tags: Iterable[str] = [tag.strip() for tag in tags_param.split(",") if tag.strip()]
-        action_types_param = params.get("action_type") or ""
-        action_types: Iterable[str] = [
-            action.strip() for action in action_types_param.split(",") if action.strip()
-        ]
+        tags, action_types = self._parse_list_params(params)
 
         try:
             raw_tools = env["llm.tool.registry.service"].list_tools(
@@ -150,6 +155,49 @@ class MCPGatewayController(http.Controller):
             return self._json_error(
                 "Unable to list tools at this time. Please retry shortly.",
                 code="MCP_TOOLS_ERROR",
+                status=500,
+            )
+
+    @http.route(
+        ["/mcp/chatgpt/functions", "/<path:_proxy_path>/mcp/chatgpt/functions"],
+        type="http",
+        auth="public",
+        methods=["GET"],
+        csrf=False,
+        priority=100,
+    )
+    def chatgpt_functions(self, _proxy_path=None, **params):
+        try:
+            connection, token = self._require_connection()
+            user = self._resolve_user(connection, params.get("user_id"))
+            env = self._build_mcp_env(connection, user)
+        except Unauthorized as exc:
+            return self._json_error(str(exc), code="MCP_AUTH_ERROR", status=401)
+
+        request.mcp_user = user
+
+        tags, action_types = self._parse_list_params(params)
+
+        try:
+            functions = env["llm.mcp.chatgpt.adapter"].list_functions(
+                user=user,
+                tags=tags,
+                action_types=action_types,
+                session_id=params.get("session_id"),
+            )
+            contract = env["llm.mcp.chatgpt.adapter"].execution_contract(
+                token=token, session_id=params.get("session_id")
+            )
+            return self._json_response({"functions": functions, "contract": contract})
+        except Exception:  # noqa: BLE001 - response must remain JSON
+            _logger.exception(
+                "Failed to list ChatGPT functions for connection %s (session: %s)",
+                connection.id,
+                params.get("session_id"),
+            )
+            return self._json_error(
+                "Unable to build ChatGPT functions at this time. Please retry shortly.",
+                code="MCP_CHATGPT_FUNCTIONS_ERROR",
                 status=500,
             )
 
@@ -204,6 +252,17 @@ class MCPGatewayController(http.Controller):
                 status=500,
             )
 
+        if isinstance(result, dict) and result.get("error"):
+            error_code = result["error"].get("code") or "MCP_EXEC_ERROR"
+            status = 400
+            if error_code == "MCP_EXEC_TIMEOUT":
+                status = 504
+            elif error_code in {"MCP_SCHEMA_INVALID", "MCP_SCHEMA_VALIDATION_FAILED"}:
+                status = 400
+            elif error_code == "MCP_EXEC_ERROR":
+                status = 500
+            return self._json_response(result, status=status)
+
         return self._json_response(result)
 
     def _sse_event(self, event: str, data) -> str:
@@ -211,6 +270,13 @@ class MCPGatewayController(http.Controller):
         return f"event: {event}\ndata: {payload}\n\n"
 
     def _stream(self, env, user, session_id=None) -> Generator[bytes, None, None]:
+        """SSE generator with disconnect detection and non-blocking heartbeats."""
+
+        http_request = request.httprequest
+        heartbeat_interval = max(0, int(self.HEARTBEAT_INTERVAL or 0))
+        deadline = monotonic() + self.MAX_STREAM_SECONDS if self.MAX_STREAM_SECONDS else None
+        close_reason = "client_disconnected"
+
         yield self._sse_event("ready", {"protocol": "mcp/1.0", "status": "ok"}).encode()
         try:
             tools = env["llm.tool.registry.service"].list_tools(
@@ -219,28 +285,47 @@ class MCPGatewayController(http.Controller):
             serialized = self._serialize_tools(tools)
             yield self._sse_event("tools", {"tools": serialized}).encode()
 
-            last_ping = time.time()
+            next_heartbeat_at = (
+                monotonic() + heartbeat_interval if heartbeat_interval else None
+            )
             while True:
-                now = time.time()
-                if now - last_ping >= self.HEARTBEAT_INTERVAL:
-                    last_ping = now
-                    yield self._sse_event("heartbeat", {"ts": now}).encode()
-                time.sleep(1)
+                if http_request.is_socket_closed():
+                    close_reason = "client_disconnected"
+                    break
+
+                now = monotonic()
+                if deadline and now >= deadline:
+                    close_reason = "timeout"
+                    break
+
+                if next_heartbeat_at and now >= next_heartbeat_at:
+                    yield self._sse_event("heartbeat", {"ts": time.time()}).encode()
+                    next_heartbeat_at = now + heartbeat_interval
+
+                # Yield control to avoid blocking workers even without heartbeats
+                gevent.sleep(0.5 if heartbeat_interval else 1.0)
+
+            close_reason = close_reason or "closed"
         except Exception:  # noqa: BLE001 - streaming must terminate gracefully
             _logger.exception(
                 "SSE stream failed for connection %s (session: %s)",
                 getattr(request, "mcp_connection", False) and request.mcp_connection.id,
                 session_id,
             )
-            yield self._sse_event(
-                "error",
-                {
-                    "error": {
-                        "code": "MCP_SSE_ERROR",
-                        "message": "Stream closed due to server error.",
-                    }
-                },
-            ).encode()
+            close_reason = "server_error"
+            if not http_request.is_socket_closed():
+                yield self._sse_event(
+                    "error",
+                    {
+                        "error": {
+                            "code": "MCP_SSE_ERROR",
+                            "message": "Stream closed due to server error.",
+                        }
+                    },
+                ).encode()
+        finally:
+            if not http_request.is_socket_closed():
+                yield self._sse_event("close", {"reason": close_reason}).encode()
 
     @http.route(
         ["/mcp/sse", "/<path:_proxy_path>/mcp/sse"],

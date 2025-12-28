@@ -135,9 +135,13 @@ class LLMCommandRunner(models.Model):
             try:
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(self._execute_payload, payload, timeout)
-                    return future.result(timeout=timeout)
-            except FuturesTimeout as exc:
-                raise TimeoutError(str(exc)) from exc
+                    try:
+                        return future.result(timeout=timeout)
+                    except FuturesTimeout as exc:
+                        future.cancel()
+                        raise TimeoutError(
+                            _("Runner exceeded timeout of %s seconds") % (timeout or "?"),
+                        ) from exc
             except Exception as exc:
                 attempt += 1
                 if attempt > retries:
