@@ -219,8 +219,7 @@ class LLMMCPConnection(models.Model):
                         "UPDATE llm_mcp_connection SET last_used_at=%s WHERE id=%s",
                         (timestamp, connection.id),
                     )
-                    # `_invalidate_cache` is the public API in Odoo 19 to refresh a record cache
-                    connection._invalidate_cache(fnames=["last_used_at"])
+                    connection.invalidate_cache(["last_used_at"])
             except errors.SerializationFailure:
                 _logger.debug(
                     "Concurrent MCP connection update skipped for %s", connection.id
