@@ -15,7 +15,11 @@ def _llm_mcp_get_session_and_dbname(self):
     if "/mcp/" not in path:
         return session, dbname
 
-    db_param = (self.httprequest.args.get("db") or "").strip()
+    db_param = (
+        self.httprequest.args.get("db")
+        or self.httprequest.headers.get("X-Odoo-Database")
+        or ""
+    ).strip()
     if not db_param:
         return session, dbname
 

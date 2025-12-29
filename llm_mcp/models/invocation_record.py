@@ -113,6 +113,7 @@ class LLMMCPInvocationRecord(models.Model):
         session_id=None,
         event_details=None,
         parent_invocation=None,
+        timeout_flag=False,
     ):
         params = params or {}
         start_time = start_time or fields.Datetime.now()
@@ -142,6 +143,7 @@ class LLMMCPInvocationRecord(models.Model):
                 "exception_trace": exception_trace,
                 "consent_ledger_id": getattr(consent_ledger, "id", False),
                 "parent_invocation_id": getattr(parent_invocation, "id", False),
+                "timeout_flag": timeout_flag,
             }
         )
 
