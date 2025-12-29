@@ -1,11 +1,12 @@
 from odoo import models
 from odoo.http import request
 
+
 class IrHttp(models.AbstractModel):
     _inherit = "ir.http"
 
     @classmethod
-    def _dispatch(cls, endpoint):
+    def _dispatch(cls, endpoint, *args, **kwargs):
         path = request.httprequest.path
 
         # 🔴 HARD BYPASS for MCP
@@ -22,4 +23,4 @@ class IrHttp(models.AbstractModel):
             request.uid = 1
             request.env = request.env(user=1)
 
-        return super()._dispatch(endpoint)
+        return super()._dispatch(endpoint, *args, **kwargs)
