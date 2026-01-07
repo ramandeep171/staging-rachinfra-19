@@ -5,6 +5,15 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_prime_rate_log"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-bar-chart"
+                        invisible="gear_prime_rate_log_count == 0">
+                    <field name="gear_prime_rate_log_count" widget="statinfo" string="Prime Rate Logs"/>
+                </button>
+            </xpath>
             <xpath expr="//group[@name='order_details']" position="inside">
                 <field name="company_id" invisible="1"/>
                 <field name="x_billing_category" widget="selection" help="Select 'RMC' to trigger the production-based workflow."/>
@@ -35,8 +44,10 @@
                             <field name="gear_capacity_id"/>
                             <field name="gear_mgq_rate_id" domain="[('service_id', '=', gear_service_id), ('capacity_id', '=', gear_capacity_id)]"/>
                             <field name="gear_design_mix_id"/>
+                            <field name="gear_design_mix_ids" widget="many2many_tags"/>
                             <field name="gear_material_area_id"/>
                             <field name="gear_expected_production_qty"/>
+                            <field name="gear_project_quantity"/>
                             <field name="gear_civil_scope"/>
                         </group>
                         <group string="Material Source (Area-wise)">
@@ -44,6 +55,10 @@
                             <field name="gear_agg_10mm_area_id"/>
                             <field name="gear_agg_20mm_area_id"/>
                             <field name="gear_admixture_area_id"/>
+                        </group>
+                        <group string="Margin &amp; Sharing">
+                            <field name="gear_margin_per_cum"/>
+                            <field name="gear_show_cost_breakdown"/>
                         </group>
                     </group>
                     <group string="Optional Services">
@@ -56,6 +71,21 @@
                             <field name="gear_diesel_opt_in"/>
                             <field name="gear_jcb_opt_in"/>
                             <field name="gear_optional_service_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <group string="Prime Rate Breakdown">
+                        <field name="gear_prime_rate_log_ids"
+                               readonly="1"
+                               options="{'no_create': True, 'no_create_edit': True, 'no_edit': True}"/>
+                    </group>
+                    <group string="Billing Product Mapping" groups="gear_on_rent.group_gear_on_rent_manager">
+                        <group>
+                            <field name="gear_service_product_id"/>
+                            <field name="gear_material_product_id"/>
+                        </group>
+                        <group>
+                            <field name="gear_optional_product_id"/>
+                            <field name="gear_dead_cost_product_id"/>
                         </group>
                     </group>
                 </page>

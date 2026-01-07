@@ -1,4 +1,5 @@
 from datetime import timedelta
+import calendar
 import base64
 import logging
 
@@ -105,6 +106,12 @@ class MrpProduction(models.Model):
         string="Excess Rate Snapshot",
         digits=(16, 2),
         help="Excess production rate captured from the parent sales order variables.",
+    )
+    x_daily_report_sent = fields.Boolean(
+        string="Daily Report Sent",
+        default=False,
+        copy=False,
+        help="Flag to avoid emailing the daily MO report multiple times.",
     )
     mgq_monthly = fields.Float(
         string="MGQ (Monthly) Snapshot",
@@ -346,6 +353,7 @@ class MrpProduction(models.Model):
             if attachment:
                 email_values["attachment_ids"] = [(4, attachment.id)]
             template.send_mail(self.id, force_send=True, email_values=email_values)
+            self.x_daily_report_sent = True
 
         if monthly:
             message = _("Daily report generated for %(mo)s.") % {"mo": self.display_name}
@@ -355,11 +363,37 @@ class MrpProduction(models.Model):
 
     def _gear_hours_to_qty(self, hours):
         self.ensure_one()
-        target = self.x_daily_target_qty or 0.0
-        if not target:
+        if not hours:
             return 0.0
-        # Assume uniform production across the day; convert hours to MGQ relief.
-        return target * (hours / 24.0)
+
+        monthly = self.x_monthly_order_id
+        contract = monthly.so_id if monthly else self.x_sale_order_id
+        # Prefer contract/monthly snapshot factor; fallback to derived MGQ per-hour rate.
+        factor = 0.0
+        if monthly and monthly.ngt_hourly_prorata_factor:
+            factor = monthly.ngt_hourly_prorata_factor
+        elif contract and contract.ngt_hourly_prorata_factor:
+            factor = contract.ngt_hourly_prorata_factor
+        else:
+            # Derive from MGQ: (MGQ per month / days in month) / 24
+            mgq = 0.0
+            days_in_month = 0
+            if monthly:
+                mgq = monthly.mgq_monthly or monthly.monthly_target_qty or 0.0
+                if monthly.date_start:
+                    days_in_month = calendar.monthrange(monthly.date_start.year, monthly.date_start.month)[1]
+            if not mgq and contract:
+                mgq = contract.x_monthly_mgq or contract.mgq_monthly or 0.0
+            if not days_in_month:
+                date_ref = monthly.date_start if monthly and monthly.date_start else fields.Date.context_today(self)
+                days_in_month = calendar.monthrange(date_ref.year, date_ref.month)[1]
+            if mgq and days_in_month:
+                factor = (mgq / days_in_month) / 24.0
+
+        if not factor and self.x_daily_target_qty:
+            factor = (self.x_daily_target_qty or 0.0) / 24.0
+
+        return round((hours or 0.0) * factor, 2)
 
     def _gear_get_daily_report_payload(self):
         """Return a payload compatible with the month-end template for a single MO."""
@@ -453,8 +487,14 @@ class MrpProduction(models.Model):
                 "docket_no": docket.docket_no,
                 "date": format_date(self.env, docket.date),
                 "timestamp": format_datetime(self.env, docket.payload_timestamp) if docket.payload_timestamp else "",
+                "batching_time": format_datetime(self.env, docket.batching_time) if docket.batching_time else "",
+                "customer_name": docket.customer_id.display_name or "",
+                "customer_address": docket.customer_id.contact_address or "",
+                "quantity_ordered": docket.quantity_ordered or 0.0,
                 "qty_m3": docket.qty_m3,
                 "workcenter": docket.workcenter_id.display_name,
+                "tm_number": docket.tm_number or "",
+                "recipe": docket.recipe_id.display_name or "",
                 "runtime_minutes": docket.runtime_minutes,
                 "idle_minutes": docket.idle_minutes,
                 "slump": docket.slump,
@@ -561,6 +601,17 @@ class MrpProduction(models.Model):
         }
         return payload
 
+    def action_open_self(self):
+        """Open the manufacturing order form directly."""
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": "mrp.production",
+            "view_mode": "form",
+            "res_id": self.id,
+            "target": "current",
+        }
+
     @api.model
     def gear_find_mo_for_datetime(self, workcenter, timestamp):
         """Locate the MO whose work order is active at the given timestamp."""
@@ -571,6 +622,36 @@ class MrpProduction(models.Model):
     def _gear_client_dockets(self):
         self.ensure_one()
         return self.x_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance")
+
+    @api.model
+    def _cron_email_daily_reports(self):
+        """Send daily MO reports (PDF + email) once per day when enabled on the monthly order."""
+        today = fields.Date.context_today(self)
+        target_date = today - timedelta(days=1)
+        domain = [
+            ("x_daily_report_sent", "=", False),
+            ("x_monthly_order_id", "!=", False),
+            ("x_monthly_order_id.x_auto_email_daily", "=", True),
+            ("date_start", "!=", False),
+            ("state", "not in", ("cancel",)),
+        ]
+        candidates = self.search(domain)
+        for production in candidates:
+            monthly = production.x_monthly_order_id
+            if not monthly:
+                continue
+            tz = monthly._gear_get_user_tz()
+            local_date = monthly._gear_datetime_to_local_date(production.date_start, tz) if production.date_start else False
+            if not local_date or local_date > target_date:
+                continue
+            # Skip backlog: mark older days as sent so the cron doesn't try to send months of history.
+            if local_date < target_date:
+                production.x_daily_report_sent = True
+                continue
+            try:
+                production.action_print_daily_report()
+            except Exception:
+                _logger.exception("Failed to auto-send daily report for %s", production.display_name)
 
 
 class MrpWorkorder(models.Model):
@@ -652,6 +733,58 @@ class MrpWorkorder(models.Model):
         string="Aggregated Batches",
         help="All batches captured on dockets linked to this work order.",
     )
+    gear_docket_qty_m3 = fields.Float(
+        string="Quantity (m³)",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+        digits=(16, 2),
+    )
+    gear_docket_tm_number = fields.Char(
+        string="TM Number",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
+    gear_docket_driver_name = fields.Char(
+        string="Driver Name",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
+    gear_docket_operator_user_id = fields.Many2one(
+        comodel_name="res.users",
+        string="Operator User",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
+    gear_docket_recipe_id = fields.Many2one(
+        comodel_name="mrp.bom",
+        string="Recipe",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
+    gear_docket_batching_time = fields.Datetime(
+        string="Batching Time",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
+    gear_docket_no = fields.Char(
+        string="Docket Number",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
+    gear_docket_customer_id = fields.Many2one(
+        comodel_name="res.partner",
+        string="Customer",
+        compute="_compute_primary_docket_fields",
+        inverse="_inverse_primary_docket_fields",
+        store=True,
+    )
     gear_chunk_sequence = fields.Integer(
         string="Gear Chunk Sequence",
         help="Sequential index used to release work orders one at a time.",
@@ -660,6 +793,18 @@ class MrpWorkorder(models.Model):
         string="Gear Planned Quantity",
         digits=(16, 2),
         help="Target quantity (m³) allocated to this work order chunk.",
+    )
+    gear_cumulative_qty_produced = fields.Float(
+        string="Produced Quantity (Cumulative)",
+        compute="_compute_gear_cumulative_qty_produced",
+        digits=(16, 2),
+        help="Running total of produced quantity up to and including this work order.",
+    )
+    gear_remaining_qty = fields.Float(
+        string="Remaining Qty (m³)",
+        compute="_compute_gear_remaining_qty",
+        digits=(16, 2),
+        help="Remaining MO target after accounting for cumulative produced quantity.",
     )
 
     @api.depends("gear_docket_ids.qty_m3")
@@ -675,16 +820,183 @@ class MrpWorkorder(models.Model):
             workorder.gear_runtime_minutes = sum(dockets.mapped("runtime_minutes"))
             workorder.gear_idle_minutes = sum(dockets.mapped("idle_minutes"))
 
-    @api.depends("gear_recipe_id", "gear_recipe_id.bom_line_ids")
+    @api.depends(
+        "gear_prime_output_qty",
+        "gear_docket_qty_m3",
+        "production_id.workorder_ids.gear_prime_output_qty",
+        "production_id.workorder_ids.gear_docket_qty_m3",
+        "production_id.workorder_ids.gear_chunk_sequence",
+        "production_id.workorder_ids.sequence",
+        "production_id.workorder_ids.state",
+    )
+    def _compute_gear_cumulative_qty_produced(self):
+        for workorder in self:
+            production = workorder.production_id
+            if not production:
+                produced = (
+                    workorder.gear_prime_output_qty
+                    or workorder.gear_docket_qty_m3
+                    or workorder.qty_produced
+                    or 0.0
+                )
+                workorder.gear_cumulative_qty_produced = produced
+                continue
+            siblings = production.workorder_ids.filtered(lambda w: w.state != "cancel")
+            siblings = siblings.sorted(
+                key=lambda w: (w.gear_chunk_sequence or w.sequence or w.id, w.id)
+            )
+            total = 0.0
+            for sibling in siblings:
+                produced = (
+                    sibling.gear_prime_output_qty
+                    or sibling.gear_docket_qty_m3
+                    or sibling.qty_produced
+                    or 0.0
+                )
+                total += produced
+                if sibling == workorder:
+                    break
+            workorder.gear_cumulative_qty_produced = total
+
+    @api.depends("gear_cumulative_qty_produced", "production_id.product_qty")
+    def _compute_gear_remaining_qty(self):
+        for workorder in self:
+            target_qty = workorder.production_id.product_qty if workorder.production_id else 0.0
+            produced_qty = workorder.gear_cumulative_qty_produced or 0.0
+            workorder.gear_remaining_qty = max(target_qty - produced_qty, 0.0)
+
+    @api.depends(
+        "gear_recipe_id",
+        "gear_recipe_id.bom_line_ids",
+        "gear_docket_ids.recipe_id",
+        "gear_docket_ids.recipe_id.bom_line_ids",
+    )
     def _compute_gear_recipe_line_ids(self):
         for workorder in self:
-            workorder.gear_recipe_line_ids = workorder.gear_recipe_id.bom_line_ids
+            recipe = workorder.gear_recipe_id
+            if not recipe:
+                primary_docket = workorder._gear_get_primary_docket(create_if_missing=False)
+                recipe = primary_docket.recipe_id if primary_docket else False
+            workorder.gear_recipe_line_ids = recipe.bom_line_ids if recipe else False
 
     @api.depends("gear_docket_ids.docket_batch_ids")
     def _compute_gear_batch_ids(self):
         for workorder in self:
             batches = workorder.gear_docket_ids.mapped("docket_batch_ids")
             workorder.gear_batch_ids = batches
+
+    @api.depends(
+        "gear_docket_ids.qty_m3",
+        "gear_docket_ids.tm_number",
+        "gear_docket_ids.driver_name",
+        "gear_docket_ids.operator_user_id",
+        "gear_docket_ids.recipe_id",
+        "gear_docket_ids.batching_time",
+        "gear_docket_ids.docket_no",
+        "gear_docket_ids.customer_id",
+        "gear_docket_ids.cycle_reason_type",
+    )
+    def _compute_primary_docket_fields(self):
+        for workorder in self:
+            docket = workorder.gear_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance").sorted(
+                key=lambda d: (d.date or fields.Date.today(), d.id)
+            )[:1]
+            docket = docket and docket[0] or False
+            workorder.gear_docket_qty_m3 = docket.qty_m3 if docket else 0.0
+            workorder.gear_docket_tm_number = docket.tm_number if docket else False
+            workorder.gear_docket_driver_name = docket.driver_name if docket else False
+            workorder.gear_docket_operator_user_id = docket.operator_user_id if docket else False
+            workorder.gear_docket_recipe_id = docket.recipe_id if docket else False
+            workorder.gear_docket_batching_time = docket.batching_time if docket else False
+            workorder.gear_docket_no = docket.docket_no if docket else False
+            workorder.gear_docket_customer_id = docket.customer_id if docket else (
+                workorder.production_id.x_sale_order_id.partner_id if workorder.production_id else False
+            )
+
+    def _gear_get_primary_docket(self, create_if_missing=False):
+        self.ensure_one()
+        docket = self.gear_docket_ids.filtered(lambda d: d.cycle_reason_type != "maintenance").sorted(
+            key=lambda d: (d.date or fields.Date.today(), d.id)
+        )[:1]
+        if docket:
+            return docket[0]
+        if not create_if_missing:
+            return False
+
+        production = self.production_id
+        sale_order = getattr(production, "x_sale_order_id", False)
+        if not production or not sale_order:
+            return False
+
+        docket_model = self.env["gear.rmc.docket"]
+        monthly_order = getattr(production, "x_monthly_order_id", False)
+        date_value = fields.Date.context_today(self)
+        if self.date_start or production.date_start:
+            try:
+                wo_start = self.date_start or production.date_start
+                local_date = False
+                if monthly_order:
+                    user_tz = monthly_order._gear_get_user_tz()
+                    local_date = monthly_order._gear_datetime_to_local_date(wo_start, user_tz)
+                if not local_date:
+                    local_dt = fields.Datetime.context_timestamp(self, wo_start)
+                    local_date = local_dt.date() if local_dt else False
+                date_value = local_date or date_value
+            except Exception:
+                pass
+
+        docket_vals = {
+            "so_id": sale_order.id,
+            "production_id": production.id,
+            "workorder_id": self.id,
+            "workcenter_id": self.workcenter_id.id if self.workcenter_id else False,
+            "monthly_order_id": monthly_order.id if monthly_order else False,
+            "docket_no": docket_model._gear_allocate_docket_no(sale_order),
+            "name": f"{production.name}-{date_value}" if production and production.name else False,
+            "date": date_value,
+            "source": "manual",
+            "state": "draft",
+            "quantity_ordered": self.gear_qty_planned or self.qty_production or production.product_qty,
+            "payload_timestamp": self.date_start or production.date_start,
+        }
+        docket = docket_model.create(docket_vals)
+        return docket
+
+    def _inverse_primary_docket_fields(self):
+        for workorder in self:
+            docket = workorder._gear_get_primary_docket(create_if_missing=True)
+            if not docket:
+                continue
+            vals = {}
+            if workorder.gear_docket_qty_m3 is not None:
+                vals["qty_m3"] = workorder.gear_docket_qty_m3
+            if workorder.gear_docket_tm_number is not None:
+                vals["tm_number"] = workorder.gear_docket_tm_number
+            if workorder.gear_docket_driver_name is not None:
+                vals["driver_name"] = workorder.gear_docket_driver_name
+            if workorder.gear_docket_operator_user_id:
+                vals["operator_user_id"] = workorder.gear_docket_operator_user_id.id
+            elif "gear_docket_operator_user_id" in workorder._fields and workorder.gear_docket_operator_user_id is False:
+                vals["operator_user_id"] = False
+            if workorder.gear_docket_recipe_id:
+                vals["recipe_id"] = workorder.gear_docket_recipe_id.id
+            elif workorder.gear_docket_recipe_id is False:
+                vals["recipe_id"] = False
+            if workorder.gear_docket_batching_time is not None:
+                vals["batching_time"] = workorder.gear_docket_batching_time
+            if workorder.gear_docket_no:
+                vals["docket_no"] = workorder.gear_docket_no
+            elif workorder.gear_docket_no is False:
+                vals["docket_no"] = False
+            if workorder.gear_docket_customer_id:
+                vals["customer_id"] = workorder.gear_docket_customer_id.id
+            elif workorder.gear_docket_customer_id is False:
+                vals["customer_id"] = False
+            if workorder.scrap_qty is not None:
+                vals["quantity_produced"] = max((workorder.gear_docket_qty_m3 or 0.0) - workorder.scrap_qty, 0.0)
+
+            if vals:
+                docket.write(vals)
 
     @api.onchange("production_id")
     def _onchange_production_id_set_recipe_product(self):
@@ -696,14 +1008,45 @@ class MrpWorkorder(models.Model):
         if self.gear_recipe_id and self.gear_recipe_id.product_tmpl_id != self.gear_recipe_product_id.product_tmpl_id:
             self.gear_recipe_id = False
 
+    def _gear_set_qty_producing(self):
+        """Keep the MO qty_producing aligned to the chunk size for this workorder."""
+        for workorder in self:
+            production = workorder.production_id
+            if not production:
+                continue
+            target_qty = workorder.gear_qty_planned or workorder.qty_production
+            if not target_qty:
+                continue
+            if production.product_uom_id:
+                target_qty = production.product_uom_id.round(target_qty)
+                if production.product_uom_id.is_zero(target_qty):
+                    continue
+            if production.qty_producing != target_qty:
+                production.qty_producing = target_qty
+                try:
+                    production._set_qty_producing(False)
+                except Exception:
+                    # If stock moves are missing, allow the work order to keep running; operator can retry.
+                    pass
+
     def button_start(self, raise_on_invalid_state=False, bypass=False):
+        self._gear_set_qty_producing()
         res = super().button_start(raise_on_invalid_state=raise_on_invalid_state, bypass=bypass)
         self._gear_update_docket_states(target_state="in_production")
         return res
 
     def button_finish(self):
         workorders = self.with_context(allow_qty_produced_done=True)
+        workorders._gear_set_qty_producing()
         res = super(MrpWorkorder, workorders).button_finish()
+        for workorder in workorders:
+            if (
+                workorder.gear_qty_planned
+                and workorder.qty_produced
+                and workorder.qty_produced > workorder.gear_qty_planned
+            ):
+                # Cap the produced quantity to the planned chunk to avoid blocking future chunk creation.
+                workorder.qty_produced = workorder.gear_qty_planned
         self._gear_finalize_dockets()
         return res
 
@@ -743,11 +1086,7 @@ class MrpWorkorder(models.Model):
             if workorder.gear_docket_ids:
                 continue
             base_no = workorder.name or f"WO-{workorder.id}"
-            docket_no = base_no
-            suffix = 1
-            while docket_model.search_count([("so_id", "=", sale_order.id), ("docket_no", "=", docket_no)]):
-                suffix += 1
-                docket_no = f"{base_no}-{suffix}"
+            docket_no = docket_model._gear_allocate_docket_no(sale_order)
             monthly_order = getattr(production, "x_monthly_order_id", False)
             if workorder.date_start:
                 date_value = False
@@ -769,6 +1108,7 @@ class MrpWorkorder(models.Model):
                 "workcenter_id": workorder.workcenter_id.id if workorder.workcenter_id else False,
                 "monthly_order_id": getattr(production, "x_monthly_order_id", False) and production.x_monthly_order_id.id or False,
                 "docket_no": docket_no,
+                "name": base_no,
                 "date": date_value,
                 "source": "manual",
                 "state": "draft",
@@ -940,12 +1280,14 @@ class MrpWorkorder(models.Model):
 
     def _gear_release_next_workorder(self):
         Workorder = self.env["mrp.workorder"]
+        MonthlyOrder = self.env["gear.rmc.monthly.order"]
         for workorder in self:
             production = workorder.production_id
             if not production:
                 continue
             if production.workorder_ids.filtered(lambda wo: wo.state == "progress"):
                 continue
+            workcenter = workorder.workcenter_id or production.workorder_ids[:1].workcenter_id
             pending_entries = list(production.x_pending_workorder_chunks or [])
             next_candidate = production.workorder_ids.filtered(
                 lambda wo: wo.state in ("ready", "blocked") and wo.id != workorder.id
@@ -956,7 +1298,6 @@ class MrpWorkorder(models.Model):
                 qty = payload.get("qty") or 0.0
                 if qty > 0:
                     seq = payload.get("seq")
-                    workcenter = workorder.workcenter_id or production.workorder_ids[:1].workcenter_id
                     if not workcenter:
                         _logger.info(
                             "Cannot auto-create next work order for %s due to missing workcenter.",
@@ -997,6 +1338,62 @@ class MrpWorkorder(models.Model):
                         "Skipping automatic creation of next work order for %s due to zero-quantity chunk.",
                         production.display_name,
                     )
+            elif not next_candidate and not pending_entries:
+                if not workcenter:
+                    _logger.info(
+                        "Cannot auto-create next work order for %s due to missing workcenter.",
+                        production.display_name,
+                    )
+                    continue
+                active_workorders = production.workorder_ids.filtered(lambda w: w.state not in ("cancel",))
+                open_workorders = active_workorders.filtered(lambda w: w.state not in ("done", "cancel"))
+                planned_qty = sum((wo.gear_qty_planned or wo.qty_production or 0.0) for wo in open_workorders)
+                remaining_qty = round((production.product_qty or 0.0) - planned_qty, 2)
+                if remaining_qty <= 0:
+                    production.x_pending_workorder_chunks = []
+                    continue
+                param = self.env["ir.config_parameter"].sudo().get_param("gear_on_rent.workorder_max_qty", "7.0")
+                try:
+                    max_chunk = float(param)
+                except (TypeError, ValueError):
+                    max_chunk = 7.0
+                if max_chunk <= 0:
+                    max_chunk = 7.0
+
+                qty_splits = MonthlyOrder._gear_split_quantity(remaining_qty, max_chunk)
+                existing_sequences = [seq for seq in active_workorders.mapped("gear_chunk_sequence") if seq]
+                seq = max(existing_sequences) + 1 if existing_sequences else len(active_workorders) + 1
+                base_name = f"{production.name} / {workcenter.display_name}"
+                base_start_dt = workorder.date_finished or fields.Datetime.now()
+
+                name = base_name if seq == 1 else f"{base_name} ({seq})"
+                first_qty = qty_splits.pop(0)
+                vals = {
+                    "name": name,
+                    "production_id": production.id,
+                    "workcenter_id": workcenter.id,
+                    "qty_production": first_qty,
+                    "date_start": base_start_dt,
+                    "date_finished": base_start_dt,
+                    "sequence": seq,
+                    "gear_chunk_sequence": seq,
+                    "gear_qty_planned": first_qty,
+                }
+                next_candidate = Workorder.create(vals)
+                created = True
+                pending_entries = []
+                next_seq = seq + 1
+                for qty in qty_splits:
+                    pending_entries.append(
+                        {
+                            "seq": next_seq,
+                            "qty": qty,
+                            "name": base_name if next_seq == 1 else f"{base_name} ({next_seq})",
+                            "date_start": fields.Datetime.to_string(base_start_dt),
+                            "date_finished": fields.Datetime.to_string(base_start_dt),
+                        }
+                    )
+                    next_seq += 1
             production.x_pending_workorder_chunks = pending_entries
             if not next_candidate:
                 continue
@@ -1031,3 +1428,60 @@ class MrpWorkorder(models.Model):
                 )
             if exceeds and not client_reason:
                 raise ValidationError(_("Client workflows require a Client reason."))
+
+    def action_open_scrap_wizard(self):
+        """Open the standard Odoo scrap popup prefilled for this work order."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id("stock.action_stock_scrap")
+        raw_ctx = action.get("context", {}) or {}
+        if isinstance(raw_ctx, str):
+            from odoo.tools.safe_eval import safe_eval
+
+            raw_ctx = safe_eval(raw_ctx)
+        ctx = dict(raw_ctx or {})
+
+        production = self.production_id
+        company = self.company_id or self.env.company
+
+        ctx["default_workorder_id"] = self.id
+        if production:
+            ctx.setdefault("default_production_id", production.id)
+            if production.bom_id:
+                ctx.setdefault("default_gear_bom_id", production.bom_id.id)
+        if production and production.name:
+            ctx.setdefault("default_origin", production.name)
+        if production and production.product_id:
+            ctx.setdefault("default_product_id", production.product_id.id)
+        if company:
+            ctx.setdefault("default_company_id", company.id)
+
+        if production and production.location_src_id:
+            ctx.setdefault("default_location_id", production.location_src_id.id)
+        else:
+            stock_location = getattr(company, "stock_warehouse_id", False)
+            stock_location = stock_location and stock_location.lot_stock_id
+            if stock_location:
+                ctx.setdefault("default_location_id", stock_location.id)
+
+        scrap_location = getattr(company, "stock_scrap_location_id", False)
+        if not scrap_location:
+            scrap_location = self.env.ref("stock.stock_location_scrap", raise_if_not_found=False)
+        if scrap_location:
+            ctx.setdefault("default_scrap_location_id", scrap_location.id)
+
+        # Force opening directly in form view for quick entry.
+        form_view = self.env.ref("stock.stock_scrap_form_view", raise_if_not_found=False) or self.env.ref(
+            "stock.view_stock_scrap_form", raise_if_not_found=False
+        )
+        views = [(form_view.id, "form")] if form_view else [(False, "form")]
+
+        action.update(
+            {
+                "context": ctx,
+                "target": "new",
+                "view_mode": "form",
+                "views": views,
+                "res_id": False,
+            }
+        )
+        return action

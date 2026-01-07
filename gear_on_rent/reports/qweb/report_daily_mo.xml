@@ -361,11 +361,12 @@
               <thead style="display: table-header-group;">
                 <tr>
                   <th>Docket</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Produced (m³)</th>
-                  <th>Runtime (min)</th>
-                  <th>Idle (min)</th>
+                  <th>Batching Time</th>
+                  <th>Customer</th>
+                  <th>Customer Address</th>
+                  <th>Quantity (m³)</th>
+                  <th>TM Number</th>
+                  <th>Recipe</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,19 +381,22 @@
                       <t t-esc="docket.get('docket_no')"/>
                     </td>
                     <td class="gor-text-left">
-                      <t t-esc="docket.get('date')"/>
+                      <t t-esc="docket.get('batching_time')"/>
                     </td>
                     <td class="gor-text-left">
-                      <t t-esc="docket.get('timestamp')"/>
+                      <t t-esc="docket.get('customer_name')"/>
+                    </td>
+                    <td class="gor-text-left">
+                      <t t-esc="docket.get('customer_address')"/>
                     </td>
                     <td>
-                      <t t-esc="docket.get('qty_m3', 0.0)"/>
+                      <t t-esc="docket.get('quantity_ordered', 0.0)"/>
                     </td>
-                    <td>
-                      <t t-esc="docket.get('runtime_minutes', 0.0)"/>
+                    <td class="gor-text-left">
+                      <t t-esc="docket.get('tm_number')"/>
                     </td>
-                    <td>
-                      <t t-esc="docket.get('idle_minutes', 0.0)"/>
+                    <td class="gor-text-left">
+                      <t t-esc="docket.get('recipe')"/>
                     </td>
                   </tr>
                 </t>

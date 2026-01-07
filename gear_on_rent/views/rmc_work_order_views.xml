@@ -52,7 +52,12 @@
                             type="object"
                             string="Prepare Invoice"
                             class="btn-primary"
-                            invisible="state == 'draft'"/>
+                            invisible="state == 'draft' or (not has_remaining_invoice_window)"/>
+                    <button name="action_print_month_end_report"
+                            type="object"
+                            string="Download Month-End Report"
+                            class="btn-secondary"
+                            invisible="invoice_count == 0 or state == 'draft'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,scheduled,done"/>
                 </header>
                 <sheet>
@@ -62,6 +67,22 @@
                             <field name="name" readonly="1"/>
                         </h1>
                     </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoices"
+                                type="object"
+                                class="oe_stat_button"
+                                invisible="invoice_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="invoice_count" widget="statinfo"/>
+                                </span>
+                                <span class="o_stat_text">Invoices</span>
+                            </div>
+                        </button>
+                    </div>
+                    <field name="has_active_invoice" invisible="1"/>
+                    <field name="has_remaining_invoice_window" invisible="1"/>
+                    <field name="last_billed_end" invisible="1"/>
                     <group>
                         <group string="Basic Information">
                             <field name="so_id" required="1"/>
@@ -73,8 +94,8 @@
                         <group string="Dates &amp; Window">
                             <field name="date_start"/>
                             <field name="date_end"/>
-                            <field name="x_window_start" modifiers="{'readonly': [['state', '!=', 'draft']]}"/>
-                            <field name="x_window_end" modifiers="{'readonly': [['state', '!=', 'draft']]}"/>
+                            <field name="x_window_start" readonly="state != 'draft'"/>
+                            <field name="x_window_end" readonly="state != 'draft'"/>
                             <field name="x_is_cooling_period"/>
                             <field name="x_auto_email_daily"/>
                         </group>
@@ -90,29 +111,34 @@
                             <field name="monthly_target_qty" readonly="1"/>
                             <field name="adjusted_target_qty" readonly="1"/>
                             <field name="prime_output_qty" readonly="1"/>
-                            <field name="optimized_standby_qty" readonly="1" modifiers="{'invisible': [['x_is_cooling_period', '=', True]]}"/>
+                            <field name="optimized_standby_qty" readonly="1" invisible="x_is_cooling_period"/>
                         </group>
                     </group>
                     <notebook>
                     <page string="Manufacturing Orders">
                             <field name="production_ids">
-                        <list editable="bottom">
-                            <field name="name"/>
-                            <button name="action_print_daily_report"
-                                    type="object"
-                                    icon="fa-print"
-                                    string="PDF"
-                                    class="btn-link"
-                                    context="{'download': True}"/>
-                            <field name="date_start"/>
-                            <field name="x_daily_target_qty" sum="Total"/>
-                            <field name="x_adjusted_target_qty" sum="Total"/>
-                            <field name="x_prime_output_qty" sum="Total"/>
-                            <field name="x_optimized_standby_qty" sum="Total" modifiers="{'column_invisible': [['parent.x_is_cooling_period', '=', True]]}"/>
-                            <field name="x_ngt_hours" sum="Total"/>
-                            <field name="x_loto_hours" sum="Total"/>
-                        </list>
-                    </field>
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <button name="action_open_self"
+                                            type="object"
+                                            icon="fa-external-link"
+                                            class="btn-link"
+                                            help="Open this manufacturing order"/>
+                                    <button name="action_print_daily_report"
+                                            type="object"
+                                            icon="fa-print"
+                                            string="PDF"
+                                            class="btn-link"
+                                            context="{'download': True}"/>
+                                    <field name="date_start"/>
+                                    <field name="x_daily_target_qty" sum="Total"/>
+                                    <field name="x_adjusted_target_qty" sum="Total"/>
+                                    <field name="x_prime_output_qty" sum="Total"/>
+                                    <field name="x_optimized_standby_qty" sum="Total" column_invisible="parent.x_is_cooling_period"/>
+                                    <field name="x_ngt_hours" sum="Total"/>
+                                    <field name="x_loto_hours" sum="Total"/>
+                                </list>
+                            </field>
                         </page>
                         <page string="Dockets">
                             <field name="docket_ids" readonly="1">
@@ -162,6 +188,7 @@
                             <group>
                                 <group>
                                     <field name="downtime_relief_qty" readonly="1"/>
+                                    <field name="downtime_total_hours" readonly="1"/>
                                     <field name="ngt_hours" readonly="1"/>
                                     <field name="loto_hours" readonly="1"/>
                                     <field name="waveoff_hours_applied" readonly="1"/>
@@ -169,8 +196,28 @@
                                 <group>
                                     <field name="waveoff_hours_chargeable" readonly="1" invisible="loto_hours &lt;= 48.0"/>
                                     <field name="loto_waveoff_hours" readonly="1"/>
+                                    <field name="waveoff_hours_remaining" readonly="1"/>
                                     <field name="bank_pull_limit" readonly="1"/>
                                     <field name="ngt_hourly_prorata_factor" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="ngt_employee_expense"/>
+                                    <field name="ngt_land_rent"/>
+                                    <field name="ngt_electricity_unit_rate"/>
+                                    <field name="ngt_meter_units" readonly="1"/>
+                                    <field name="ngt_electricity_expense" readonly="1"/>
+                                    <field name="ngt_total_expense" readonly="1"/>
+                                    <field name="ngt_effective_rate" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Prime &amp; Manual">
+                            <group>
+                                <group>
+                                    <field name="prime_output_qty" readonly="1"/>
+                                    <field name="manual_on_qty" readonly="1"/>
+                                    <field name="manual_after_qty" readonly="1"/>
+                                    <field name="prime_with_manual_qty" readonly="1"/>
                                 </group>
                             </group>
                         </page>

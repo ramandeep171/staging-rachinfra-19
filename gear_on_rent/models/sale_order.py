@@ -1,6 +1,7 @@
 from collections import defaultdict
 from calendar import monthrange
 from datetime import datetime, time, timedelta
+import json
 # Branding Patch Stage-5 applied for SP Nexgen Automind Pvt Ltd — Tech Paras
 
 try:  # pragma: no cover - keep optional deps optional in CI
@@ -22,6 +23,131 @@ from odoo.osv.expression import AND, OR
 
 _logger = logging.getLogger(__name__)
 # © SP Nexgen Automind Pvt Ltd · www.smarterpeak.com
+
+PRIME_LOG_SOURCE_SELECTION = [
+    ("master", "Master Template"),
+    ("cost_component", "Cost Component"),
+    ("calculator", "Calculator"),
+    ("fallback", "Field Fallback"),
+    ("not_applicable", "Not Applicable"),
+    ("excluded", "Excluded"),
+]
+
+PRIME_LOG_TRIGGER_FIELDS = {
+    "gear_cost_component_ids",
+    "mgq_monthly",
+    "x_monthly_mgq",
+    "qty_mgq",
+    "gear_expected_production_qty",
+    "gear_project_duration_months",
+    "gear_project_duration_years",
+    "gear_dead_cost_months",
+    "gear_dead_cost_amount",
+    "gear_civil_scope",
+    "x_inventory_mode",
+    "gear_design_mix_id",
+    "gear_material_area_id",
+    "gear_cement_area_id",
+    "gear_agg_10mm_area_id",
+    "gear_agg_20mm_area_id",
+    "gear_admixture_area_id",
+    "gear_transport_opt_in",
+    "gear_pumping_opt_in",
+    "gear_manpower_opt_in",
+    "gear_diesel_opt_in",
+    "gear_jcb_opt_in",
+}
+
+
+class GearPrimeRateLogOptional(models.Model):
+    _name = "gear.prime.rate.log.optional"
+    _description = "Prime Rate Optional Service Log"
+
+    log_id = fields.Many2one("gear.prime.rate.log", string="Prime Rate Log", required=True, ondelete="cascade")
+    code = fields.Char(string="Code")
+    name = fields.Char(string="Service")
+    charge_type = fields.Selection(
+        [("per_cum", "Per CUM"), ("per_month", "Per Month"), ("fixed", "Fixed")],
+        string="Charge Type",
+    )
+    rate_value = fields.Monetary(string="Rate Value", currency_field="currency_id")
+    per_cum = fields.Monetary(string="Per CUM", currency_field="currency_id")
+    currency_id = fields.Many2one("res.currency", related="log_id.currency_id", store=True, readonly=True)
+
+
+class GearPrimeRateLog(models.Model):
+    _name = "gear.prime.rate.log"
+    _description = "Prime Rate Breakdown"
+
+    name = fields.Char(required=True, default="Prime Rate Log")
+    order_id = fields.Many2one("sale.order", string="Quotation", required=True, ondelete="cascade", index=True)
+    currency_id = fields.Many2one("res.currency", related="order_id.currency_id", store=True, readonly=True)
+    calc_time = fields.Datetime(string="Computed On", default=fields.Datetime.now, required=True)
+    mgq = fields.Float(string="MGQ", digits=(16, 2))
+    production_qty = fields.Float(string="Production Qty", digits=(16, 2))
+    project_months = fields.Float(string="Project Months", digits=(16, 2))
+    running_monthly = fields.Monetary(string="Running Monthly", currency_field="currency_id")
+    running_per_cum = fields.Monetary(string="Running / CUM", currency_field="currency_id")
+    running_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Running Source")
+    depreciation_monthly = fields.Monetary(string="Depreciation Monthly", currency_field="currency_id")
+    depreciation_per_cum = fields.Monetary(string="Depreciation / CUM", currency_field="currency_id")
+    depreciation_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Depreciation Source")
+    dead_total = fields.Monetary(string="Dead Cost Total", currency_field="currency_id")
+    dead_per_cum = fields.Monetary(string="Dead Cost / CUM", currency_field="currency_id")
+    dead_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Dead Cost Source")
+    margin_per_cum = fields.Monetary(string="Margin / CUM", currency_field="currency_id")
+    material_per_cum = fields.Monetary(string="Material / CUM", currency_field="currency_id")
+    material_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Material Source")
+    inventory_mode = fields.Selection(
+        [
+            ("without_inventory", "Without Inventory"),
+            ("with_inventory", "With Inventory"),
+        ],
+        string="Inventory Mode",
+    )
+    optional_per_cum = fields.Monetary(string="Optional / CUM", currency_field="currency_id")
+    prime_rate = fields.Monetary(string="Prime Rate", currency_field="currency_id")
+    raw_prime_rate = fields.Monetary(string="Raw Prime Rate", currency_field="currency_id")
+    mgq_prime_rate = fields.Monetary(string="MGQ Prime Rate", currency_field="currency_id")
+    prime_rate_source = fields.Selection(
+        selection=[("cost_engine", "Cost Engine"), ("mgq_rate", "MGQ Rate")],
+        string="Prime Source",
+    )
+    service_type = fields.Selection(related="order_id.gear_service_type", store=True, readonly=True)
+    capacity_id = fields.Many2one(
+        "gear.plant.capacity.master", related="order_id.gear_capacity_id", store=True, readonly=True
+    )
+    final_prime_rate = fields.Monetary(string="Final Prime", currency_field="currency_id")
+    final_optimize_rate = fields.Monetary(string="Final Optimize", currency_field="currency_id")
+    final_after_mgq_rate = fields.Monetary(string="Final After MGQ", currency_field="currency_id")
+    optimize_rate = fields.Monetary(string="Optimize Rate", currency_field="currency_id")
+    after_mgq_rate = fields.Monetary(string="After MGQ Rate", currency_field="currency_id")
+    ngt_rate = fields.Monetary(string="NGT Rate", currency_field="currency_id")
+    # Running breakdown
+    running_manpower = fields.Monetary(string="Manpower (Monthly)", currency_field="currency_id")
+    running_power = fields.Monetary(string="Power (Monthly)", currency_field="currency_id")
+    running_dg = fields.Monetary(string="DG (Monthly)", currency_field="currency_id")
+    running_jcb = fields.Monetary(string="JCB (Monthly)", currency_field="currency_id")
+    running_admin = fields.Monetary(string="Admin (Monthly)", currency_field="currency_id")
+    running_interest = fields.Monetary(string="Interest (Monthly)", currency_field="currency_id")
+    running_land_investment = fields.Monetary(string="Land / Site Dev. (Monthly)", currency_field="currency_id")
+    running_total_breakdown = fields.Monetary(string="Running Total (Monthly)", currency_field="currency_id")
+    # CAPEX breakdown
+    capex_plant_machinery = fields.Monetary(string="Plant & Machinery", currency_field="currency_id")
+    capex_furniture = fields.Monetary(string="Furniture", currency_field="currency_id")
+    capex_equipment_fittings = fields.Monetary(string="Equipment & Fittings", currency_field="currency_id")
+    capex_computers_peripherals = fields.Monetary(string="Computers & Peripherals", currency_field="currency_id")
+    capex_total = fields.Monetary(string="Total CAPEX", currency_field="currency_id")
+    capex_monthly_depr = fields.Monetary(string="Monthly Depreciation (CAPEX)", currency_field="currency_id")
+    # Dead-cost breakdown
+    dead_civil_factory = fields.Monetary(string="Factory Building", currency_field="currency_id")
+    dead_civil_non_factory = fields.Monetary(string="Non-Factory Building", currency_field="currency_id")
+    optional_line_ids = fields.One2many(
+        "gear.prime.rate.log.optional",
+        "log_id",
+        string="Optional Services",
+        copy=False,
+    )
 
 
 class SaleOrder(models.Model):
@@ -55,6 +181,15 @@ class SaleOrder(models.Model):
         tracking=True,
         help="Choose whether this contract consumes real inventory or runs via the silent warehouse.",
     )
+    pricing_type = fields.Selection(
+        selection=[
+            ("individual_rate", "Individual Service Rate"),
+            ("full_package_rate", "Full Package Rate"),
+        ],
+        string="Pricing Type",
+        tracking=True,
+        help="Customer-selected batching plant pricing preference captured from the landing page.",
+    )
     x_real_warehouse_id = fields.Many2one(
         comodel_name="stock.warehouse",
         string="Real Warehouse",
@@ -70,6 +205,24 @@ class SaleOrder(models.Model):
         store=True,
         tracking=True,
         help="Variable-based monthly MGQ value used for billing calculations.",
+    )
+    qty_mgq = fields.Float(
+        string="Prime Quantity",
+        digits=(16, 2),
+        tracking=True,
+        help="Prime billing quantity anchored to MGQ for batching quotations.",
+    )
+    qty_below = fields.Float(
+        string="Optimize Quantity",
+        digits=(16, 2),
+        tracking=True,
+        help="Standby quantity billed at the optimize tier below MGQ.",
+    )
+    qty_above = fields.Float(
+        string="NGT / After MGQ Quantity",
+        digits=(16, 2),
+        tracking=True,
+        help="Excess or NGT quantity billed after MGQ.",
     )
     x_monthly_mgq = fields.Float(
         string="Monthly MGQ",
@@ -185,6 +338,11 @@ class SaleOrder(models.Model):
     gear_materials_shortage_note = fields.Text(string="Materials Shortage Notes")
     gear_manpower_note = fields.Text(string="Manpower Notes")
     gear_asset_note = fields.Text(string="Asset Notes")
+    gear_last_docket_number = fields.Integer(
+        string="Last Docket Number",
+        default=0,
+        help="Running docket counter per contract used to keep docket numbers sequential.",
+    )
     gear_service_id = fields.Many2one(
         comodel_name="gear.service.master",
         string="Service Category",
@@ -212,6 +370,12 @@ class SaleOrder(models.Model):
         string="Design Mix",
         tracking=True,
         help="Grade mix used for inventory quotations (M10–M30).",
+    )
+    gear_design_mix_ids = fields.Many2many(
+        comodel_name="gear.design.mix.master",
+        string="Design Mixes",
+        tracking=True,
+        help="All grade mixes requested for this contract.",
     )
     gear_material_area_id = fields.Many2one(
         comodel_name="gear.material.area.master",
@@ -254,6 +418,18 @@ class SaleOrder(models.Model):
     gear_manpower_opt_in = fields.Boolean(string="Manpower Required", tracking=True)
     gear_diesel_opt_in = fields.Boolean(string="Diesel Required", tracking=True)
     gear_jcb_opt_in = fields.Boolean(string="JCB Required", tracking=True)
+    gear_margin_per_cum = fields.Monetary(
+        string="Margin / CUM (Override)",
+        currency_field="currency_id",
+        tracking=True,
+        help="Set a manual per-CUM margin that the batching cost engine should use while building the rates.",
+    )
+    gear_show_cost_breakdown = fields.Boolean(
+        string="Share Cost Calculations",
+        default=False,
+        tracking=True,
+        help="Enable to show the detailed cost calculations (running cost, CAPEX, charts) on the quotation PDF.",
+    )
     gear_dead_cost_amount = fields.Monetary(
         string="Dead Cost Amount",
         currency_field="currency_id",
@@ -265,11 +441,41 @@ class SaleOrder(models.Model):
         tracking=True,
         help="Amortization window (typically 36–120 months) for turnkey plants.",
     )
+    gear_service_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Plant Service Product",
+        default=lambda self: self._gear_default_service_product_id(),
+        help="Product used for plant/mixing service lines generated from batching quotes.",
+    )
+    gear_material_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Material Supply Product",
+        default=lambda self: self._gear_default_material_product_id(),
+        help="Product used for material supply billing when inventory mode is enabled.",
+    )
+    gear_optional_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Optional Service Product",
+        default=lambda self: self._gear_default_optional_product_id(),
+        help="Fallback product for optional service surcharges if the service itself has no product.",
+    )
+    gear_dead_cost_product_id = fields.Many2one(
+        comodel_name="product.product",
+        string="Dead Cost Product",
+        default=lambda self: self._gear_default_dead_cost_product_id(),
+        help="Product used for dead cost amortization lines.",
+    )
     gear_project_duration_years = fields.Selection(
         selection=[("3", "3 Years"), ("6", "6 Years"), ("10", "10 Years")],
         string="Project Duration (Years)",
         tracking=True,
         help="High-level contract duration options for turnkey or long-term rentals.",
+    )
+    gear_cost_component_ids = fields.One2many(
+        comodel_name="gear.cost.component",
+        inverse_name="order_id",
+        string="Cost Components",
+        help="Detailed running, CAPEX, dead cost, material, and optional components for the quotation.",
     )
     gear_project_duration_months = fields.Integer(
         string="Project Duration (Months)",
@@ -285,6 +491,12 @@ class SaleOrder(models.Model):
         digits=(16, 2),
         tracking=True,
         help="Expected production volume to assess optimize (shortfall) quantities against MGQ.",
+    )
+    gear_project_quantity = fields.Float(
+        string="Project Quantity (m³)",
+        digits=(16, 2),
+        tracking=True,
+        help="Overall project quantity captured from the batching plant request (used when production expectation is not provided).",
     )
     gear_prime_rate_final = fields.Float(
         string="Prime Rate (Final)",
@@ -325,6 +537,44 @@ class SaleOrder(models.Model):
         tracking=True,
         help="Dead-cost amortization per CUM for turnkey vendor-scope engagements.",
     )
+    gear_running_cost_per_cum = fields.Monetary(
+        string="Running Cost (Per CUM)",
+        currency_field="currency_id",
+        tracking=True,
+        help="Base plant running cost per CUM derived from cost components.",
+    )
+    gear_depr_cost_per_cum = fields.Monetary(
+        string="Depreciation (Per CUM)",
+        currency_field="currency_id",
+        tracking=True,
+        help="Amortized CAPEX depreciation per CUM.",
+    )
+    gear_material_cost_per_cum = fields.Monetary(
+        string="Material Cost (Per CUM)",
+        currency_field="currency_id",
+        tracking=True,
+    )
+    gear_optional_cost_per_cum = fields.Monetary(
+        string="Optional Cost (Per CUM)",
+        currency_field="currency_id",
+        tracking=True,
+    )
+    gear_prime_rate_log_ids = fields.One2many(
+        "gear.prime.rate.log",
+        "order_id",
+        string="Prime Rate Logs",
+        copy=False,
+    )
+    gear_prime_rate_log_count = fields.Integer(
+        string="Prime Rate Logs",
+        compute="_compute_gear_prime_rate_log_count",
+        help="Number of prime rate log snapshots linked to this quotation.",
+    )
+    gear_prime_rate_log = fields.Text(
+        string="Prime Rate Log",
+        compute="_compute_prime_rate_log",
+        help="Detailed breakdown of running, depreciation, dead, material, and optional components used to derive the prime rate.",
+    )
     gear_total_per_cum_rate = fields.Monetary(
         string="Total Rate (Per CUM)",
         currency_field="currency_id",
@@ -360,6 +610,71 @@ class SaleOrder(models.Model):
         tracking=True,
     )
 
+    @api.model
+    def _gear_default_product_from_xmlid(self, xmlid):
+        record = self.env.ref(xmlid, raise_if_not_found=False)
+        if not record:
+            return False
+        if record._name == "product.product":
+            return record.id
+        variant = record.product_variant_id if hasattr(record, "product_variant_id") else False
+        return variant.id if variant else False
+
+    @api.model
+    def _gear_default_service_product_id(self):
+        return self._gear_default_product_from_xmlid("gear_on_rent.product_batching_service_prime")
+
+    @api.model
+    def _gear_default_material_product_id(self):
+        return self._gear_default_product_from_xmlid("gear_on_rent.product_material_supply")
+
+    @api.model
+    def _gear_default_optional_product_id(self):
+        return self._gear_default_product_from_xmlid("gear_on_rent.product_optional_generic")
+
+    @api.model
+    def _gear_default_dead_cost_product_id(self):
+        return self._gear_default_product_from_xmlid("gear_on_rent.product_dead_cost_amortization")
+
+    @api.model
+    def _extract_design_mix_ids_from_vals(self, vals):
+        commands = vals.get("gear_design_mix_ids")
+        if not commands:
+            return []
+
+        ids = []
+        for command in commands:
+            if not command:
+                continue
+            operation = command[0]
+            if operation == 6 and len(command) >= 3:
+                ids.extend(command[2])
+            elif operation == 4 and len(command) >= 2:
+                ids.append(command[1])
+            elif operation == 5:
+                ids = []
+            elif operation == 3 and len(command) >= 2:
+                ids = [design_id for design_id in ids if design_id != command[1]]
+        return ids
+
+    @api.model
+    def _normalize_design_mix_vals(self, vals):
+        """Keep primary design mix aligned with the multi-select field."""
+
+        vals = dict(vals)
+        design_ids = self._extract_design_mix_ids_from_vals(vals)
+        primary_id = vals.get("gear_design_mix_id")
+
+        if primary_id:
+            if not design_ids:
+                vals["gear_design_mix_ids"] = [(6, 0, [primary_id])]
+            elif primary_id not in design_ids:
+                vals["gear_design_mix_ids"] = [(6, 0, [*design_ids, primary_id])]
+        elif design_ids:
+            vals["gear_design_mix_id"] = design_ids[0]
+
+        return vals
+
     @api.depends("x_monthly_mgq")
     def _compute_mgq_monthly(self):
         for order in self:
@@ -380,11 +695,14 @@ class SaleOrder(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        orders = super().create(vals_list)
+        normalized_vals = [self._normalize_design_mix_vals(vals) for vals in vals_list]
+        orders = super().create(normalized_vals)
         orders._gear_sync_billing_category()
+        orders._gear_refresh_prime_rate_log()
         return orders
 
     def write(self, vals):
+        vals = self._normalize_design_mix_vals(vals)
         audit_fields = {
             "gear_optional_service_ids",
             "gear_transport_opt_in",
@@ -400,6 +718,7 @@ class SaleOrder(models.Model):
             "gear_dead_cost_amount",
             "gear_dead_cost_months",
             "gear_design_mix_id",
+            "gear_design_mix_ids",
         }
         should_audit = bool(set(vals).intersection(audit_fields))
 
@@ -422,11 +741,15 @@ class SaleOrder(models.Model):
                     "dead_cost": order.gear_dead_cost_amount,
                     "dead_cost_months": order.gear_dead_cost_months,
                     "design_mix": order.gear_design_mix_id,
+                    "design_mix_ids": set(order.gear_design_mix_ids.ids),
                 }
 
         if "x_inventory_mode" in vals or "x_real_warehouse_id" in vals:
             self._gear_validate_inventory_mode_change(vals.get("x_inventory_mode"))
         res = super().write(vals)
+
+        if set(vals).intersection(PRIME_LOG_TRIGGER_FIELDS):
+            self._gear_refresh_prime_rate_log()
 
         if should_audit:
             for order in self:
@@ -486,17 +809,41 @@ class SaleOrder(models.Model):
                         }
                     )
 
-                if "gear_design_mix_id" in vals and prev["design_mix"].id != order.gear_design_mix_id.id:
+                prev_design_mix_id = prev["design_mix"].id if prev["design_mix"] else False
+                current_design_mix_id = order.gear_design_mix_id.id if order.gear_design_mix_id else False
+                if "gear_design_mix_id" in vals and prev_design_mix_id != current_design_mix_id:
                     messages.append(
                         _("Grade mix changed from %s to %s") % (_name(prev["design_mix"]), _name(order.gear_design_mix_id))
                     )
 
+                if "gear_design_mix_ids" in vals:
+                    current_design_mix_ids = set(order.gear_design_mix_ids.ids)
+                    removed = prev["design_mix_ids"] - current_design_mix_ids
+                    added = current_design_mix_ids - prev["design_mix_ids"]
+
+                    if added:
+                        names = self.env["gear.design.mix.master"].browse(added).mapped("display_name")
+                        messages.append(_("Design mixes added: %s") % ", ".join(names))
+                    if removed:
+                        names = self.env["gear.design.mix.master"].browse(removed).mapped("display_name")
+                        messages.append(_("Design mixes removed: %s") % ", ".join(names))
+
                 if messages:
                     order.message_post(body="<br/>".join(messages), subtype_xmlid="mail.mt_note")
 
-        if "order_line" in vals:
-            self._gear_sync_billing_category()
-        return res
+    @api.onchange("gear_design_mix_ids")
+    def _onchange_gear_design_mix_ids(self):
+        for order in self:
+            if order.gear_design_mix_ids and (
+                not order.gear_design_mix_id or order.gear_design_mix_id not in order.gear_design_mix_ids
+            ):
+                order.gear_design_mix_id = order.gear_design_mix_ids[0]
+
+    @api.onchange("gear_design_mix_id")
+    def _onchange_gear_design_mix_id(self):
+        for order in self:
+            if order.gear_design_mix_id and order.gear_design_mix_id not in order.gear_design_mix_ids:
+                order.gear_design_mix_ids |= order.gear_design_mix_id
 
     def _gear_validate_inventory_mode_change(self, new_mode=None):
         for order in self:
@@ -871,6 +1218,17 @@ class SaleOrder(models.Model):
             elif order.x_billing_category == "rmc":
                 order.x_billing_category = "rental"
 
+    @api.onchange("gear_mgq_rate_id")
+    def _onchange_gear_mgq_rate_id(self):
+        for order in self:
+            tier = order.gear_mgq_rate_id
+            if not tier:
+                continue
+            order.prime_rate = tier.prime_rate
+            order.optimize_rate = tier.optimize_rate
+            order.excess_rate = tier.after_mgq_rate
+            order.ngt_rate = tier.ngt_rate
+
     def _gear_sync_production_defaults(self):
         for order in self.filtered(lambda o: o.x_billing_category == "rmc"):
             production_lines = order.order_line.filtered(
@@ -888,8 +1246,17 @@ class SaleOrder(models.Model):
                 if workcenters:
                     order.x_workcenter_id = workcenters[0]
 
-            start_dates = [fields.Date.to_date(dt) for dt in production_lines.mapped("start_date") if dt]
-            end_dates = [fields.Date.to_date(dt) for dt in production_lines.mapped("return_date") if dt]
+            def _local_date(dt):
+                if not dt:
+                    return False
+                try:
+                    tz_dt = fields.Datetime.context_timestamp(order, dt)
+                except Exception:
+                    tz_dt = dt
+                return tz_dt.date() if hasattr(tz_dt, "date") else fields.Date.to_date(dt)
+
+            start_dates = [_local_date(dt) for dt in production_lines.mapped("start_date") if dt]
+            end_dates = [_local_date(dt) for dt in production_lines.mapped("return_date") if dt]
 
             if start_dates:
                 min_start = min(start_dates)
@@ -1063,6 +1430,196 @@ class SaleOrder(models.Model):
         delta = window_end - window_start
         return round(delta.total_seconds() / 3600.0, 2)
 
+    def _gear_prime_rate_payload_map(self):
+        calculator = self.env["gear.batching.quotation.calculator"].sudo()
+        payload_map = {}
+        for order in self:
+            try:
+                rates = calculator.compute_batching_rates(order)
+            except Exception:
+                _logger.exception("Failed to compute prime rate log for %s", order.id)
+                payload_map[order.id] = None
+                continue
+            payload_map[order.id] = rates.get("prime_rate_log")
+        return payload_map
+
+    def _gear_apply_prime_rate_payload(self, payload):
+        self.ensure_one()
+        if not payload:
+            self.gear_prime_rate_log = False
+            return
+        try:
+            self.gear_prime_rate_log = json.dumps(payload, indent=2)
+        except Exception:
+            self.gear_prime_rate_log = str(payload)
+        self._sync_prime_rate_log_payload(payload)
+
+    def _gear_apply_prime_rate_payload_map(self, payload_map):
+        for order in self:
+            payload = payload_map.get(order.id)
+            if payload:
+                order._gear_apply_prime_rate_payload(payload)
+            else:
+                order.gear_prime_rate_log = False
+
+    def _gear_refresh_prime_rate_log(self):
+        payload_map = self._gear_prime_rate_payload_map()
+        self._gear_apply_prime_rate_payload_map(payload_map)
+
+    @api.depends(
+        "gear_cost_component_ids.amount",
+        "gear_cost_component_ids.component_type",
+        "gear_cost_component_ids.quantity",
+        "gear_cost_component_ids.grade",
+        "gear_cost_component_ids.area",
+        "mgq_monthly",
+        "x_monthly_mgq",
+        "qty_mgq",
+        "gear_expected_production_qty",
+        "gear_project_quantity",
+        "gear_margin_per_cum",
+        "gear_project_duration_months",
+        "gear_project_duration_years",
+        "gear_dead_cost_months",
+        "gear_civil_scope",
+        "x_inventory_mode",
+        "gear_design_mix_id",
+        "gear_material_area_id",
+        "gear_cement_area_id",
+        "gear_agg_10mm_area_id",
+        "gear_agg_20mm_area_id",
+        "gear_admixture_area_id",
+        "gear_transport_opt_in",
+        "gear_pumping_opt_in",
+        "gear_manpower_opt_in",
+        "gear_diesel_opt_in",
+        "gear_jcb_opt_in",
+    )
+    def _compute_prime_rate_log(self):
+        payload_map = self._gear_prime_rate_payload_map()
+        self._gear_apply_prime_rate_payload_map(payload_map)
+
+    def _compute_gear_prime_rate_log_count(self):
+        counts = {}
+        if self.ids:
+            data = (
+                self.env["gear.prime.rate.log"].sudo().read_group(
+                    [("order_id", "in", self.ids)], ["order_id"], ["order_id"]
+                )
+            )
+            counts = {entry["order_id"][0]: entry["order_id_count"] for entry in data}
+        for order in self:
+            order.gear_prime_rate_log_count = counts.get(order.id, 0)
+
+    def _sync_prime_rate_log_payload(self, payload):
+        self.ensure_one()
+        if not payload:
+            return
+
+        components = payload.get("components", {})
+        running = components.get("running", {}) or {}
+        depreciation = components.get("depreciation", {}) or {}
+        dead_cost = components.get("dead_cost", {}) or {}
+        margin = components.get("margin", {}) or {}
+        material = components.get("material", {}) or {}
+        optional = components.get("optional", {}) or {}
+        optional_services = optional.get("services") or []
+        source_map = payload.get("source_map") or {}
+        running_breakdown = source_map.get("running", {})
+        capex_breakdown = source_map.get("capex", {})
+        dead_breakdown = source_map.get("dead_cost", {})
+
+        optional_commands = []
+        for service in optional_services:
+            optional_commands.append(
+                (
+                    0,
+                    0,
+                    {
+                        "code": service.get("code"),
+                        "name": service.get("name"),
+                        "charge_type": service.get("charge_type"),
+                        "rate_value": service.get("rate_value", 0.0),
+                        "per_cum": service.get("per_cum", 0.0),
+                    },
+                )
+            )
+
+        log_vals = {
+            "name": f"{self.display_name or self.name} Prime Rate Log",
+            "order_id": self.id,
+            "calc_time": fields.Datetime.now(),
+            "mgq": payload.get("mgq", 0.0),
+            "production_qty": payload.get("production_qty", 0.0),
+            "project_months": payload.get("project_months", 0.0),
+            "mgq_prime_rate": payload.get("mgq_prime_rate", 0.0),
+            "raw_prime_rate": payload.get("raw_prime_rate", 0.0),
+            "prime_rate_source": payload.get("prime_rate_source"),
+            "running_monthly": running.get("monthly_total", 0.0),
+            "running_per_cum": running.get("per_cum", 0.0),
+            "running_source": running.get("source"),
+            "depreciation_monthly": depreciation.get("monthly_total", 0.0),
+            "depreciation_per_cum": depreciation.get("per_cum", 0.0),
+            "depreciation_source": depreciation.get("source"),
+            "dead_total": dead_cost.get("total", 0.0),
+            "dead_per_cum": dead_cost.get("per_cum", 0.0),
+            "dead_source": dead_cost.get("source"),
+            "margin_per_cum": margin.get("per_cum", 0.0),
+            "material_per_cum": material.get("per_cum", 0.0),
+            "material_source": material.get("source"),
+            "inventory_mode": material.get("inventory_mode") or self.x_inventory_mode,
+            "optional_per_cum": optional.get("per_cum", 0.0),
+            "prime_rate": payload.get("prime_rate", 0.0),
+            "final_prime_rate": payload.get("final_prime_rate", 0.0),
+            "final_optimize_rate": payload.get("final_optimize_rate", 0.0),
+            "final_after_mgq_rate": payload.get("final_after_mgq_rate", 0.0),
+            "optimize_rate": payload.get("optimize_rate", 0.0),
+            "after_mgq_rate": payload.get("after_mgq_rate", 0.0),
+            "ngt_rate": payload.get("ngt_rate", 0.0),
+            "running_manpower": running_breakdown.get("manpower", 0.0),
+            "running_power": running_breakdown.get("power", 0.0),
+            "running_dg": running_breakdown.get("dg", 0.0),
+            "running_jcb": running_breakdown.get("jcb", 0.0),
+            "running_admin": running_breakdown.get("admin", 0.0),
+            "running_interest": running_breakdown.get("interest", 0.0),
+            "running_land_investment": running_breakdown.get("land_investment", 0.0),
+            "running_total_breakdown": running_breakdown.get("running_total", running.get("monthly_total", 0.0)),
+            "capex_plant_machinery": capex_breakdown.get("plant_machinery", 0.0),
+            "capex_furniture": capex_breakdown.get("furniture", 0.0),
+            "capex_equipment_fittings": capex_breakdown.get("equipment_fittings", 0.0),
+            "capex_computers_peripherals": capex_breakdown.get("computers_peripherals", 0.0),
+            "capex_total": capex_breakdown.get("total_capex", 0.0),
+            "capex_monthly_depr": capex_breakdown.get("monthly_depr", depreciation.get("monthly_total", 0.0)),
+            "dead_civil_factory": dead_breakdown.get("civil_factory_building", 0.0),
+            "dead_civil_non_factory": dead_breakdown.get("civil_non_factory_building", 0.0),
+        }
+
+        Log = self.env["gear.prime.rate.log"].sudo()
+        logs = self.gear_prime_rate_log_ids.sudo()
+        existing_log = logs[:1]
+        extra_logs = logs[1:]
+        if extra_logs:
+            extra_logs.unlink()
+
+        if existing_log:
+            log_vals["optional_line_ids"] = [(5, 0, 0), *optional_commands]
+            existing_log.write(log_vals)
+        else:
+            log_vals["optional_line_ids"] = optional_commands
+            Log.create(log_vals)
+
+    def action_view_prime_rate_log(self):
+        self.ensure_one()
+        action = self.env.ref("gear_on_rent.action_gear_prime_rate_log", raise_if_not_found=False)
+        if not action:
+            return False
+        result = action.read()[0]
+        result["domain"] = [("order_id", "=", self.id)]
+        context = dict(self.env.context)
+        context.setdefault("default_order_id", self.id)
+        result["context"] = context
+        return result
+
     # ------------------------------------------------------------------
     # Batching-plant quotation acceptance → SO auto-creation
     # ------------------------------------------------------------------
@@ -1142,6 +1699,9 @@ class SaleOrder(models.Model):
             "gear_civil_scope": self.gear_civil_scope,
             "mgq_monthly": self.mgq_monthly,
             "x_monthly_mgq": self.x_monthly_mgq,
+            "qty_mgq": self.qty_mgq,
+            "qty_below": self.qty_below,
+            "qty_above": self.qty_above,
             "prime_rate": self.prime_rate,
             "optimize_rate": self.optimize_rate,
             "excess_rate": self.excess_rate,
@@ -1149,6 +1709,11 @@ class SaleOrder(models.Model):
             "gear_dead_cost_amount": self.gear_dead_cost_amount,
             "gear_dead_cost_months": self.gear_dead_cost_months,
             "x_inventory_mode": self.x_inventory_mode,
+            "x_real_warehouse_id": self.x_real_warehouse_id.id,
+            "gear_service_product_id": self.gear_service_product_id.id,
+            "gear_material_product_id": self.gear_material_product_id.id,
+            "gear_optional_product_id": self.gear_optional_product_id.id,
+            "gear_dead_cost_product_id": self.gear_dead_cost_product_id.id,
             "gear_optional_service_ids": [(6, 0, self.gear_optional_service_ids.ids)],
             "gear_transport_opt_in": self.gear_transport_opt_in,
             "gear_pumping_opt_in": self.gear_pumping_opt_in,
@@ -1193,6 +1758,77 @@ class SaleOrder(models.Model):
         fallback = self.env.ref("product.product_product_1", raise_if_not_found=False)
         return fallback
 
+    def _gear_resolve_mapping_product(self, kind=None, service=None):
+        """Resolve a product for batching SO mapping without introducing new fields."""
+
+        self.ensure_one()
+
+        mapping_fields = {
+            "plant": ["gear_service_product_id", "service_product_id"],
+            "material": ["gear_material_product_id", "material_product_id", "x_material_product_id"],
+            "optional": ["gear_optional_product_id", "optional_product_id"],
+            "dead": ["gear_dead_cost_product_id", "dead_cost_product_id"],
+        }
+
+        if kind == "optional" and service and hasattr(service, "product_id"):
+            product = service.product_id
+            if product:
+                return product
+
+        for field_name in mapping_fields.get(kind, []):
+            product = getattr(self, field_name, False)
+            if product:
+                try:
+                    return product if hasattr(product, "id") else self.env["product.product"].browse(product)
+                except Exception:
+                    continue
+
+        return self._gear_resolve_line_product()
+
+    def _gear_resolve_tier_product(self, billing_mode):
+        """Return a deterministic product variant for the requested billing tier."""
+
+        self.ensure_one()
+
+        xmlid_map = {
+            "prime": "gear_on_rent.product_batching_service_prime",
+            "optimize": "gear_on_rent.product_batching_service_optimize",
+            "ngt": "gear_on_rent.product_batching_service_ngt",
+            "after_mgq": "gear_on_rent.product_batching_service_after_mgq",
+        }
+        xmlid = xmlid_map.get(billing_mode)
+        if xmlid:
+            product = self.env.ref(xmlid, raise_if_not_found=False)
+            if product:
+                return product if product._name == "product.product" else product.product_variant_id
+
+        template = self.env.ref("gear_on_rent.product_batching_service", raise_if_not_found=False)
+        attr_map = {
+            "prime": "gear_on_rent.product_attr_billing_prime",
+            "optimize": "gear_on_rent.product_attr_billing_optimize",
+            "ngt": "gear_on_rent.product_attr_billing_ngt",
+        }
+        attr_xmlid = attr_map.get(billing_mode)
+        attr_value = self.env.ref(attr_xmlid, raise_if_not_found=False) if attr_xmlid else False
+        if template and attr_value:
+            variants = template.product_variant_ids.filtered(
+                lambda p: attr_value
+                in p.product_template_attribute_value_ids.mapped("product_attribute_value_id")
+            )
+            if variants:
+                return variants[:1]
+
+        return self._gear_resolve_mapping_product("plant")
+
+    def _gear_get_billing_quantities(self):
+        """Return a tuple of (primary_qty, mgq_reference_qty)."""
+
+        mgq_qty = self.mgq_monthly or self.x_monthly_mgq or 0.0
+        production_qty = self.gear_expected_production_qty or 0.0
+        primary_qty = production_qty or mgq_qty or 1.0
+        reference_qty = mgq_qty or primary_qty
+        return primary_qty, reference_qty
+
     def _gear_build_inventory_line_note(self, final_rates):
         parts = []
         if self.gear_design_mix_id:
@@ -1223,45 +1859,150 @@ class SaleOrder(models.Model):
 
     def _gear_prepare_batching_so_lines(self, final_rates):
         self.ensure_one()
-        product = self._gear_resolve_line_product()
         line_commands = []
 
-        if self.x_inventory_mode == "with_inventory":
-            name = "Concrete Supply"
-            if self.gear_design_mix_id:
-                name = f"Concrete Supply — Grade {self.gear_design_mix_id.grade.upper()}"
-            note = self._gear_build_inventory_line_note(final_rates)
+        qty, mgq_qty = self._gear_get_billing_quantities()
+        breakdown = (final_rates or {}).get("full_rate_breakdown", {})
+        optional_services = breakdown.get("optional_services", [])
+
+        def _append_line(product, quantity, price, name):
             line_commands.append(
                 (
                     0,
                     0,
                     {
                         "product_id": product.id if product else False,
-                        "product_uom_qty": 1.0,
-                        "price_unit": final_rates.get("total_per_cum", 0.0),
-                        "name": note or name,
+                        "product_uom_qty": quantity,
+                        "price_unit": price or 0.0,
+                        "name": name,
                     },
                 )
             )
-        else:
-            tiers = [
-                ("Prime Output Rate — MGQ Billing", final_rates.get("final_prime_rate", 0.0)),
-                ("Optimize Shortfall Rate — MGQ Billing", final_rates.get("final_optimize_rate", 0.0)),
-                ("After-MGQ Excess Rate — MGQ Billing", final_rates.get("final_after_mgq_rate", 0.0)),
+
+        if self.pricing_type == "full_package_rate":
+            breakdown_mgq = breakdown.get("mgq", 0.0)
+            production_qty = breakdown.get("production_qty") or self.gear_expected_production_qty or 0.0
+
+            prime_qty = self.qty_mgq or self.mgq_monthly or self.x_monthly_mgq or breakdown_mgq or 0.0
+            optimize_qty = self.qty_below or 0.0
+            ngt_qty = breakdown.get("ngt_qty", 0.0)
+            after_mgq_qty = self.qty_above or 0.0
+
+            if not optimize_qty and prime_qty and production_qty and production_qty < prime_qty:
+                optimize_qty = prime_qty - production_qty
+            if not after_mgq_qty and prime_qty and production_qty and production_qty > prime_qty:
+                after_mgq_qty = production_qty - prime_qty
+
+            prime_qty = prime_qty or production_qty or mgq_qty or qty
+
+            tier_config = [
+                (
+                    "prime",
+                    self._gear_resolve_tier_product("prime"),
+                    final_rates.get("final_prime_rate")
+                    or self.prime_rate
+                    or final_rates.get("prime_rate", 0.0),
+                    prime_qty,
+                    "Prime Output Production",
+                ),
+                (
+                    "optimize",
+                    self._gear_resolve_tier_product("optimize"),
+                    final_rates.get("final_optimize_rate")
+                    or self.optimize_rate
+                    or final_rates.get("optimize_rate", 0.0),
+                    optimize_qty,
+                    "Optimized Standby Operations",
+                ),
+                (
+                    "ngt",
+                    self._gear_resolve_tier_product("ngt"),
+                    final_rates.get("final_ngt_rate")
+                    or final_rates.get("final_after_mgq_rate")
+                    or self.ngt_rate
+                    or final_rates.get("after_mgq_rate", 0.0),
+                    ngt_qty,
+                    "No-Generation Time (NGT) Period",
+                ),
+                (
+                    "after_mgq",
+                    self._gear_resolve_tier_product("after_mgq"),
+                    final_rates.get("final_after_mgq_rate")
+                    or self.ngt_rate
+                    or final_rates.get("after_mgq_rate", 0.0),
+                    after_mgq_qty,
+                    "After-MGQ Quantity",
+                ),
             ]
-            for name, price in tiers:
-                line_commands.append(
-                    (
-                        0,
-                        0,
-                        {
-                            "product_id": product.id if product else False,
-                            "product_uom_qty": 1.0,
-                            "price_unit": price or 0.0,
-                            "name": name,
-                        },
-                    )
-                )
+
+            for _, product, rate, quantity, label in tier_config:
+                if not rate:
+                    continue
+                _append_line(product, quantity or 0.0, rate, product.display_name if product else label)
+
+            return line_commands
+
+        # Inventory-mode mapping: material + plant + optional + dead cost
+        if self.x_inventory_mode == "with_inventory":
+            material_product = self._gear_resolve_mapping_product("material")
+            material_rate = final_rates.get("material_cost", 0.0)
+            material_name = "Material Supply"
+            if self.gear_design_mix_id:
+                material_name = f"Material Supply — Grade {self.gear_design_mix_id.grade.upper()}"
+            _append_line(material_product, mgq_qty or qty, material_rate, material_name)
+
+            plant_product = self._gear_resolve_mapping_product("plant")
+            plant_rate = final_rates.get("base_plant_rate", 0.0)
+            plant_name = "Plant / Mixing Service"
+            if self.gear_service_type == "turnkey":
+                plant_name = "Turnkey Plant / Mixing Service"
+            _append_line(plant_product, qty, plant_rate, plant_name)
+        else:
+            breakdown_mgq = breakdown.get("mgq", 0.0)
+            production_qty = breakdown.get("production_qty") or self.gear_expected_production_qty or 0.0
+
+            prime_qty = self.qty_mgq or self.mgq_monthly or self.x_monthly_mgq or breakdown_mgq or 0.0
+            optimize_qty = self.qty_below or 0.0
+            ngt_qty = self.qty_above or 0.0
+
+            if not optimize_qty and prime_qty and production_qty and production_qty < prime_qty:
+                optimize_qty = prime_qty - production_qty
+            if not ngt_qty and prime_qty and production_qty and production_qty > prime_qty:
+                ngt_qty = production_qty - prime_qty
+
+            prime_qty = prime_qty or production_qty or mgq_qty or qty
+
+            tier_rates = {
+                "prime": final_rates.get("prime_rate", 0.0) or self.prime_rate,
+                "optimize": final_rates.get("optimize_rate", 0.0) or self.optimize_rate,
+                "ngt": final_rates.get("after_mgq_rate", 0.0) or self.ngt_rate,
+            }
+            tier_quantities = {"prime": prime_qty, "optimize": optimize_qty, "ngt": ngt_qty}
+            tier_labels = {
+                "prime": "Prime Output Production",
+                "optimize": "Optimized Standby Operations",
+                "ngt": "No-Generation Time (NGT) Period",
+            }
+
+            for mode in ["prime", "optimize", "ngt"]:
+                price = tier_rates.get(mode) or 0.0
+                quantity = tier_quantities.get(mode) or 0.0
+                if price <= 0:
+                    continue
+                product = self._gear_resolve_tier_product(mode)
+                label = product.display_name if product else tier_labels.get(mode) or "Plant / Mixing Service"
+                _append_line(product, quantity, price, label)
+
+        # Optional services (one line per enabled service)
+        for entry in optional_services:
+            per_cum = entry.get("per_cum")
+            if per_cum is None:
+                continue
+            service = self._gear_optional_service_rate(entry.get("code"))
+            optional_product = self._gear_resolve_mapping_product("optional", service=service)
+            optional_name = entry.get("name") or (service.display_name if service else "Optional Service")
+            _append_line(optional_product, mgq_qty or qty, per_cum, optional_name)
+
         return line_commands
 
     def action_accept_and_create_so(self):
@@ -1279,6 +2020,10 @@ class SaleOrder(models.Model):
             "gear_quote_state": "accepted",
             "gear_optional_services_cost": final_rates.get("optional_cost", 0.0),
             "gear_dead_cost_per_cum": final_rates.get("dead_cost", 0.0),
+            "gear_running_cost_per_cum": final_rates.get("running_per_cum", 0.0),
+            "gear_depr_cost_per_cum": final_rates.get("depr_per_cum", 0.0),
+            "gear_material_cost_per_cum": final_rates.get("material_per_cum", 0.0),
+            "gear_optional_cost_per_cum": final_rates.get("optional_per_cum", final_rates.get("optional_cost", 0.0)),
             "x_billing_category": self.x_billing_category or "plant",
         }
         write_vals.update(optional_rates)
@@ -1329,6 +2074,13 @@ class SaleOrder(models.Model):
                 return template
         return super()._find_mail_template()
 
+    def _create_invoices(self, grouped=False, final=False, date=None):
+        """Allow plant-mode contracts to invoice ordered quantities without deliveries."""
+        plant_orders = self.filtered(lambda order: order.x_billing_category == "plant" and order.state in ("sale", "done"))
+        if plant_orders:
+            plant_orders._force_lines_to_invoice_policy_order()
+        return super()._create_invoices(grouped=grouped, final=final, date=date)
+
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
@@ -1354,3 +2106,35 @@ class SaleOrderLine(models.Model):
         orders._gear_sync_billing_category()
         orders._gear_sync_production_defaults()
         return res
+
+    def _prepare_invoice_line(self, **optional_values):
+        """Copy batching SO economic truth to invoices without recomputation.
+
+        For batching-plant contracts we want invoice lines to mirror the SO
+        snapshot (products, quantities, unit prices, taxes, and analytics)
+        exactly instead of relying on any downstream recalculation. We still
+        call super() to keep Odoo defaults, then enforce the snapshot values
+        when the originating SO is a batching acceptance.
+        """
+
+        vals = super()._prepare_invoice_line(**optional_values)
+
+        order = self.order_id
+        if order and order.gear_quote_source_id and order.x_billing_category == "plant":
+            vals.update(
+                {
+                    "name": self.name,
+                    "price_unit": self.price_unit,
+                    "tax_ids": [(6, 0, self.tax_ids.ids)],
+                }
+            )
+
+            # Preserve analytic distribution/tag snapshot if present on the SO line
+            if self.analytic_distribution:
+                vals["analytic_distribution"] = self.analytic_distribution
+            else:
+                analytic_tags = getattr(self, "analytic_tag_ids", False)
+                if analytic_tags:
+                    vals["analytic_tag_ids"] = [(6, 0, analytic_tags.ids)]
+
+        return vals

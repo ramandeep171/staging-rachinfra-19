@@ -176,7 +176,7 @@
               </div>
               <div class="gor-two-col__col">
                 <h4 class="gor-section-title">Diesel Overrun</h4>
-                <table class="gor-metric-table">
+                <table class="gor-metric-table" t-if="payload.get('show_diesel')">
                   <tbody>
                     <tr>
                       <th>Excess Diesel (L)</th>
@@ -193,6 +193,7 @@
                     </tr>
                   </tbody>
                 </table>
+                <div t-if="not payload.get('show_diesel')" style="font-size:11px;color:#666;">No diesel overruns recorded this period.</div>
               </div>
             </div>
 
@@ -223,7 +224,7 @@
             <div class="gor-two-col">
               <div class="gor-two-col__col">
                 <h5>Cooling Windows</h5>
-                <table class="gor-metric-table gor-inline-table">
+                <table class="gor-metric-table gor-inline-table" t-if="payload.get('show_cooling')">
                   <tbody>
                     <tr>
                       <th>Prorated MGQ</th>
@@ -245,6 +246,7 @@
                     </tr>
                   </tbody>
                 </table>
+                <div t-if="not payload.get('show_cooling')" style="font-size:11px;color:#666;">No cooling window in this period.</div>
               </div>
               <div class="gor-two-col__col">
                 <h5>Normal Windows</h5>
@@ -279,27 +281,29 @@
               </div>
             </div>
 
-            <h4 class="mt-4">Wastage Summary</h4>
-            <table class="gor-metric-table gor-inline-table">
-              <tbody>
-                <tr>
-                  <th>Prime Output (m³)</th>
-                  <td><t t-esc="payload.get('prime_output_qty', 0.0)"/></td>
-                </tr>
-                <tr>
-                  <th>Allowed Wastage (m³)</th>
-                  <td><t t-esc="payload.get('allowed_wastage_qty', 0.0)"/></td>
-                </tr>
-                <tr>
-                  <th>Actual Scrap (m³)</th>
-                  <td><t t-esc="payload.get('actual_scrap_qty', 0.0)"/></td>
-                </tr>
-                <tr>
-                  <th>Over Wastage / Deduction (m³)</th>
-                  <td><t t-esc="payload.get('over_wastage_qty', 0.0)"/></td>
-                </tr>
-              </tbody>
-            </table>
+            <t t-if="payload.get('show_wastage')">
+              <h4 class="mt-4">Wastage Summary</h4>
+              <table class="gor-metric-table gor-inline-table">
+                <tbody>
+                  <tr>
+                    <th>Prime Output (m³)</th>
+                    <td><t t-esc="payload.get('prime_output_qty', 0.0)"/></td>
+                  </tr>
+                  <tr>
+                    <th>Allowed Wastage (m³)</th>
+                    <td><t t-esc="payload.get('allowed_wastage_qty', 0.0)"/></td>
+                  </tr>
+                  <tr>
+                    <th>Actual Scrap (m³)</th>
+                    <td><t t-esc="payload.get('actual_scrap_qty', 0.0)"/></td>
+                  </tr>
+                  <tr>
+                    <th>Over Wastage / Deduction (m³)</th>
+                    <td><t t-esc="payload.get('over_wastage_qty', 0.0)"/></td>
+                  </tr>
+                </tbody>
+              </table>
+            </t>
 
             <h4 class="mt-4">Manufacturing Orders</h4>
             <table class="gor-full-table">
@@ -371,6 +375,178 @@
                 </t>
               </tbody>
             </table>
+            <t t-if="payload.get('loto_requests')">
+              <h5 style="margin-top:10px;">LOTO Approvals (Log)</h5>
+              <table class="gor-full-table">
+                <thead style="display: table-header-group;">
+                  <tr>
+                    <th>Reference</th>
+                    <th>Period</th>
+                    <th>Total Hours</th>
+                    <th>Wave-Off Applied</th>
+                    <th>Chargeable</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <t t-foreach="payload.get('loto_requests', [])" t-as="loto">
+                    <tr>
+                      <td class="gor-text-left"><t t-esc="loto.get('name')"/></td>
+                      <td class="gor-text-left">
+                        <div><t t-esc="loto.get('period_start')"/></div>
+                        <div><t t-esc="loto.get('period_end')"/></div>
+                      </td>
+                      <td><t t-esc="loto.get('hours_total', 0.0)"/></td>
+                      <td><t t-esc="loto.get('hours_waveoff', 0.0)"/></td>
+                      <td><t t-esc="loto.get('hours_chargeable', 0.0)"/></td>
+                      <td class="gor-text-left"><t t-esc="loto.get('reason')"/></td>
+                    </tr>
+                  </t>
+                </tbody>
+              </table>
+            </t>
+            <t t-if="payload.get('ngt_requests')">
+              <h4 class="mt-4">NGT Requests (Approved)</h4>
+              <table class="gor-full-table">
+                <thead style="display: table-header-group;">
+                  <tr>
+                    <th>Reference</th>
+                    <th>Period</th>
+                    <th>Hours</th>
+                    <th>Rate (m³/hr)</th>
+                    <th>Relief (m³)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <t t-foreach="payload.get('ngt_requests', [])" t-as="request">
+                    <tr>
+                      <td class="gor-text-left">
+                        <t t-esc="request.get('name')"/>
+                      </td>
+                      <td class="gor-text-left">
+                        <div><t t-esc="request.get('period_start')"/></div>
+                        <div><t t-esc="request.get('period_end')"/></div>
+                      </td>
+                      <td>
+                        <t t-esc="request.get('hours', 0.0)"/>
+                      </td>
+                      <td>
+                        <t t-esc="request.get('hour_rate', 0.0)"/>
+                      </td>
+                      <td>
+                        <t t-esc="request.get('qty', 0.0)"/>
+                      </td>
+                    </tr>
+                  </t>
+                </tbody>
+              </table>
+              <div style="page-break-before:always;"/>
+              <t t-foreach="payload.get('ngt_requests', [])" t-as="request">
+                <div style="margin-top:12px;border:1px solid #0b5394;border-radius:8px;padding:12px;">
+                  <h4 style="margin:0 0 6px 0;color:#0b5394;">NGT Request Annexure</h4>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px 20px;font-size:11px;margin-bottom:6px;">
+                    <div><strong>Reference:</strong> <t t-esc="request.get('name')"/></div>
+                    <div><strong>Contract / SO:</strong> <t t-esc="request.get('contract_name')"/></div>
+                    <div><strong>Status:</strong> <t t-esc="request.get('status')"/></div>
+                    <div><strong>MGQ (Monthly):</strong> <t t-esc="request.get('mgq_monthly', 0.0)"/></div>
+                  </div>
+                  <table class="gor-full-table" style="margin-top:4px;font-size:11px;">
+                    <thead style="display: table-header-group;">
+                      <tr>
+                        <th>Start</th>
+                        <th>Start Meter</th>
+                        <th>End</th>
+                        <th>End Meter</th>
+                        <th>Total Hours</th>
+                        <th>Metered Units</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="gor-text-left"><t t-esc="request.get('period_start')"/></td>
+                        <td><t t-esc="request.get('meter_start', 0.0)"/></td>
+                        <td class="gor-text-left"><t t-esc="request.get('period_end')"/></td>
+                        <td><t t-esc="request.get('meter_end', 0.0)"/></td>
+                        <td><t t-esc="request.get('hours', 0.0)"/></td>
+                        <td><t t-esc="request.get('meter_units', 0.0)"/></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <table class="gor-full-table" style="margin-top:8px;font-size:11px;">
+                    <thead style="display: table-header-group;">
+                      <tr>
+                        <th>Label</th>
+                        <th class="gor-text-right">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="gor-text-left">Total Hours (NGT)</td>
+                        <td><t t-esc="request.get('hours', 0.0)"/></td>
+                      </tr>
+                      <tr>
+                        <td class="gor-text-left">Per Hour Rate (m³/hr)</td>
+                        <td><t t-esc="request.get('hour_rate', 0.0)"/></td>
+                      </tr>
+                      <tr>
+                        <th class="gor-text-left">NGT Quantity (m³)</th>
+                        <th><t t-esc="request.get('qty', 0.0)"/></th>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div style="font-size:10px;margin:4px 0 6px 0;">
+                    NGT Calculation = NGT Hours × Per Hour Rate = <t t-esc="request.get('hours', 0.0)"/> × <t t-esc="request.get('hour_rate', 0.0)"/> = <t t-esc="request.get('qty', 0.0)"/> m³
+                  </div>
+                  <t t-if="request.get('show_expenses')">
+                    <table class="gor-full-table" style="margin-top:4px;font-size:11px;">
+                      <thead style="display: table-header-group;">
+                        <tr>
+                          <th class="gor-text-left">Sr.</th>
+                          <th class="gor-text-left">Expense Category</th>
+                          <th class="gor-text-left">Details</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>1</td>
+                          <td class="gor-text-left">Employee Expense</td>
+                          <td class="gor-text-left">Monthly employee cost</td>
+                          <td><t t-esc="request.get('currency_symbol')"/> <t t-esc="request.get('employee_expense', 0.0)"/></td>
+                        </tr>
+                        <tr>
+                          <td>2</td>
+                          <td class="gor-text-left">Land Rent</td>
+                          <td class="gor-text-left">Monthly land rent</td>
+                          <td><t t-esc="request.get('currency_symbol')"/> <t t-esc="request.get('land_rent', 0.0)"/></td>
+                        </tr>
+                        <tr>
+                          <td>3</td>
+                          <td class="gor-text-left">Electricity Expense</td>
+                          <td class="gor-text-left">
+                            <div>Meter: <t t-esc="request.get('meter_start', 0.0)"/> -> <t t-esc="request.get('meter_end', 0.0)"/> (<t t-esc="request.get('meter_units', 0.0)"/> units)</div>
+                            <div>Unit rate: <t t-esc="request.get('currency_symbol')"/> <t t-esc="request.get('electricity_rate', 0.0)"/> per unit</div>
+                          </td>
+                          <td><t t-esc="request.get('currency_symbol')"/> <t t-esc="request.get('electricity_expense', 0.0)"/></td>
+                        </tr>
+                        <tr>
+                          <th colspan="3" class="gor-text-left">Total Monthly Expense</th>
+                          <th><t t-esc="request.get('currency_symbol')"/> <t t-esc="request.get('total_expense', 0.0)"/></th>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div style="font-size:10px;margin-top:6px;">
+                      <strong>NGT Rate per m³ (if expenses provided):</strong>
+                      <t t-esc="request.get('currency_symbol')"/> <t t-esc="request.get('rate_per_m3', 0.0)"/>
+                    </div>
+                  </t>
+                  <div t-if="not request.get('show_expenses')" style="font-size:10px;margin-top:6px;">No expense inputs captured for this NGT request.</div>
+                  <t t-if="request.get('reason')">
+                    <div style="font-size:10px;margin-top:6px;"><strong>Notes / Reason:</strong> <t t-esc="request.get('reason')"/></div>
+                  </t>
+                </div>
+              </t>
+            </t>
             <div class="gor-footer-placeholder"/>
             <div class="gor-footer">PTO....</div>
             </div>

@@ -9,6 +9,8 @@
                     <group>
                         <field name="monthly_order_id"/>
                         <field name="so_id" readonly="1"/>
+                        <field name="period_start"/>
+                        <field name="period_end"/>
                         <field name="invoice_date"/>
                     </group>
                     <group>
@@ -42,4 +44,33 @@
               parent="menu_gear_on_rent_operations"
               action="gear_on_rent.action_prepare_invoice_from_mrp"
               sequence="30"/>
+
+    <!-- Log Scrap Wizard -->
+    <record id="view_scrap_log_wizard_form" model="ir.ui.view">
+        <field name="name">gear.scrap.log.wizard.form</field>
+        <field name="model">gear.scrap.log.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Log Scrap">
+                <group>
+                    <field name="workorder_id" readonly="1"/>
+                    <field name="production_id" readonly="1"/>
+                    <field name="monthly_order_id" readonly="1"/>
+                    <field name="quantity"/>
+                    <field name="reason_id"/>
+                    <field name="note"/>
+                </group>
+                <footer>
+                    <button name="action_log_scrap" type="object" string="Log Scrap" class="btn-primary"/>
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_scrap_log_wizard" model="ir.actions.act_window">
+        <field name="name">Log Scrap</field>
+        <field name="res_model">gear.scrap.log.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
 </odoo>

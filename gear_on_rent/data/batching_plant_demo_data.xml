@@ -41,6 +41,7 @@
       <field name="prime_rate">410</field>
       <field name="optimize_rate">210</field>
       <field name="after_mgq_rate">450</field>
+      <field name="ngt_rate">0</field>
     </record>
 
     <record id="mgq_rate_slab_2000" model="gear.mgq.rate.master">
@@ -52,6 +53,7 @@
       <field name="prime_rate">390</field>
       <field name="optimize_rate">200</field>
       <field name="after_mgq_rate">430</field>
+      <field name="ngt_rate">0</field>
     </record>
 
     <record id="mgq_rate_slab_2500" model="gear.mgq.rate.master">
@@ -63,6 +65,7 @@
       <field name="prime_rate">370</field>
       <field name="optimize_rate">190</field>
       <field name="after_mgq_rate">420</field>
+      <field name="ngt_rate">0</field>
     </record>
 
     <!-- Material Area Pricing -->
@@ -172,6 +175,38 @@
       <field name="code">jcb</field>
       <field name="charge_type">fixed</field>
       <field name="rate">36000</field>
+    </record>
+
+    <!-- Default monthly running cost master so prime-rate math has seed data -->
+    <record id="gear_running_cost_master_demo" model="gear.running.cost.master">
+      <field name="company_id" ref="base.main_company"/>
+      <field name="manpower_monthly">265000</field>
+      <field name="power_monthly">95000</field>
+      <field name="dg_monthly">48000</field>
+      <field name="jcb_monthly">85000</field>
+      <field name="admin_monthly">13000</field>
+      <field name="interest_monthly">39000</field>
+      <field name="land_investment">75000</field>
+      <field name="active">True</field>
+    </record>
+
+    <!-- Default CAPEX master entry for depreciation roll-up -->
+    <record id="gear_capex_master_demo" model="gear.capex.master">
+      <field name="company_id" ref="base.main_company"/>
+      <field name="plant_machinery_capex">20000000</field>
+      <field name="furniture_capex">500000</field>
+      <field name="equipment_fittings_capex">250000</field>
+      <field name="computers_peripherals_capex">150000</field>
+      <field name="useful_life_years">10</field>
+      <field name="active">True</field>
+    </record>
+
+    <!-- Default dead-cost investment so turnkey quotes amortize civil scope -->
+    <record id="gear_dead_cost_master_demo" model="gear.dead.cost.master">
+      <field name="company_id" ref="base.main_company"/>
+      <field name="civil_factory_building">400000</field>
+      <field name="civil_non_factory_building">200000</field>
+      <field name="active">True</field>
     </record>
 
     <!-- Cost Component Master -->

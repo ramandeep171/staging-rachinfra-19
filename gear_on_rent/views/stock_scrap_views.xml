@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="stock_scrap_form_view_inherit_gear_bom" model="ir.ui.view">
+        <field name="name">stock.scrap.form.inherit.gear.bom</field>
+        <field name="model">stock.scrap</field>
+        <field name="inherit_id" ref="stock.stock_scrap_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="gear_bom_id" readonly="state == 'done'" options="{'no_create_edit': True}"/>
+                <field name="gear_recipe_id" readonly="1"/>
+            </xpath>
+            <xpath expr="//field[@name='production_id']" position="after">
+                <field name="gear_recipe_id" readonly="1"/>
+            </xpath>
+            <xpath expr="//sheet/group" position="after">
+                <notebook>
+                    <page string="Recipe Components">
+                        <field name="gear_recipe_component_ids"
+                               views="[(ref('gear_on_rent.view_gear_scrap_recipe_line_tree'), 'list'), (ref('gear_on_rent.view_gear_scrap_recipe_line_form'), 'form')]"
+                               context="{'default_scrap_id': id}"
+                               mode="list,form"/>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="stock_scrap_form_view2_inherit_gear_bom" model="ir.ui.view">
+        <field name="name">stock.scrap.form2.inherit.gear.bom</field>
+        <field name="model">stock.scrap</field>
+        <field name="inherit_id" ref="stock.stock_scrap_form_view2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="gear_bom_id" readonly="state == 'done'" options="{'no_create_edit': True}"/>
+                <field name="gear_recipe_id" readonly="1"/>
+            </xpath>
+            <xpath expr="//field[@name='production_id']" position="after">
+                <field name="gear_recipe_id" readonly="1"/>
+            </xpath>
+            <xpath expr="//footer" position="before">
+                <notebook>
+                    <page string="Recipe Components">
+                        <field name="gear_recipe_component_ids"
+                               views="[(ref('gear_on_rent.view_gear_scrap_recipe_line_tree'), 'list'), (ref('gear_on_rent.view_gear_scrap_recipe_line_form'), 'form')]"
+                               context="{'default_scrap_id': id}"
+                               mode="list,form"/>
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Inline form for editable recipe components (hide parent link) -->
+    <record id="view_gear_scrap_recipe_line_form" model="ir.ui.view">
+        <field name="name">gear.scrap.recipe.line.form</field>
+        <field name="model">gear.scrap.recipe.line</field>
+        <field name="arch" type="xml">
+            <form string="Recipe Component">
+                <sheet>
+                    <group>
+                        <field name="scrap_id" invisible="1"/>
+                        <field name="product_id" string="Component"/>
+                        <field name="quantity" string="Quantity"/>
+                        <field name="product_uom_id" string="Unit of Measure"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_gear_scrap_recipe_line_tree" model="ir.ui.view">
+        <field name="name">gear.scrap.recipe.line.tree</field>
+        <field name="model">gear.scrap.recipe.line</field>
+        <field name="arch" type="xml">
+            <list string="Recipe Components" editable="bottom">
+                <field name="product_id" string="Component"/>
+                <field name="quantity" string="Quantity"/>
+                <field name="product_uom_id" string="Unit"/>
+                <field name="scrap_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+</odoo>

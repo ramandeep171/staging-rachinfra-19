@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_gear_prime_rate_log_tree" model="ir.ui.view">
+        <field name="name">gear.prime.rate.log.tree</field>
+        <field name="model">gear.prime.rate.log</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="calc_time"/>
+                <field name="order_id"/>
+                <field name="mgq"/>
+                <field name="production_qty"/>
+                <field name="project_months"/>
+                <field name="mgq_prime_rate"/>
+                <field name="prime_rate"/>
+                <field name="final_prime_rate"/>
+                <field name="prime_rate_source"/>
+                <field name="running_per_cum"/>
+                <field name="depreciation_per_cum"/>
+                <field name="dead_per_cum"/>
+                <field name="margin_per_cum"/>
+                <field name="optional_per_cum"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_prime_rate_log_form" model="ir.ui.view">
+        <field name="name">gear.prime.rate.log.form</field>
+        <field name="model">gear.prime.rate.log</field>
+        <field name="arch" type="xml">
+            <form string="Prime Rate Log" create="0" edit="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="order_id"/>
+                            <field name="calc_time"/>
+                            <field name="inventory_mode"/>
+                            <field name="mgq"/>
+                            <field name="production_qty"/>
+                            <field name="project_months"/>
+                            <field name="service_type"/>
+                            <field name="capacity_id"/>
+                        </group>
+                        <group string="Prime Rate Summary">
+                            <field name="prime_rate"/>
+                            <field name="final_prime_rate"/>
+                            <field name="mgq_prime_rate"/>
+                            <field name="raw_prime_rate"/>
+                            <field name="final_optimize_rate"/>
+                            <field name="final_after_mgq_rate"/>
+                            <field name="prime_rate_source"/>
+                        </group>
+                    </group>
+                    <group string="Running &amp; Depreciation">
+                        <group>
+                            <field name="running_monthly"/>
+                            <field name="running_per_cum"/>
+                            <field name="running_source"/>
+                        </group>
+                        <group>
+                            <field name="depreciation_monthly"/>
+                            <field name="depreciation_per_cum"/>
+                            <field name="depreciation_source"/>
+                        </group>
+                    </group>
+                    <group string="Dead Cost &amp; Margin">
+                        <group>
+                            <field name="dead_total"/>
+                            <field name="dead_per_cum"/>
+                            <field name="dead_source"/>
+                        </group>
+                        <group>
+                            <field name="margin_per_cum"/>
+                        </group>
+                    </group>
+                    <group string="Running Cost Breakdown" colspan="2">
+                        <group>
+                            <field name="running_manpower"/>
+                            <field name="running_power"/>
+                            <field name="running_dg"/>
+                            <field name="running_jcb"/>
+                        </group>
+                        <group>
+                            <field name="running_admin"/>
+                            <field name="running_interest"/>
+                            <field name="running_land_investment"/>
+                            <field name="running_total_breakdown"/>
+                        </group>
+                    </group>
+                    <group string="CAPEX Breakdown" colspan="2">
+                        <group>
+                            <field name="capex_plant_machinery"/>
+                            <field name="capex_furniture"/>
+                            <field name="capex_equipment_fittings"/>
+                        </group>
+                        <group>
+                            <field name="capex_computers_peripherals"/>
+                            <field name="capex_total"/>
+                            <field name="capex_monthly_depr"/>
+                        </group>
+                    </group>
+                    <group string="Dead Cost Breakdown" colspan="2">
+                        <group>
+                            <field name="dead_civil_factory"/>
+                            <field name="dead_civil_non_factory"/>
+                        </group>
+                        <group>
+                            <field name="dead_total"/>
+                        </group>
+                    </group>
+                    <group string="Material &amp; Optional Summary" colspan="2">
+                        <group>
+                            <field name="material_per_cum"/>
+                            <field name="material_source"/>
+                        </group>
+                        <group>
+                            <field name="optional_per_cum"/>
+                        </group>
+                    </group>
+                    <group string="Optional Services">
+                        <field name="optional_line_ids"
+                               options="{'no_create': True, 'no_edit': True, 'no_open': True}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_prime_rate_log" model="ir.actions.act_window">
+        <field name="name">Prime Rate Logs</field>
+        <field name="res_model">gear.prime.rate.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_prime_rate_log_tree"/>
+    </record>
+
+    <menuitem id="menu_gear_prime_rate_log"
+              name="Prime Rate Logs"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_prime_rate_log"
+              sequence="8"/>
+</odoo>

@@ -6,18 +6,19 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;family=Poppins:wght@400;500;600;700;800&amp;display=swap"/>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css"/>
       <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
-      <link rel="stylesheet" type="text/css" href="/gear_on_rent/static/src/css/batching_plant.css"/>
+      <link rel="stylesheet" type="text/css" href="/gear_on_rent/static/src/css/batching_plant.css?v=2"/>
       <script type="text/javascript" src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer="defer"/>
       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js" defer="defer"/>
       <script type="text/javascript" src="/gear_on_rent/static/src/js/batching_plant.js" defer="defer"/>
     </template>
 
     <!-- Batching Plant Landing Page -->
-    <template id="batching_plant_website_page" name="Batching Plant Rental Page">
-      <t t-call="website.layout">
-        <t t-set="title">Batching Plant Rental | RACH INFRA GearOnRent | Premium Plant Solutions</t>
-        <t t-set="head">
-          <t t-raw="head"/>
+  <template id="batching_plant_website_page" name="Batching Plant Rental Page">
+    <t t-call="website.layout">
+      <t t-set="user" t-value="request.env.user"/>
+      <t t-set="title">Batching Plant Rental | RACH INFRA GearOnRent | Premium Plant Solutions</t>
+      <t t-set="head">
+        <t t-raw="head"/>
           <meta name="description" content="Premium batching plant rental solutions with IoT integration, real-time monitoring, and NABL certified operations. CP 30 to CP 120 capacity plants available."/>
           <t t-call="gear_on_rent.batching_plant_assets"/>
         </t>
@@ -1159,207 +1160,351 @@
               
               <div class="contact-wrapper">
                 <div class="contact-form-section" data-aos="fade-right">
-                  <form class="contact-form" id="contactForm">
-                    <div class="form-section">
-                      <h4>Customer Information</h4>
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="partner_name">
-                            <i class="fas fa-user"></i> Full Name *
-                          </label>
-                          <input type="text" id="partner_name" name="partner_name" required="required" placeholder="Enter your full name"/>
-                        </div>
-                        <div class="form-group">
-                          <label for="company_name">
-                            <i class="fas fa-building"></i> Company Name
-                          </label>
-                          <input type="text" id="company_name" name="company_name" placeholder="Enter company name"/>
-                        </div>
-                      </div>
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="email">
-                            <i class="fas fa-envelope"></i> Email *
-                          </label>
-                          <input type="email" id="email" name="email" required="required" placeholder="your@email.com"/>
-                        </div>
-                        <div class="form-group">
-                          <label for="phone">
-                            <i class="fas fa-phone"></i> Phone *
-                          </label>
-                          <input type="tel" id="phone" name="phone" required="required" placeholder="+91 XXXXX XXXXX"/>
-                        </div>
-                      </div>
-                    </div>
+                  <form class="contact-form modern-quote-form" id="contactForm" novalidate="novalidate">
+                    <input type="hidden" name="pricing_type" id="pricingTypeInput"/>
+                    <t t-set="service_card_meta"
+                       t-value="{
+                         'dedicated': {
+                           'icon': 'fas fa-industry',
+                           'title': 'Dedicated Plant Model',
+                           'desc': 'Exclusive batching plant setup for your project with zero inventory hassle'
+                         },
+                         'turnkey': {
+                           'icon': 'fas fa-key',
+                           'title': 'Turnkey Based Model',
+                           'desc': 'End-to-end concrete solution with material sourcing &amp; guaranteed quality'
+                         }
+                       }"/>
+                    <t t-set="default_service_type" t-value="default_service_type or (service_types and service_types[0][0]) or ''"/>
 
-                    <div class="form-section">
-                      <h4>Project Inputs</h4>
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="gear_service_type">
-                            <i class="fas fa-clipboard-list"></i> Service Type *
-                          </label>
-                          <select id="gear_service_type" name="gear_service_type" required="required">
-                            <option value="">Select service type</option>
-                            <t t-foreach="service_types" t-as="stype">
-                              <option t-att-value="stype[0]" t-esc="stype[1]"/>
-                            </t>
-                          </select>
+                    <div class="form-card glass-card" id="basicDetailsCard">
+                      <div class="form-card__header">
+                        <span class="form-card__icon">
+                          <i class="fas fa-id-card"></i>
+                        </span>
+                        <div>
+                          <p class="card-eyebrow">Start Here</p>
+                          <h4>Basic Details</h4>
+                          <p>Share your contact and project details to receive a tailored quote.</p>
                         </div>
-                        <div class="form-group">
-                          <label for="gear_capacity_id">
-                            <i class="fas fa-industry"></i> Plant Capacity *
-                          </label>
+                      </div>
+                      <div class="field-grid floating-grid">
+                        <div class="floating-label">
+                          <input type="text" id="partner_name" name="partner_name" required="required" placeholder=" " t-att-value="default_full_name or ''"/>
+                          <label for="partner_name">Full Name *</label>
+                          <i class="fas fa-user input-icon"></i>
+                        </div>
+                        <div class="floating-label">
+                          <input type="text" id="company_name" name="company_name" placeholder=" "/>
+                          <label for="company_name">Company Name</label>
+                          <i class="fas fa-building input-icon"></i>
+                        </div>
+                        <div class="floating-label">
+                          <input type="email" id="email" name="email" required="required" placeholder=" " t-att-value="default_email or ''"/>
+                          <label for="email">Email Address *</label>
+                          <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                        <div class="floating-label">
+                          <input type="tel" id="phone" name="phone" required="required" placeholder=" " t-att-value="default_phone or ''"/>
+                          <label for="phone">Phone Number *</label>
+                          <i class="fas fa-phone input-icon"></i>
+                        </div>
+                        <div class="floating-label">
+                          <input type="number" step="0.01" min="0" id="mgq_monthly" name="mgq_monthly" placeholder=" "/>
+                          <label for="mgq_monthly">MGQ Monthly *</label>
+                          <i class="fas fa-chart-line input-icon"></i>
+                          <small class="help-text">Monthly Guaranteed Quantity</small>
+                        </div>
+                        <div class="floating-label">
                           <select id="gear_capacity_id" name="gear_capacity_id" required="required">
-                            <option value="">Select capacity</option>
+                            <option value="" selected="selected" disabled="disabled"></option>
                             <t t-foreach="capacities" t-as="capacity">
                               <option t-att-value="capacity.id" t-esc="capacity.name"/>
                             </t>
                           </select>
+                          <label for="gear_capacity_id">Plant Capacity *</label>
+                          <i class="fas fa-industry input-icon"></i>
                         </div>
-                      </div>
-
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="mgq_monthly">
-                            <i class="fas fa-chart-line"></i> MGQ (Monthly)
-                          </label>
-                          <input type="number" step="0.01" min="0" id="mgq_monthly" name="mgq_monthly" placeholder="Enter monthly MGQ"/>
-                        </div>
-                        <div class="form-group">
-                          <label for="gear_expected_production_qty">
-                            <i class="fas fa-cubes"></i> Expected Production (m³)
-                          </label>
-                          <input type="number" step="0.01" min="0" id="gear_expected_production_qty" name="gear_expected_production_qty" placeholder="Expected monthly production"/>
-                        </div>
-                      </div>
-
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="x_inventory_mode">
-                            <i class="fas fa-warehouse"></i> Inventory Mode *
-                          </label>
-                          <select id="x_inventory_mode" name="x_inventory_mode" required="required">
-                            <option value="">Select inventory mode</option>
-                            <t t-foreach="inventory_modes" t-as="mode">
-                              <option t-att-value="mode[0]" t-esc="mode[1]"/>
-                            </t>
-                          </select>
-                        </div>
-                        <div class="form-group" id="gradeWrapper" style="display:none;">
-                          <label for="gear_design_mix_id">
-                            <i class="fas fa-flask"></i> Grade Mix
-                          </label>
-                          <select id="gear_design_mix_id" name="gear_design_mix_id">
-                            <option value="">Select grade</option>
-                            <t t-foreach="design_mixes" t-as="design">
-                              <option t-att-value="design.id" t-esc="design.name"/>
-                            </t>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="gear_material_area_id">
-                            <i class="fas fa-map-marker-alt"></i> Material Area
-                          </label>
-                          <select id="gear_material_area_id" name="gear_material_area_id">
-                            <option value="">Select material area</option>
-                            <t t-foreach="material_areas" t-as="area">
-                              <option t-att-value="area.id" t-esc="area.name"/>
-                            </t>
-                          </select>
-                        </div>
-                        <div class="form-group">
-                          <label for="gear_project_duration_years">
-                            <i class="fas fa-clock"></i> Project Duration (Years)
-                          </label>
+                        <div class="floating-label">
                           <select id="gear_project_duration_years" name="gear_project_duration_years">
-                            <option value="">Select duration</option>
+                            <option value="" selected="selected"></option>
                             <t t-foreach="project_durations" t-as="duration">
                               <option t-att-value="duration[0]" t-esc="duration[1]"/>
                             </t>
                           </select>
+                          <label for="gear_project_duration_years">Project Duration (Years)</label>
+                          <i class="fas fa-calendar-alt input-icon"></i>
                         </div>
-                      </div>
-
-                      <div class="form-row">
-                        <div class="form-group">
-                          <label for="gear_civil_scope">
-                            <i class="fas fa-hard-hat"></i> Civil Scope
-                          </label>
-                          <select id="gear_civil_scope" name="gear_civil_scope">
-                            <option value="">Select civil scope</option>
-                            <t t-foreach="civil_scopes" t-as="scope">
-                              <option t-att-value="scope[0]" t-esc="scope[1]"/>
-                            </t>
-                          </select>
-                        </div>
-                        <div class="form-group">
-                          <label for="note">
-                            <i class="fas fa-comment-alt"></i> Project Notes
-                          </label>
-                          <textarea id="note" name="note" rows="3" placeholder="Share scope, constraints, or timeline notes"></textarea>
+                        <div class="floating-label">
+                          <input type="number" step="0.01" min="0" id="gear_expected_production_qty" name="gear_expected_production_qty" placeholder=" "/>
+                          <label for="gear_expected_production_qty">Expected Production (m³)</label>
+                          <i class="fas fa-cubes input-icon"></i>
                         </div>
                       </div>
                     </div>
 
-                    <div class="form-section">
-                      <h4>Optional Services</h4>
-                      <div class="form-row optional-row">
-                        <div class="form-group">
-                          <div class="checkbox-with-input">
-                            <label>
-                              <input type="checkbox" name="gear_transport_opt_in" value="1"/> Transport (per CUM)
-                            </label>
-                            <input type="number" step="0.01" min="0" name="gear_transport_per_cum" placeholder="0.00"/>
-                          </div>
-                        </div>
-                        <div class="form-group">
-                          <div class="checkbox-with-input">
-                            <label>
-                              <input type="checkbox" name="gear_pumping_opt_in" value="1"/> Pump (per CUM)
-                            </label>
-                            <input type="number" step="0.01" min="0" name="gear_pump_per_cum" placeholder="0.00"/>
-                          </div>
+                    <div class="form-card glass-card" id="serviceModelCard">
+                      <div class="form-card__header">
+                        <span class="form-card__icon">
+                          <i class="fas fa-layer-group"></i>
+                        </span>
+                        <div>
+                          <p class="card-eyebrow">Engagement Model</p>
+                          <h4>Choose Service Type</h4>
+                          <p>Select the approach that best matches your batching plant needs.</p>
                         </div>
                       </div>
-                      <div class="form-row optional-row">
-                        <div class="form-group">
-                          <div class="checkbox-with-input">
-                            <label>
-                              <input type="checkbox" name="gear_manpower_opt_in" value="1"/> Manpower (per CUM)
-                            </label>
-                            <input type="number" step="0.01" min="0" name="gear_manpower_per_cum" placeholder="0.00"/>
-                          </div>
-                        </div>
-                        <div class="form-group">
-                          <div class="checkbox-with-input">
-                            <label>
-                              <input type="checkbox" name="gear_diesel_opt_in" value="1"/> Diesel (per CUM)
-                            </label>
-                            <input type="number" step="0.01" min="0" name="gear_diesel_per_cum" placeholder="0.00"/>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="form-row optional-row">
-                        <div class="form-group">
-                          <div class="checkbox-with-input">
-                            <label>
-                              <input type="checkbox" name="gear_jcb_opt_in" value="1"/> JCB (Monthly)
-                            </label>
-                            <input type="number" step="0.01" min="0" name="gear_jcb_monthly" placeholder="0.00"/>
-                          </div>
-                        </div>
+                      <div class="radio-card-grid" id="serviceTypeGrid">
+                        <t t-foreach="service_types" t-as="stype">
+                          <t t-set="meta" t-value="service_card_meta.get(stype[0], {})"/>
+                          <label class="radio-card">
+                            <input type="radio"
+                                   name="gear_service_type"
+                                   t-att-checked="'checked' if (default_service_type == stype[0]) else None"
+                                   t-att-value="stype[0]"
+                                   t-att-data-label="meta.get('title') or stype[1]"/>
+                            <span class="radio-status">
+                              <i class="fas fa-check"></i>
+                            </span>
+                            <div class="radio-icon">
+                              <i t-att-class="meta.get('icon') or 'fas fa-cogs'"></i>
+                            </div>
+                            <div class="radio-content">
+                              <h5 t-esc="meta.get('title') or stype[1]"/>
+                              <p t-esc="meta.get('desc') or 'Choose this model for your project.'"/>
+                            </div>
+                          </label>
+                        </t>
                       </div>
                     </div>
 
-                    <button type="submit" class="btn btn-submit">
-                      <i class="fas fa-paper-plane"></i> Submit Request
-                    </button>
+                    <div class="form-card glass-card advanced-card" id="advancedCard">
+                      <div class="advanced-toggle ripple-effect" id="advancedToggle">
+                        <div class="advanced-info">
+                          <div class="advanced-icon">
+                            <i class="fas fa-calculator"></i>
+                          </div>
+                          <div>
+                            <h4>Advanced Cost Calculator</h4>
+                            <p>Add inventory preferences, MGQ helper inputs, and optional services.</p>
+                          </div>
+                        </div>
+                        <div class="advanced-status">
+                          <span class="badge">Optional</span>
+                          <div class="advanced-arrow">
+                            <i class="fas fa-chevron-down" id="advancedToggleIcon"></i>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="advanced-scroll-controls">
+                        <button type="button" class="scroll-btn" id="advancedScrollUp" aria-label="Scroll to calculator start">
+                          <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <button type="button" class="scroll-btn" id="advancedScrollDown" aria-label="Scroll to calculator end">
+                          <i class="fas fa-chevron-down"></i>
+                        </button>
+                      </div>
+                      <div class="advanced-section" id="advancedSection">
+                        <div class="advanced-subcard mgq-helper-card">
+                          <div class="subcard-header">
+                            <div class="subcard-icon">
+                              <i class="fas fa-bullseye"></i>
+                            </div>
+                            <div>
+                              <p class="card-eyebrow">MGQ Helper</p>
+                              <h5>Auto-calculate total quantities</h5>
+                              <p>Enter a project quantity or duration to get a suggested MGQ.</p>
+                            </div>
+                          </div>
+                          <div class="field-grid floating-grid">
+                            <div class="floating-label">
+                              <input type="number" step="0.01" min="0" id="total_project_qty" placeholder=" "/>
+                              <label for="total_project_qty">Total Project Quantity (m³)</label>
+                              <i class="fas fa-cubes input-icon"></i>
+                            </div>
+                            <div class="floating-label">
+                              <input type="number" step="0.01" min="1" id="project_duration_months" name="gear_project_duration_months" placeholder=" "/>
+                              <label for="project_duration_months">Project Duration (Months)</label>
+                              <i class="fas fa-hourglass-half input-icon"></i>
+                            </div>
+                          </div>
+                          <div class="suggestion-actions compact">
+                            <p class="suggested-value" id="mgqSuggestionText">Enter values to see suggested MGQ.</p>
+                            <button type="button" class="btn btn-outline-primary btn-small" id="applyMgqSuggestion">
+                              <i class="fas fa-magic"></i> Auto-Fill MGQ
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="advanced-subcard additional-details-card">
+                          <div class="subcard-header">
+                            <div class="subcard-icon">
+                              <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <div>
+                              <p class="card-eyebrow">Additional Details</p>
+                              <h5>Inventory mode, sourcing, and civil notes</h5>
+                              <p>Select how we should provision the batching plant for your project.</p>
+                            </div>
+                          </div>
+                          <div class="additional-details-grid floating-grid">
+                            <div class="floating-label wide">
+                              <select id="x_inventory_mode" name="x_inventory_mode" required="required">
+                                <option value="" selected="selected" disabled="disabled"></option>
+                                <t t-foreach="inventory_modes" t-as="mode">
+                                  <option t-att-value="mode[0]" t-esc="mode[1]"/>
+                                </t>
+                              </select>
+                              <label for="x_inventory_mode">Select Inventory Mode *</label>
+                              <i class="fas fa-boxes input-icon"></i>
+                            </div>
+                            <div class="floating-label" id="civilScopeWrapper">
+                              <select id="gear_civil_scope" name="gear_civil_scope">
+                                <option value="" selected="selected"></option>
+                                <t t-foreach="civil_scopes" t-as="scope">
+                                  <option t-att-value="scope[0]" t-esc="scope[1]"/>
+                                </t>
+                              </select>
+                              <label for="gear_civil_scope">Civil/Infrastructure Responsibility</label>
+                              <i class="fas fa-project-diagram input-icon"></i>
+                            </div>
+                            <div class="inventory-only" id="areaWrapper" style="display:none;">
+                              <div class="floating-label">
+                                <select id="gear_material_area_id" name="gear_material_area_id">
+                                  <option value="" selected="selected"></option>
+                                  <t t-foreach="material_areas" t-as="area">
+                                    <option t-att-value="area.id" t-esc="area.name"/>
+                                  </t>
+                                </select>
+                                <label for="gear_material_area_id">Material Source Area</label>
+                                <i class="fas fa-map-marker-alt input-icon"></i>
+                              </div>
+                            </div>
+                            <div class="inventory-only" id="stepDesignMix" style="display:none;">
+                              <div class="floating-label" id="gradeWrapper" style="display:none;">
+                                <select id="gear_design_mix_ids" name="gear_design_mix_ids" multiple="multiple">
+                                  <t t-foreach="design_mixes" t-as="design">
+                                    <option t-att-value="design.id" t-esc="design.name"/>
+                                  </t>
+                                </select>
+                                <label for="gear_design_mix_ids">Design Mix (select one or more)</label>
+                              </div>
+                            </div>
+                            <div class="floating-label textarea-field note-field">
+                              <textarea id="note" name="note" rows="3" placeholder=" "></textarea>
+                              <label for="note">Additional Notes</label>
+                              <i class="fas fa-comment-alt input-icon"></i>
+                            </div>
+                          </div>
+                          <div class="checklist-card" id="civilCostChecklist" style="display:none;">
+                            <div class="checklist-header">
+                              <i class="fas fa-tools"></i>
+                              <span>Civil &amp; Infra Cost Components (reference)</span>
+                            </div>
+                            <div class="checklist-grid">
+                              <label class="checklist-item"><input type="checkbox" checked="checked" disabled="disabled"/> Foundations &amp; PCC</label>
+                              <label class="checklist-item"><input type="checkbox" checked="checked" disabled="disabled"/> Structure &amp; Sheds</label>
+                              <label class="checklist-item"><input type="checkbox" checked="checked" disabled="disabled"/> Electrical &amp; Panels</label>
+                              <label class="checklist-item"><input type="checkbox" checked="checked" disabled="disabled"/> Water Supply &amp; Plumbing</label>
+                              <label class="checklist-item"><input type="checkbox" checked="checked" disabled="disabled"/> DG/Compressor Bays</label>
+                              <label class="checklist-item"><input type="checkbox" checked="checked" disabled="disabled"/> Roads &amp; Drainage</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="advanced-subcard optional-details-card">
+                          <div class="subcard-header">
+                            <div class="subcard-icon">
+                              <i class="fas fa-toolbox"></i>
+                            </div>
+                            <div>
+                              <p class="card-eyebrow">Optional Services</p>
+                              <h5>Layer transportation, pumps, manpower &amp; more</h5>
+                              <p>Enable any addons you would like us to include in your quote.</p>
+                            </div>
+                          </div>
+                          <t t-if="optional_services">
+                            <div class="optional-services-grid">
+                              <t t-foreach="optional_services" t-as="opt">
+                                <div class="optional-service-card"
+                                     t-att-data-rate="opt['rate_value']"
+                                     t-att-data-charge-type="opt['charge_type']">
+                                  <label class="optional-service-toggle">
+                                    <input type="checkbox"
+                                           t-att-name="opt['flag_field']"
+                                           value="1"
+                                           class="js-optional-service-toggle"
+                                           t-att-checked="'checked' if opt.get('default_enabled') else None"/>
+                                    <div class="optional-service-pill">
+                                      <span class="optional-service-name" t-esc="opt['label']"/>
+                                      <small class="text-muted" t-esc="opt['charge_label']"/>
+                                    </div>
+                                  </label>
+                                  <div class="optional-service-body">
+                                    <label class="optional-service-qty">
+                                      <span t-esc="opt['quantity_placeholder'] or 'Qty'"/>
+                                      <input type="number"
+                                             step="0.01"
+                                             min="0"
+                                             class="js-optional-rate-input"
+                                             t-att-name="opt['value_field']"
+                                             t-att-data-rate="opt['rate_value']"
+                                             t-att-data-flag-field="opt['flag_field']"
+                                             t-att-data-charge-type="opt['charge_type']"
+                                             t-att-placeholder="opt['quantity_placeholder'] or 'Qty'"/>
+                                    </label>
+                                    <p class="optional-service-note">
+                                      <t t-esc="opt['helper_text']"/>
+                                    </p>
+                                  </div>
+                                </div>
+                              </t>
+                            </div>
+                          </t>
+                          <t t-else="">
+                            <p class="text-muted">Optional services are not configured yet.</p>
+                          </t>
+                        </div>
+                        <div id="advancedScrollEnd"></div>
+                      </div>
+                    </div>
+
+                    <div class="form-card glass-card submit-card">
+                      <div class="form-error-banner" id="formErrorBanner"></div>
+                      <button type="submit" class="btn btn-submit ripple-effect">
+                        <i class="fas fa-rocket"></i> Get Instant Quote
+                      </button>
+                      <p class="submit-note">⚡ Response within 4 hours guaranteed</p>
+                    </div>
                   </form>
-                  
+
+                  <div class="pricing-modal" id="pricingTypeModal" aria-hidden="true">
+                    <div class="pricing-modal__dialog" role="dialog" aria-labelledby="pricingModalTitle" aria-modal="true">
+                      <div class="pricing-modal__header">
+                        <h4 id="pricingModalTitle">Choose Your Batching Plant Pricing</h4>
+                        <button type="button" class="pricing-modal__close" id="pricingTypeClose" aria-label="Close pricing type modal">
+                          &#215;
+                        </button>
+                      </div>
+                      <div class="pricing-modal__body">
+                        <div class="pricing-options">
+                          <button type="button" class="pricing-option" data-pricing-type="individual_rate">
+                            <span class="pricing-option__title">Individual Service Rate</span>
+                            <span class="pricing-option__subtitle">Quote services separately</span>
+                          </button>
+                          <button type="button" class="pricing-option" data-pricing-type="full_package_rate">
+                            <span class="pricing-option__title">Full Package Rate</span>
+                            <span class="pricing-option__subtitle">All-inclusive turnkey pricing</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="pricing-modal__footer">
+                        <button type="button" class="btn btn-outline-secondary" id="pricingTypeCancel">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="pricingTypeContinue" disabled="disabled">Continue</button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="form-success" id="formSuccess">
                     <i class="fas fa-check-circle"></i>
                     <h3>Thank You!</h3>
@@ -1380,74 +1525,133 @@
                     </div>
                   </div>
                 </div>
-                
-                <div class="contact-info-section" data-aos="fade-left">
-                  <div class="contact-info-card">
-                    <h3>Direct Contact</h3>
-                    
-                    <div class="contact-info-item">
-                      <div class="info-icon">
-                        <i class="fas fa-user-tie"></i>
+                <div class="contact-summary-section" data-aos="fade-left">
+                  <div class="summary-card glass-card live-summary-card">
+                    <div class="summary-header">
+                      <div class="summary-icon">
+                        <i class="fas fa-chart-line"></i>
                       </div>
-                      <div class="info-content">
-                        <h4>CEO Direct Line</h4>
-                        <p>Neetu Rani</p>
-                        <a href="tel:+919289375999" class="contact-link">
-                          <i class="fas fa-phone"></i> +91 8920327673
-                        </a>
+                      <div>
+                        <h3>Live Quote Summary</h3>
+                        <p>Selections update in real time</p>
                       </div>
                     </div>
-                    
-                    <div class="contact-info-item">
-                      <div class="info-icon">
-                        <i class="fas fa-user"></i>
+                    <div class="summary-stack">
+                      <div class="summary-panel contact-panel">
+                        <div class="summary-panel__header">
+                          <span class="panel-icon"><i class="fas fa-user"></i></span>
+                          <div>
+                            <p class="card-eyebrow">Contact Details</p>
+                            <h5>Stay synced with us</h5>
+                          </div>
+                        </div>
+                        <ul class="contact-detail-list">
+                          <li>
+                            <span class="contact-detail-icon"><i class="fas fa-id-card"></i></span>
+                            <div>
+                              <small>Name</small>
+                              <strong id="previewContactName">—</strong>
+                            </div>
+                          </li>
+                          <li>
+                            <span class="contact-detail-icon"><i class="fas fa-building"></i></span>
+                            <div>
+                              <small>Company</small>
+                              <strong id="previewCompany">—</strong>
+                            </div>
+                          </li>
+                          <li>
+                            <span class="contact-detail-icon"><i class="fas fa-envelope"></i></span>
+                            <div>
+                              <small>Email</small>
+                              <strong id="previewContactEmail">—</strong>
+                            </div>
+                          </li>
+                          <li>
+                            <span class="contact-detail-icon"><i class="fas fa-phone"></i></span>
+                            <div>
+                              <small>Phone</small>
+                              <strong id="previewContactPhone">—</strong>
+                            </div>
+                          </li>
+                        </ul>
                       </div>
-                      <div class="info-content">
-                        <h4>Account Manager</h4>
-                        <p>Yash</p>
-                        <a href="tel:+916357890641" class="contact-link">
-                          <i class="fas fa-phone"></i> +91 7428059333
-                        </a>
+                      <div class="summary-panel requirements-panel">
+                        <div class="summary-panel__header">
+                          <span class="panel-icon"><i class="fas fa-clipboard-check"></i></span>
+                          <div>
+                            <p class="card-eyebrow">Project Requirements</p>
+                            <h5>Your requested configuration</h5>
+                          </div>
+                        </div>
+                        <div class="summary-metrics-grid">
+                          <div class="metric-card">
+                            <span>MGQ (Monthly)</span>
+                            <strong id="previewMgq">—</strong>
+                          </div>
+                          <div class="metric-card">
+                            <span>Capacity</span>
+                            <strong id="previewCapacity">—</strong>
+                          </div>
+                          <div class="metric-card">
+                            <span>Duration</span>
+                            <strong id="previewDuration">—</strong>
+                          </div>
+                          <div class="metric-card">
+                            <span>Area Pricing</span>
+                            <strong id="previewArea">—</strong>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div class="contact-info-item">
-                      <div class="info-icon">
-                        <i class="fas fa-calendar-check"></i>
+                      <div class="summary-panel service-panel">
+                        <div class="summary-panel__header">
+                          <span class="panel-icon"><i class="fas fa-layer-group"></i></span>
+                          <div>
+                            <p class="card-eyebrow">Service Model</p>
+                            <h5>Operational preferences</h5>
+                          </div>
+                        </div>
+                        <ul class="service-preview-list">
+                          <li><span>Service Type</span><strong id="previewService">—</strong></li>
+                          <li><span>Inventory Mode</span><strong id="previewInventory">—</strong></li>
+                          <li><span>Design Mix</span><strong id="previewDesignMix">—</strong></li>
+                          <li><span>Optional Services</span><strong id="previewOptional">—</strong></li>
+                        </ul>
                       </div>
-                      <div class="info-content">
-                        <h4>Schedule Site Visit</h4>
-                        <p>See our plants in action</p>
-                        <a href="#contact" class="btn btn-site-visit">
-                          <i class="fas fa-map-marker-alt"></i> Book Site Visit
+                        <div class="summary-panel estimate-panel">
+                          <div class="summary-panel__header">
+                            <span class="panel-icon"><i class="fas fa-wallet"></i></span>
+                            <div>
+                              <p class="card-eyebrow">Estimated Monthly Cost</p>
+                              <h5>Shared once quote is generated</h5>
+                            </div>
+                          </div>
+                          <div class="estimate-display">
+                          <strong id="previewEstimateValue">—</strong>
+                          <small id="previewEstimateNote">Costs are shared once your quote is generated</small>
+                        </div>
+                      </div>
+                      <div class="summary-panel help-panel">
+                        <div class="help-row">
+                          <div class="help-icon">
+                            <i class="fas fa-headset"></i>
+                          </div>
+                          <div class="help-details">
+                            <p>Need Help?</p>
+                            <a href="tel:+919289375999" class="help-phone">
+                              <i class="fas fa-phone"></i>
+                              +91 92893 75999
+                            </a>
+                          </div>
+                        </div>
+                        <a href="https://wa.me/919289375999" target="_blank" rel="noopener" class="whatsapp-chip">
+                          <i class="fab fa-whatsapp"></i>
+                          WhatsApp Support
                         </a>
                       </div>
                     </div>
                   </div>
-                  
-                  <div class="contact-cta-card">
-                    <i class="fas fa-headset"></i>
-                    <h3>24/7 Support Available</h3>
-                    <p>Our technical team is ready to assist you anytime</p>
-                  </div>
-                  
-                  <div class="certifications-card">
-                    <h4>Certifications &amp; Compliance</h4>
-                    <div class="cert-items">
-                      <div class="cert-item">
-                        <i class="fas fa-certificate"></i>
-                        <span>ISO 9001:2015</span>
-                      </div>
-                      <div class="cert-item">
-                        <i class="fas fa-flask"></i>
-                        <span>NABL Accredited</span>
-                      </div>
-                      <div class="cert-item">
-                        <i class="fas fa-leaf"></i>
-                        <span>Environmental Clearance</span>
-                      </div>
-                    </div>
-                  </div>
+
                 </div>
               </div>
             </div>

@@ -15,12 +15,31 @@
             <t t-foreach="docs" t-as="doc">
                 <t t-set="pdf_data" t-value="pdf_data"/>
                 <t t-set="chart_urls" t-value="chart_urls"/>
-                <t t-set="order" t-value="pdf_data.get('order')"/>
-                <t t-set="base_rates" t-value="pdf_data.get('base_rates') or {}"/>
-                <t t-set="final_rates" t-value="pdf_data.get('final_rates') or {}"/>
-                <t t-set="cost_breakdown" t-value="pdf_data.get('cost_breakdown') or {}"/>
-                <t t-set="mgq_scenarios" t-value="pdf_data.get('mgq_scenarios') or []"/>
-                <t t-set="summary_cards" t-value="pdf_data.get('summary_cards') or []"/>
+                <t t-set="order" t-value="docs and docs[0] or False"/>
+                <t t-set="plant_slabs" t-value="pdf_data.get('plant_slabs') or {}"/>
+                <t t-set="slab_rates" t-value="pdf_data.get('plant_slabs') or pdf_data.get('slab_rates') or {}"/>
+                <t t-set="material_breakdown" t-value="pdf_data.get('material_breakdown') or {}"/>
+                <t t-set="optional_services" t-value="pdf_data.get('optional_services') or []"/>
+                <t t-set="capex_breakdown" t-value="pdf_data.get('capex_breakdown') or {}"/>
+                <t t-set="capex_items" t-value="pdf_data.get('capex_items') or capex_breakdown.get('items') or []"/>
+                <t t-set="project_duration" t-value="pdf_data.get('project_duration')"/>
+                <t t-set="final_rate" t-value="pdf_data.get('final_rates') or {'total_rate_per_cum': pdf_data.get('final_rate')}"/>
+                <t t-set="final_rates" t-value="pdf_data.get('final_rates') or final_rate"/>
+                <t t-set="dead_cost_per_cum" t-value="pdf_data.get('dead_cost') or final_rate.get('dead_cost') or order.gear_dead_cost_per_cum or 0.0"/>
+                <t t-set="dead_cost_context" t-value="pdf_data.get('dead_cost_context') or {
+                    'per_cum': dead_cost_per_cum,
+                    'total': capex_breakdown.get('total_amount') or order.gear_dead_cost_amount or 0.0,
+                }"/>
+                <t t-set="quotation_context" t-value="pdf_data.get('quotation_context') or {
+                    'inventory_mode': order.x_inventory_mode,
+                    'civil_scope': order.gear_civil_scope,
+                    'area_name': order.gear_material_area_id.name if order.gear_material_area_id else False,
+                    'service_type': order.gear_service_type,
+                    'capacity': order.gear_capacity_id.name if order.gear_capacity_id else False,
+                    'grade': order.gear_design_mix_id.grade if order.gear_design_mix_id else False,
+                    'project_duration_months': order.gear_project_duration_months or (order.gear_project_duration_years and order.gear_project_duration_years * 12) or False,
+                    'show_cost_breakdown': order.gear_show_cost_breakdown,
+                }"/>
 
                 <style>
                         .bp-wrapper{
@@ -122,136 +141,237 @@
 
                 <t t-if="order">
                     <div class="page bp-wrapper">
-                            <div class="bp-heading">
-                                <div class="bp-brand">SP Nexgen Automind Pvt Ltd</div>
-                                <div class="bp-tagline">Tech Paras - Odoo Engineering Division - Automate Excellence</div>
-                            </div>
-                            <div class="bp-main-title">Batching Plant Quotation</div>
+                        <div class="bp-heading">
+                            <div class="bp-brand">SP Nexgen Automind Pvt Ltd</div>
+                            <div class="bp-tagline">Tech Paras - Odoo Engineering Division - Automate Excellence</div>
+                        </div>
+                        <div class="bp-main-title">Batching Plant Quotation</div>
 
-                            <section class="bp-section">
-                                <h3>Service Summary</h3>
-                                <ul class="bp-bullet-list">
-                                    <li><strong>Service Type:</strong> <t t-esc="order.gear_service_type or '-'"/></li>
-                                    <li><strong>Plant Capacity:</strong> <t t-esc="order.gear_capacity_id.name or '-'"/></li>
-                                    <li><strong>MGQ:</strong> <t t-esc="base_rates.get('mgq')"/></li>
-                                    <li><strong>Inventory:</strong> <t t-esc="order.x_inventory_mode or '-'"/></li>
-                                    <li t-if="order.gear_design_mix_id"><strong>Grade:</strong> <t t-esc="order.gear_design_mix_id.grade"/></li>
-                                    <li>
-                                        <strong>Optional Services:</strong>
-                                        <t t-if="order.gear_transport_opt_in or order.gear_pumping_opt_in or order.gear_manpower_opt_in or order.gear_diesel_opt_in or order.gear_jcb_opt_in">
-                                            <span t-if="order.gear_transport_opt_in">Transport </span>
-                                            <span t-if="order.gear_pumping_opt_in">Pump </span>
-                                            <span t-if="order.gear_manpower_opt_in">Manpower </span>
-                                            <span t-if="order.gear_diesel_opt_in">Diesel </span>
-                                            <span t-if="order.gear_jcb_opt_in">JCB </span>
-                                        </t>
-                                        <t t-else="">None</t>
-                                    </li>
-                                    <li><strong>Project Duration:</strong> <t t-esc="order.gear_project_duration_months or 0"/> months</li>
-                                    <li><strong>Civil Scope:</strong> <t t-esc="order.gear_civil_scope or '-'"/></li>
-                                    <li><strong>Area:</strong> <t t-esc="order.gear_material_area_id.name or '-'"/></li>
-                                </ul>
-                            </section>
+                        <section class="bp-section">
+                            <h3>Service Summary</h3>
+                            <ul class="bp-bullet-list">
+                                <li><strong>Service Type:</strong> <t t-esc="quotation_context.get('service_type') or order.gear_service_type or '-'"/></li>
+                                <li><strong>Plant Capacity:</strong> <t t-esc="quotation_context.get('capacity') or (order.gear_capacity_id.name if order.gear_capacity_id else '-')"/></li>
+                                <li><strong>Inventory Mode:</strong> <t t-esc="quotation_context.get('inventory_mode') or order.x_inventory_mode or '-'"/></li>
+                                <li><strong>Grade:</strong> <t t-esc="quotation_context.get('grade') or (order.gear_design_mix_id.grade if order.gear_design_mix_id else '-')"/></li>
+                                <li><strong>Project Duration:</strong> <t t-esc="quotation_context.get('project_duration_months') or order.gear_project_duration_months or 0"/> months</li>
+                                <li><strong>Civil Scope:</strong> <t t-esc="quotation_context.get('civil_scope') or order.gear_civil_scope or '-'"/></li>
+                                <li><strong>Area:</strong> <t t-esc="quotation_context.get('area_name') or (order.gear_material_area_id.name if order.gear_material_area_id else '-')"/></li>
+                            </ul>
+                        </section>
 
-                            <section class="bp-section">
-                                <h3>Final Rates</h3>
+                        <section class="bp-section">
+                            <h3>MGQ Summary</h3>
+                            <table class="bp-table">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Monthly Guaranteed Quantity (MGQ)</td>
+                                        <td t-esc="pdf_data.get('mgq') or plant_slabs.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 0"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Production Expectation</td>
+                                        <td t-esc="pdf_data.get('production_expectation') or order.gear_expected_production_qty or '-'"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Project Duration</td>
+                                        <td>
+                                            <t t-if="order.gear_project_duration_months"><t t-esc="order.gear_project_duration_months"/> months</t>
+                                            <t t-elif="project_duration"><t t-esc="project_duration"/> years</t>
+                                            <t t-elif="order.gear_project_duration_years"><t t-esc="order.gear_project_duration_years"/> years</t>
+                                            <t t-else="">-</t>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="bp-section">
+                            <h3>Plant Cost (MGQ Slabs)</h3>
+                            <table class="bp-table">
+                                <thead>
+                                    <tr>
+                                        <th>Slab</th>
+                                        <th>Rate / CUM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Prime</td>
+                                        <td t-esc="plant_slabs.get('prime_rate')"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Optimize</td>
+                                        <td t-esc="plant_slabs.get('optimize_rate')"/>
+                                    </tr>
+                                    <tr>
+                                        <td>After MGQ</td>
+                                        <td t-esc="plant_slabs.get('after_mgq_rate')"/>
+                                    </tr>
+                                    <tr>
+                                        <td>NGT Relief</td>
+                                        <td t-esc="plant_slabs.get('ngt_rate')"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="bp-section" t-if="(quotation_context.get('inventory_mode') or order.x_inventory_mode) == 'with_inventory'">
+                            <h3>Material Cost</h3>
+                            <t t-set="material_lines" t-value="material_breakdown.get('lines') or []"/>
+                            <table class="bp-table" t-if="material_lines">
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Qty</th>
+                                        <th>Rate</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="material_lines" t-as="line">
+                                        <td t-esc="line.get('label') or line.get('component')"/>
+                                        <td t-esc="line.get('qty')"/>
+                                        <td t-esc="line.get('rate')"/>
+                                        <td t-esc="line.get('total')"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table class="bp-table" t-if="not material_lines">
+                                <thead>
+                                    <tr>
+                                        <th>Material</th>
+                                        <th>Qty</th>
+                                        <th>Rate</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Cement</td>
+                                        <td t-esc="material_breakdown.get('cement_qty')"/>
+                                        <td t-esc="material_breakdown.get('cement_rate')"/>
+                                        <td t-esc="material_breakdown.get('cement_total')"/>
+                                    </tr>
+                                    <tr>
+                                        <td>10mm Aggregate</td>
+                                        <td t-esc="material_breakdown.get('agg_10mm_qty')"/>
+                                        <td t-esc="material_breakdown.get('agg_10mm_rate')"/>
+                                        <td t-esc="material_breakdown.get('agg_10mm_total')"/>
+                                    </tr>
+                                    <tr>
+                                        <td>20mm Aggregate</td>
+                                        <td t-esc="material_breakdown.get('agg_20mm_qty')"/>
+                                        <td t-esc="material_breakdown.get('agg_20mm_rate')"/>
+                                        <td t-esc="material_breakdown.get('agg_20mm_total')"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Admixture</td>
+                                        <td t-esc="material_breakdown.get('admixture_qty')"/>
+                                        <td t-esc="material_breakdown.get('admixture_rate')"/>
+                                        <td t-esc="material_breakdown.get('admixture_total')"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section class="bp-section">
+                            <h3>Optional Services</h3>
+                            <t t-set="optional_items" t-value="optional_services or []"/>
+                            <t t-if="optional_items">
                                 <table class="bp-table">
                                     <thead>
                                         <tr>
-                                            <th>Label</th>
+                                            <th>Service</th>
                                             <th>Rate</th>
+                                            <th>Qty</th>
+                                            <th>Per CUM</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr t-if="order.x_inventory_mode == 'without_inventory'">
-                                            <td>Prime</td>
-                                            <td t-esc="final_rates.get('final_prime_rate')"/>
-                                        </tr>
-                                        <tr t-if="order.x_inventory_mode == 'without_inventory'">
-                                            <td>Optimize</td>
-                                            <td t-esc="final_rates.get('final_optimize_rate')"/>
-                                        </tr>
-                                        <tr t-if="order.x_inventory_mode == 'without_inventory'">
-                                            <td>After MGQ</td>
-                                            <td t-esc="final_rates.get('final_after_mgq_rate')"/>
-                                        </tr>
-                                        <tr t-if="order.x_inventory_mode == 'with_inventory'">
-                                            <td t-esc="final_rates.get('grade') or 'Grade Rate'"/>
-                                            <td t-esc="final_rates.get('total_per_cum')"/>
+                                        <tr t-foreach="optional_items" t-as="opt">
+                                            <td t-esc="opt.get('name') or opt.get('label') or opt.get('service') or opt.get('code')"/>
+                                            <td t-esc="opt.get('rate_value') or opt.get('rate')"/>
+                                            <td t-esc="opt.get('quantity') or 0.0"/>
+                                            <td t-esc="opt.get('per_cum') or opt.get('total')"/>
                                         </tr>
                                     </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" style="text-align:right;font-weight:600;">Optional Cost Total</td>
+                                            <td style="font-weight:600;" t-esc="final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0"/>
+                                        </tr>
+                                    </tfoot>
                                 </table>
-                            </section>
+                            </t>
+                            <t t-if="not optional_items">
+                                <p>No optional services selected.</p>
+                            </t>
+                        </section>
 
-                            <section class="bp-section">
-                                <h3>Cost Breakup</h3>
-                                <table class="bp-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Component</th>
-                                            <th>Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Base Plant</td>
-                                            <td t-esc="cost_breakdown.get('base')"/>
-                                        </tr>
-                                        <tr>
-                                            <td>Material</td>
-                                            <td t-esc="cost_breakdown.get('material')"/>
-                                        </tr>
-                                        <tr>
-                                            <td>Optional</td>
-                                            <td t-esc="cost_breakdown.get('optional')"/>
-                                        </tr>
-                                        <tr>
-                                            <td>Dead Cost</td>
-                                            <td t-esc="cost_breakdown.get('dead_cost')"/>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </section>
+                        <section class="bp-section" t-if="(quotation_context.get('civil_scope') or order.gear_civil_scope) == 'vendor'">
+                            <h3>Dead Cost / CAPEX</h3>
+                            <t t-set="capex_items" t-value="capex_breakdown.get('items') or []"/>
+                            <table class="bp-table" t-if="capex_items">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Status / Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="capex_items" t-as="capex">
+                                        <td t-esc="capex.get('label') or capex.get('component')"/>
+                                        <td>
+                                            <t t-set="capex_amount" t-value="capex.get('amount') or capex.get('total')"/>
+                                            <t t-if="capex_amount not in (None, False)">
+                                                <t t-esc="capex_amount"/>
+                                            </t>
+                                            <t t-else="">
+                                                Pending finalization
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p>
+                                <strong>Dead Cost per CUM:</strong>
+                                <t t-set="per_cum" t-value="capex_breakdown.get('dead_cost_per_cum') or dead_cost_context.get('per_cum') or dead_cost_per_cum"/>
+                                <t t-if="per_cum">
+                                    <t t-esc="per_cum"/>
+                                </t>
+                                <t t-else="">Pending finalization</t>
+                            </p>
+                            <p>
+                                <strong>CAPEX Total:</strong>
+                                <t t-set="capex_total" t-value="capex_breakdown.get('total_amount') or dead_cost_context.get('total') or order.gear_dead_cost_amount"/>
+                                <t t-if="capex_total">
+                                    <t t-esc="capex_total"/>
+                                </t>
+                                <t t-else="">Pending finalization</t>
+                            </p>
+                            <p class="bp-note" t-if="capex_breakdown.get('note')">
+                                <em t-esc="capex_breakdown.get('note')"/>
+                            </p>
+                        </section>
 
-                            <section class="bp-section" t-if="order.x_inventory_mode == 'with_inventory'">
-                                <h3>Material Cost</h3>
-                                <table class="bp-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Component</th>
-                                            <th>Consumption</th>
-                                            <th>Cost</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Cement</td>
-                                            <td t-esc="order.gear_design_mix_id.cement_qty"/>
-                                            <td t-esc="order.gear_material_area_id.cement_rate"/>
-                                        </tr>
-                                        <tr>
-                                            <td>10mm Aggregate</td>
-                                            <td t-esc="order.gear_design_mix_id.agg_10mm_qty"/>
-                                            <td t-esc="order.gear_material_area_id.agg_10mm_rate"/>
-                                        </tr>
-                                        <tr>
-                                            <td>20mm Aggregate</td>
-                                            <td t-esc="order.gear_design_mix_id.agg_20mm_qty"/>
-                                            <td t-esc="order.gear_material_area_id.agg_20mm_rate"/>
-                                        </tr>
-                                        <tr>
-                                            <td>Admixture</td>
-                                            <td t-esc="order.gear_design_mix_id.admixture_qty"/>
-                                            <td t-esc="order.gear_material_area_id.admixture_rate"/>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </section>
+                        <section class="bp-section">
+                            <h3>Final Rate per CUM</h3>
+                            <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">
+                                <span style="font-weight:600;color:#92400e;">Total Rate</span>
+                                <span style="font-size:18px;font-weight:700;color:#92400e;" t-esc="final_rate.get('total_rate_per_cum') or final_rate.get('final_rate') or slab_rates.get('total_rate_per_cum')"/>
+                            </div>
+                        </section>
                     </div>
 
                     <div class="page bp-wrapper">
-                        <section class="bp-section" t-if="mgq_scenarios">
-                            <h3>MGQ Billing Scenarios</h3>
+                        <section class="bp-section" t-if="slab_rates.get('scenarios')">
+                            <h3>MGQ Scenario Comparison</h3>
                             <table class="bp-table">
                                 <thead>
                                     <tr>
@@ -263,50 +383,111 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr t-foreach="mgq_scenarios" t-as="scenario">
-                                        <td t-esc="scenario.get('label')"/>
+                                    <tr t-foreach="slab_rates.get('scenarios')" t-as="scenario">
+                                        <td t-esc="scenario.get('label') or scenario.get('code')"/>
                                         <td t-esc="scenario.get('qty')"/>
-                                        <td t-esc="scenario.get('prime_bill')"/>
-                                        <td t-esc="scenario.get('optimize_bill')"/>
-                                        <td t-esc="scenario.get('after_bill')"/>
+                                        <td t-esc="scenario.get('prime')"/>
+                                        <td t-esc="scenario.get('optimize')"/>
+                                        <td t-esc="scenario.get('after')"/>
                                     </tr>
                                 </tbody>
                             </table>
                         </section>
-                    </div>
 
-                    <div class="page bp-wrapper">
-                        <section class="bp-section">
+                        <t t-set="show_cost_breakdown" t-value="quotation_context.get('show_cost_breakdown') if 'show_cost_breakdown' in quotation_context else order.gear_show_cost_breakdown"/>
+                        <section class="bp-section" t-if="show_cost_breakdown">
                             <h3>Charts</h3>
-                            <div class="bp-chart" t-if="chart_urls.get('cost_pie')">
+                            <t t-set="cost_pie_img" t-value="pdf_data.get('cost_pie_chart') or chart_urls.get('cost_pie')"/>
+                            <t t-set="mgq_billing_img" t-value="pdf_data.get('mgq_billing_chart') or chart_urls.get('mgq_bars')"/>
+                            <t t-set="diesel_img" t-value="pdf_data.get('diesel_chart') or chart_urls.get('diesel_line')"/>
+                            <t t-set="grade_img" t-value="pdf_data.get('grade_chart') or chart_urls.get('grade_comparison')"/>
+                            <t t-set="source_map" t-value="pdf_data.get('source_map') or final_rates.get('source_map') or {}"/>
+                            <t t-set="running_map" t-value="source_map.get('running', {})"/>
+                            <t t-set="capex_map" t-value="source_map.get('capex', {})"/>
+                            <t t-set="dead_map" t-value="source_map.get('dead_cost', {})"/>
+                            <t t-set="intermediate_map" t-value="source_map.get('intermediate_values', {})"/>
+                            <div class="bp-chart" t-if="cost_pie_img">
                                 <p class="bp-chart-title">Cost Breakdown</p>
-                                <img t-att-src="chart_urls.get('cost_pie')" alt="Cost breakdown chart"/>
+                                <img t-att-src="cost_pie_img" alt="Cost breakdown chart"/>
                             </div>
-                            <div class="bp-chart" t-if="chart_urls.get('mgq_bars')">
+                            <t t-set="running_total_display" t-value="(running_map.get('manpower') or 0.0)
+                                + (running_map.get('land_investment') or 0.0)
+                                + (running_map.get('power') or 0.0)
+                                + (running_map.get('dg') or 0.0)
+                                + (running_map.get('admin') or 0.0)
+                                + (running_map.get('interest') or 0.0)
+                                + ((order.gear_jcb_opt_in and running_map.get('jcb')) or 0.0)"/>
+                            <table class="bp-table" t-if="source_map">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="2"><strong>Running Cost (Monthly)</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="text-muted">Fixed Components</td>
+                                    </tr>
+                                    <tr><td>Manpower</td><td t-esc="running_map.get('manpower')"/></tr>
+                                    <tr t-if="running_map.get('land_investment')">
+                                        <td>Land / Site Development</td>
+                                        <td t-esc="running_map.get('land_investment')"/>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2" class="text-muted">Variable Components</td>
+                                    </tr>
+                                    <tr><td>Power</td><td t-esc="running_map.get('power')"/></tr>
+                                    <tr><td>DG</td><td t-esc="running_map.get('dg')"/></tr>
+                                    <t t-if="order.gear_jcb_opt_in">
+                                        <tr><td>JCB</td><td t-esc="running_map.get('jcb')"/></tr>
+                                    </t>
+                                    <tr><td>Admin</td><td t-esc="running_map.get('admin')"/></tr>
+                                    <tr><td>Interest</td><td t-esc="running_map.get('interest')"/></tr>
+                                    <tr><td><strong>Running Total</strong></td><td t-esc="running_total_display"/></tr>
+                                    <tr>
+                                        <td colspan="2"><strong>CAPEX</strong></td>
+                                    </tr>
+                                    <tr><td>Plant &amp; Machinery</td><td t-esc="capex_map.get('plant_machinery')"/></tr>
+                                    <tr><td>Furniture</td><td t-esc="capex_map.get('furniture')"/></tr>
+                                    <tr><td>Equipment &amp; Fittings</td><td t-esc="capex_map.get('equipment_fittings')"/></tr>
+                                    <tr><td>Computers &amp; Peripherals</td><td t-esc="capex_map.get('computers_peripherals')"/></tr>
+                                    <tr><td><strong>Total CAPEX</strong></td><td t-esc="capex_map.get('total_capex')"/></tr>
+                                    <tr><td>Monthly Depreciation</td><td t-esc="capex_map.get('monthly_depr')"/></tr>
+                                    <tr>
+                                        <td colspan="2"><strong>Dead Cost</strong></td>
+                                    </tr>
+                                    <tr><td>Factory Building</td><td t-esc="dead_map.get('civil_factory_building')"/></tr>
+                                    <tr><td>Non-Factory Building</td><td t-esc="dead_map.get('civil_non_factory_building')"/></tr>
+                                    <tr><td><strong>Dead Cost Total</strong></td><td t-esc="dead_map.get('dead_total')"/></tr>
+                                    <tr>
+                                        <td colspan="2"><strong>Margin &amp; Prime</strong></td>
+                                    </tr>
+                                    <tr><td>Margin / CUM</td><td t-esc="final_rates.get('margin_per_cum')"/></tr>
+                                    <tr><td>Prime Rate (before margin)</td><td t-esc="final_rates.get('prime_rate')"/></tr>
+                                    <tr><td>Final Prime Rate</td><td t-esc="final_rates.get('final_prime_rate') or final_rates.get('total_per_cum')"/></tr>
+                                    <tr><td colspan="2" class="text-muted">Final Prime Rate = Prime Rate + Margin / CUM</td></tr>
+                                    <tr>
+                                        <td colspan="2"><strong>Calculation Inputs</strong></td>
+                                    </tr>
+                                    <tr><td>Duration (months)</td><td t-esc="intermediate_map.get('duration_months')"/></tr>
+                                    <tr><td>MGQ Used</td><td t-esc="intermediate_map.get('MGQ')"/></tr>
+                                </tbody>
+                            </table>
+                            <div class="bp-chart" t-if="mgq_billing_img">
                                 <p class="bp-chart-title">MGQ Billing</p>
-                                <img t-att-src="chart_urls.get('mgq_bars')" alt="MGQ billing chart"/>
+                                <img t-att-src="mgq_billing_img" alt="MGQ billing chart"/>
                             </div>
-                            <div class="bp-chart" t-if="chart_urls.get('diesel_line')">
+                            <div class="bp-chart" t-if="diesel_img">
                                 <p class="bp-chart-title">Diesel Escalation</p>
-                                <img t-att-src="chart_urls.get('diesel_line')" alt="Diesel escalation chart"/>
+                                <img t-att-src="diesel_img" alt="Diesel escalation chart"/>
                             </div>
-                        </section>
-
-                        <section class="bp-section" t-if="chart_urls.get('grade_comparison')">
-                            <h3>Grade Comparison</h3>
-                            <div class="bp-chart">
-                                <img t-att-src="chart_urls.get('grade_comparison')" alt="Grade comparison chart"/>
+                            <div class="bp-chart" t-if="grade_img">
+                                <p class="bp-chart-title">Grade Comparison</p>
+                                <img t-att-src="grade_img" alt="Grade comparison chart"/>
                             </div>
-                        </section>
-
-                        <section class="bp-section">
-                            <h3>Summary</h3>
-                            <ul class="bp-summary-list">
-                                <li t-foreach="summary_cards" t-as="card">
-                                    <strong t-esc="card.get('label')"/>:
-                                    <t t-esc="card.get('value')"/>
-                                </li>
-                            </ul>
                         </section>
 
                         <div class="bp-footer-note">

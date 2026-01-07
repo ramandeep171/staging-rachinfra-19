@@ -6,16 +6,74 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <record id="view_gear_plant_capacity_master_list" model="ir.ui.view">
+        <field name="name">gear.plant.capacity.master.list</field>
+        <field name="model">gear.plant.capacity.master</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="capacity_cum_hour"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
     <record id="action_gear_plant_capacity_master" model="ir.actions.act_window">
         <field name="name">Plant Capacities</field>
         <field name="res_model">gear.plant.capacity.master</field>
         <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_plant_capacity_master_list"/>
     </record>
 
-    <record id="action_gear_mgq_rate_master" model="ir.actions.act_window">
-        <field name="name">MGQ Rate Tiers</field>
-      <field name="res_model">gear.mgq.rate.master</field>
-        <field name="view_mode">list,form</field>
+    <record id="view_gear_plant_capacity_master_form" model="ir.ui.view">
+        <field name="name">gear.plant.capacity.master.form</field>
+        <field name="model">gear.plant.capacity.master</field>
+        <field name="arch" type="xml">
+            <form string="Plant Capacity">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="capacity_cum_hour"/>
+                            <field name="depreciation_years"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="notes" colspan="2"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Capacity Components">
+                            <group col="2">
+                                <field name="component_batching_plant"/>
+                                <field name="component_cement_silos"/>
+                                <field name="component_fly_ash_silos"/>
+                                <field name="component_aggregate_belt"/>
+                                <field name="component_screw_pump"/>
+                                <field name="component_ground_dust_filter"/>
+                                <field name="component_batch_cabin"/>
+                                <field name="component_unloading_commissioning"/>
+                                <field name="component_transportation"/>
+                                <field name="component_dg_set"/>
+                                <field name="component_power_board"/>
+                                <field name="component_electrical_system"/>
+                                <field name="component_transformer"/>
+                                <field name="component_electrical_panel"/>
+                                <field name="component_workshop_equipment"/>
+                                <field name="component_weighbridge"/>
+                                <field name="component_overhead_ht_line"/>
+                                <field name="component_auxiliary_dg_set"/>
+                                <field name="component_mechanical_broom"/>
+                                <field name="component_misc"/>
+                                <field name="component_ci_weights"/>
+                                <field name="component_high_pressure_water"/>
+                                <field name="component_fogging_system"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
     </record>
 
     <record id="action_gear_cost_component_master" model="ir.actions.act_window">
@@ -42,6 +100,227 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <record id="view_gear_running_cost_master_list" model="ir.ui.view">
+        <field name="name">gear.running.cost.master.list</field>
+        <field name="model">gear.running.cost.master</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="manpower_monthly"/>
+                <field name="power_monthly"/>
+                <field name="dg_monthly"/>
+                <field name="jcb_monthly"/>
+                <field name="admin_monthly"/>
+                <field name="interest_monthly"/>
+                <field name="land_investment"/>
+                <field name="total_monthly" readonly="1"/>
+                <field name="company_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_running_cost_master_form" model="ir.ui.view">
+        <field name="name">gear.running.cost.master.form</field>
+        <field name="model">gear.running.cost.master</field>
+        <field name="arch" type="xml">
+            <form string="Running Cost Master">
+                <sheet>
+                    <group col="2">
+                        <field name="manpower_monthly"/>
+                        <field name="power_monthly"/>
+                        <field name="dg_monthly"/>
+                        <field name="jcb_monthly"/>
+                        <field name="admin_monthly"/>
+                        <field name="interest_monthly"/>
+                        <field name="land_investment"/>
+                        <field name="total_monthly" readonly="1"/>
+                        <field name="company_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_running_cost_master" model="ir.actions.act_window">
+        <field name="name">Running Cost Master</field>
+        <field name="res_model">gear.running.cost.master</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_running_cost_master_list"/>
+    </record>
+
+    <record id="view_gear_capex_master_list" model="ir.ui.view">
+        <field name="name">gear.capex.master.list</field>
+        <field name="model">gear.capex.master</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="plant_machinery_capex"/>
+                <field name="furniture_capex"/>
+                <field name="equipment_fittings_capex"/>
+                <field name="computers_peripherals_capex"/>
+                <field name="component_total" readonly="1"/>
+                <field name="monthly_depreciation" readonly="1"/>
+                <field name="useful_life_years"/>
+                <field name="company_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_capex_master_form" model="ir.ui.view">
+        <field name="name">gear.capex.master.form</field>
+        <field name="model">gear.capex.master</field>
+        <field name="arch" type="xml">
+            <form string="CAPEX Master">
+                <sheet>
+                    <group col="2">
+                        <field name="plant_machinery_capex"/>
+                        <field name="furniture_capex"/>
+                        <field name="equipment_fittings_capex"/>
+                        <field name="computers_peripherals_capex"/>
+                        <field name="component_total" readonly="1"/>
+                        <field name="monthly_depreciation" readonly="1"/>
+                        <field name="useful_life_years"/>
+                        <field name="company_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_capex_master" model="ir.actions.act_window">
+        <field name="name">CAPEX Master</field>
+        <field name="res_model">gear.capex.master</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_capex_master_list"/>
+    </record>
+
+    <record id="view_gear_dead_cost_master_list" model="ir.ui.view">
+        <field name="name">gear.dead.cost.master.list</field>
+        <field name="model">gear.dead.cost.master</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="civil_factory_building"/>
+                <field name="civil_non_factory_building"/>
+                <field name="construction_total" readonly="1"/>
+                <field name="company_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_dead_cost_master_form" model="ir.ui.view">
+        <field name="name">gear.dead.cost.master.form</field>
+        <field name="model">gear.dead.cost.master</field>
+        <field name="arch" type="xml">
+            <form string="Dead Cost Master">
+                <sheet>
+                    <group col="2">
+                        <field name="civil_factory_building"/>
+                        <field name="civil_non_factory_building"/>
+                        <field name="construction_total" readonly="1"/>
+                        <field name="company_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_gear_costing_overview_list" model="ir.ui.view">
+        <field name="name">gear.costing.overview.list</field>
+        <field name="model">gear.costing.overview</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="company_id"/>
+                <field name="running_total"/>
+                <field name="capex_total"/>
+                <field name="capex_monthly_depr"/>
+                <field name="dead_total"/>
+                <field name="base_prime_monthly"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_costing_overview_form" model="ir.ui.view">
+        <field name="name">gear.costing.overview.form</field>
+        <field name="model">gear.costing.overview</field>
+        <field name="arch" type="xml">
+            <form string="Costing Overview">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group>
+                            <field name="running_total"/>
+                            <field name="capex_total"/>
+                            <field name="capex_monthly_depr"/>
+                            <field name="dead_total"/>
+                            <field name="base_prime_monthly"/>
+                            <field name="base_prime_formula" readonly="1"/>
+                            <field name="margin_percent"/>
+                            <field name="margin_amount" readonly="1"/>
+                            <field name="final_prime_rate" readonly="1"/>
+                            <field name="final_prime_formula" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Running Cost Breakdown">
+                            <group col="2">
+                                <field name="running_manpower"/>
+                                <field name="running_power"/>
+                                <field name="running_dg"/>
+                                <field name="running_jcb"/>
+                                <field name="running_admin"/>
+                                <field name="running_interest"/>
+                                <field name="running_land"/>
+                                <field name="running_total" readonly="1"/>
+                            </group>
+                            <div class="o_form_label">Running Monthly = sum(Manpower + Power + DG + JCB + Admin + Interest + Land)</div>
+                        </page>
+                        <page string="CAPEX Breakdown">
+                            <group col="2">
+                                <field name="capex_plant_machinery"/>
+                                <field name="capex_furniture"/>
+                                <field name="capex_equipment"/>
+                                <field name="capex_computers"/>
+                                <field name="capex_total" readonly="1"/>
+                                <field name="capex_monthly_depr" readonly="1"/>
+                            </group>
+                            <div class="o_form_label">Monthly Depreciation = CAPEX Total / Useful Life (months) from CAPEX Master.</div>
+                        </page>
+                        <page string="Dead Cost Breakdown">
+                            <group col="2">
+                                <field name="dead_factory"/>
+                                <field name="dead_non_factory"/>
+                                <field name="dead_total" readonly="1"/>
+                            </group>
+                            <div class="o_form_label">Dead Cost Total = Factory Building + Non-Factory Building.</div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_costing_overview" model="ir.actions.act_window">
+        <field name="name">Prime Cost Overview</field>
+        <field name="res_model">gear.costing.overview</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_costing_overview_list"/>
+    </record>
+
+    <record id="action_gear_dead_cost_master" model="ir.actions.act_window">
+        <field name="name">Dead Cost Master</field>
+        <field name="res_model">gear.dead.cost.master</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_dead_cost_master_list"/>
+    </record>
+
     <menuitem id="menu_gear_on_rent_masters"
               name="Batching Masters"
               parent="menu_gear_on_rent_root"
@@ -59,23 +338,23 @@
               action="action_gear_plant_capacity_master"
               sequence="2"/>
 
-    <menuitem id="menu_gear_mgq_rate_master"
-              name="MGQ Rate Tiers"
-              parent="menu_gear_on_rent_masters"
-              action="action_gear_mgq_rate_master"
-              sequence="3"/>
-
     <menuitem id="menu_gear_cost_component_master"
               name="Cost Components"
               parent="menu_gear_on_rent_masters"
               action="action_gear_cost_component_master"
               sequence="4"/>
 
+    <menuitem id="menu_gear_costing_overview"
+              name="Prime Cost Overview"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_costing_overview"
+              sequence="5"/>
+
     <menuitem id="menu_gear_material_area_master"
               name="Material Area Rates"
               parent="menu_gear_on_rent_masters"
               action="action_gear_material_area_master"
-              sequence="5"/>
+              sequence="6"/>
 
     <menuitem id="menu_gear_design_mix_master"
               name="Design Mixes"
@@ -88,4 +367,22 @@
               parent="menu_gear_on_rent_masters"
               action="action_gear_optional_service_master"
               sequence="7"/>
+
+    <menuitem id="menu_gear_running_cost_master"
+              name="Running Cost"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_running_cost_master"
+              sequence="8"/>
+
+    <menuitem id="menu_gear_capex_master"
+              name="CAPEX"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_capex_master"
+              sequence="9"/>
+
+    <menuitem id="menu_gear_dead_cost_master"
+              name="Dead Cost"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_dead_cost_master"
+              sequence="10"/>
 </odoo>

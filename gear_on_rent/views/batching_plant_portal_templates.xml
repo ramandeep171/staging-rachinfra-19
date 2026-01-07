@@ -4,54 +4,111 @@
     <t t-call="portal.portal_layout">
       <div class="o_portal_wrap">
         <div class="container">
-          <div class="row mb-3">
-            <div class="col-12">
-              <h1 class="display-5">Batching Plant Quotations</h1>
+          <div class="row mb-3 align-items-center">
+            <div class="col">
+              <h1 class="display-5 mb-0">Batching Plant Quotations</h1>
               <p class="text-muted mb-0">Quotes created from the /batching-plant landing page.</p>
             </div>
+            <div class="col-auto text-end text-muted">
+              <span class="small">Showing</span>
+              <span class="badge bg-light text-dark border" t-esc="orders and len(orders) or 0"/>
+            </div>
           </div>
-          <div class="row g-3">
-            <t t-if="orders">
-              <t t-foreach="orders" t-as="order">
-                <div class="col-lg-6">
-                  <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                      <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                          <h4 class="card-title mb-1" t-esc="order.name"/>
-                          <p class="mb-0 small text-muted" t-esc="order.partner_id.display_name"/>
+
+          <t t-if="orders">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Quotation</th>
+                    <th>Service</th>
+                    <th>Inventory</th>
+                    <th class="text-end">MGQ</th>
+                    <th class="text-end">Duration</th>
+                    <th class="text-end">Final Rate / CUM</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <t t-foreach="orders" t-as="order">
+                    <tr>
+                      <td>
+                        <div class="fw-semibold">
+                          <a t-attf-href="/my/batching-plant/#{order.id}" class="text-decoration-none"> <span t-esc="order.name"/> </a>
                         </div>
-                        <span class="badge bg-secondary text-uppercase" t-esc="order.state"/>
-                      </div>
-                      <div class="row small text-muted mb-2">
-                        <div class="col-6">
-                          <div><strong>MGQ:</strong> <span t-esc="order.mgq_monthly or order.x_monthly_mgq or '—'"/></div>
-                          <div><strong>Mode:</strong> <span t-esc="order.x_inventory_mode or '—'"/></div>
+                        <div class="small text-muted" t-esc="order.partner_id.display_name"/>
+                      </td>
+                      <td>
+                        <span class="badge bg-primary-subtle text-primary text-uppercase" t-esc="order.gear_service_type or '—'"/>
+                      </td>
+                      <td>
+                        <t t-if="order.x_inventory_mode == 'with_inventory'">
+                          <span class="badge bg-success-subtle text-success">With Inventory</span>
+                        </t>
+                        <t t-else="">
+                          <span class="badge bg-info-subtle text-info">Without Inventory</span>
+                        </t>
+                      </td>
+                      <td class="text-end" t-esc="order.mgq_monthly or order.x_monthly_mgq or '—'"/>
+                      <td class="text-end">
+                        <t t-if="order.gear_project_duration_months">
+                          <span t-esc="order.gear_project_duration_months"/> <span class="text-muted">months</span>
+                        </t>
+                        <t t-elif="order.gear_project_duration_years">
+                          <span t-esc="order.gear_project_duration_years"/> <span class="text-muted">years</span>
+                        </t>
+                        <t t-else="">—</t>
+                      </td>
+                      <td class="text-end">
+                        <span t-esc="(display_rates.get(order.id) if display_rates else False) or '—'"/>
+                      </td>
+                      <td class="text-center">
+                        <t t-set="quote_state" t-value="dict(order._fields['gear_quote_state'].selection).get(order.gear_quote_state, 'Draft')"/>
+                        <span class="badge bg-secondary-subtle text-secondary" t-esc="quote_state"/>
+                      </td>
+                      <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                          <a t-attf-href="/my/batching-plant/#{order.id}" class="btn btn-sm btn-primary">View</a>
+                          <a t-attf-href="/my/batching-plant/#{order.id}/pdf" class="btn btn-sm btn-outline-secondary">PDF</a>
+                          <form t-if="order.state in ['draft', 'sent']" t-att-action="'/my/batching-plant/%s/accept' % order.id" method="post" class="d-inline">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                          </form>
                         </div>
-                        <div class="col-6">
-                          <div><strong>Grade:</strong> <span t-esc="order.gear_design_mix_id.grade or '—'"/></div>
-                          <div><strong>Capacity:</strong> <span t-esc="order.gear_capacity_id.name or '—'"/></div>
-                        </div>
-                      </div>
-                      <div class="d-flex gap-2 flex-wrap">
-                        <a t-attf-href="/my/batching-plant/#{order.id}" class="btn btn-sm btn-primary">View</a>
-                        <a t-attf-href="/my/batching-plant/#{order.id}/pdf" class="btn btn-sm btn-outline-secondary">PDF</a>
-                        <form t-if="order.state in ['draft', 'sent']" t-att-action="'/my/batching-plant/%s/accept' % order.id" method="post" class="d-inline">
-                          <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                          <button type="submit" class="btn btn-sm btn-success">Accept</button>
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </t>
-            </t>
-            <t t-else="">
-              <div class="col-12">
-                <div class="alert alert-info mb-0">No batching-plant quotations are linked to your account yet.</div>
+                      </td>
+                    </tr>
+                  </t>
+                </tbody>
+              </table>
+            </div>
+            <t t-if="pager and pager.get('page_count') and pager.get('page_count') &gt; 1">
+              <t t-set="current_page" t-value="pager.get('page', {}).get('num', 1)"/>
+              <div class="d-flex justify-content-center">
+                <ul class="pagination mb-0">
+                  <li class="page-item" t-att-class="'disabled' if current_page &lt;= 1 else ''">
+                    <a class="page-link" t-att-href="pager.get('page_previous', {}).get('url')" aria-label="Previous">&#171;</a>
+                  </li>
+                  <t t-foreach="pager.get('pages') or []" t-as="page_dict">
+                    <t t-if="page_dict.get('num') == '…'">
+                      <li class="page-item disabled"><span class="page-link">…</span></li>
+                    </t>
+                    <t t-else="">
+                      <li class="page-item" t-att-class="'active' if page_dict.get('is_current') else ''">
+                        <a class="page-link" t-att-href="page_dict.get('url')" t-esc="page_dict.get('num')"/>
+                      </li>
+                    </t>
+                  </t>
+                  <li class="page-item" t-att-class="'disabled' if current_page &gt;= pager.get('page_count') else ''">
+                    <a class="page-link" t-att-href="pager.get('page_next', {}).get('url')" aria-label="Next">&#187;</a>
+                  </li>
+                </ul>
               </div>
             </t>
-          </div>
+          </t>
+          <t t-else="">
+            <div class="alert alert-info mb-0">No batching-plant quotations are linked to your account yet.</div>
+          </t>
         </div>
       </div>
     </t>
@@ -61,70 +118,257 @@
     <t t-call="portal.portal_layout">
       <div class="o_portal_wrap">
         <div class="container">
-          <div class="row mb-3">
-            <div class="col-12 d-flex justify-content-between align-items-start">
-              <div>
-                <h1 class="display-5" t-esc="order.name"/>
-                <p class="text-muted mb-0">Batching plant quotation details</p>
-              </div>
-              <div class="d-flex gap-2 flex-wrap">
-                <a t-attf-href="/my/batching-plant/#{order.id}/pdf" class="btn btn-outline-secondary">Download PDF · Tech Paras</a>
-                <form t-if="order.state in ['draft', 'sent']" t-att-action="'/my/batching-plant/%s/accept' % order.id" method="post">
-                  <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                  <button type="submit" class="btn btn-success">Accept Quotation</button>
-                </form>
-              </div>
+          <t t-set="show_cost_breakdown" t-value="order.gear_show_cost_breakdown"/>
+          <div class="row mb-3 align-items-center">
+            <div class="col">
+              <h1 class="display-5" t-esc="order.name"/>
+              <p class="text-muted mb-0">Batching plant quotation details</p>
+            </div>
+            <div class="col-auto d-flex gap-2 flex-wrap">
+              <a t-attf-href="/my/batching-plant/#{order.id}/pdf" class="btn btn-outline-secondary">Download PDF</a>
+              <form t-if="order.state in ['draft', 'sent']" t-att-action="'/my/batching-plant/%s/accept' % order.id" method="post">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                <button type="submit" class="btn btn-success">Accept Quotation</button>
+              </form>
             </div>
           </div>
 
           <div class="row g-3">
-            <div class="col-lg-6">
+            <div class="col-lg-8">
               <div class="card h-100">
-                <div class="card-header">Service Summary</div>
+                <div class="card-header">Service &amp; Project Summary</div>
                 <div class="card-body">
-                  <ul class="list-unstyled mb-0">
-                    <li><strong>Service Type:</strong> <span t-esc="order.gear_service_type or '—'"/></li>
-                    <li><strong>Capacity:</strong> <span t-esc="order.gear_capacity_id.name or '—'"/></li>
-                    <li><strong>MGQ:</strong> <span t-esc="pdf_data['base_rates'].get('mgq')"/></li>
-                    <li><strong>Expected Production:</strong> <span t-esc="order.gear_expected_production_qty or '—'"/></li>
-                    <li><strong>Inventory Mode:</strong> <span t-esc="order.x_inventory_mode or '—'"/></li>
-                    <li t-if="order.x_inventory_mode == 'with_inventory'"><strong>Grade:</strong> <span t-esc="order.gear_design_mix_id.grade or '—'"/></li>
-                    <li t-if="order.x_inventory_mode == 'with_inventory'"><strong>Area:</strong> <span t-esc="order.gear_material_area_id.name or '—'"/></li>
-                    <li><strong>Project Duration:</strong> <span t-esc="order.gear_project_duration_years or order.gear_project_duration_months or '—'"/></li>
-                    <li><strong>Civil Scope:</strong> <span t-esc="order.gear_civil_scope or '—'"/></li>
-                    <!-- <li><strong>Optional Services:</strong>
-                      <span t-if="order.gear_transport_opt_in">Transport </span>
-                      <span t-if="order.gear_pumping_opt_in">Pump </span>
-                      <span t-if="order.gear_manpower_opt_in">Manpower </span>
-                      <span t-if="order.gear_diesel_opt_in">Diesel </span>
-                      <span t-if="order.gear_jcb_opt_in">JCB </span>
-                    </li> -->
-                  </ul>
+                  <div class="row g-2">
+                    <div class="col-sm-6">
+                      <div class="small text-muted">Service Type</div>
+                      <div class="fw-semibold" t-esc="order.gear_service_type or '—'"/>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="small text-muted">Inventory Mode</div>
+                      <div class="fw-semibold" t-esc="order.x_inventory_mode or '—'"/>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="small text-muted">MGQ</div>
+                      <div class="fw-semibold" t-esc="pdf_data['base_rates'].get('mgq') or order.mgq_monthly or order.x_monthly_mgq or '—'"/>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="small text-muted">Project Qty</div>
+                      <div class="fw-semibold" t-esc="pdf_data['base_rates'].get('production_qty') or order.gear_expected_production_qty or '—'"/>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="small text-muted">Duration</div>
+                      <div class="fw-semibold">
+                        <t t-if="order.gear_project_duration_months"><span t-esc="order.gear_project_duration_months"/> months</t>
+                        <t t-elif="order.gear_project_duration_years"><span t-esc="order.gear_project_duration_years"/> years</t>
+                        <t t-else="">—</t>
+                      </div>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="small text-muted">Capacity</div>
+                      <div class="fw-semibold" t-esc="order.gear_capacity_id.name or '—'"/>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="small text-muted">Area / Region</div>
+                      <div class="fw-semibold" t-esc="order.gear_material_area_id.name or '—'"/>
+                    </div>
+                    <div class="col-sm-4">
+                      <div class="small text-muted">Civil Scope</div>
+                      <div class="fw-semibold" t-esc="order.gear_civil_scope or '—'"/>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+            <div class="col-lg-4">
+              <div class="card text-bg-light h-100">
+                <div class="card-body">
+                  <div class="text-muted text-uppercase small">Final Rate (per CUM)</div>
+                  <div class="display-6 fw-bold text-success" t-esc="final_rates.get('total_rate_per_cum') or final_rates.get('total_per_cum') or final_rates.get('final_prime_rate') or final_rates.get('prime_rate_final')"/>
+                  <p class="mb-0 small text-muted">This rate includes: plant cost, material (if any), optional services (if enabled), and dead cost (if enabled).</p>
+                  <div class="mt-3 d-flex gap-2">
+                    <a t-attf-href="/my/batching-plant/#{order.id}/pdf" class="btn btn-outline-secondary flex-grow-1">Download PDF</a>
+                    <form t-if="order.state in ['draft', 'sent']" t-att-action="'/my/batching-plant/%s/accept' % order.id" method="post" class="flex-grow-1">
+                      <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                      <button type="submit" class="btn btn-success w-100">Accept</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          <div class="row g-3 mt-1">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">MGQ Slab Rates</div>
+                <div class="card-body p-0">
+                  <div class="table-responsive mb-0">
+                    <table class="table table-sm align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Slab</th>
+                          <th class="text-end">Rate</th>
+                          <th class="text-end">Includes Optional</th>
+                          <th class="text-end">Dead Cost</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Prime</td>
+                          <td class="text-end" t-esc="final_rates.get('prime_rate') or order.prime_rate"/>
+                          <td class="text-end" t-esc="final_rates.get('final_prime_rate') or order.gear_prime_rate_final"/>
+                          <td class="text-end" t-esc="final_rates.get('dead_per_cum') or order.gear_dead_cost_per_cum"/>
+                        </tr>
+                        <tr>
+                          <td>Optimize</td>
+                          <td class="text-end" t-esc="final_rates.get('optimize_rate') or order.optimize_rate"/>
+                          <td class="text-end" t-esc="final_rates.get('final_optimize_rate') or order.gear_optimize_rate_final"/>
+                          <td class="text-end" t-esc="final_rates.get('dead_per_cum') or order.gear_dead_cost_per_cum"/>
+                        </tr>
+                        <tr>
+                          <td>After MGQ</td>
+                          <td class="text-end" t-esc="final_rates.get('after_mgq_rate') or order.excess_rate"/>
+                          <td class="text-end" t-esc="final_rates.get('final_after_mgq_rate') or order.gear_after_mgq_rate_final"/>
+                          <td class="text-end" t-esc="final_rates.get('dead_per_cum') or order.gear_dead_cost_per_cum"/>
+                        </tr>
+                        <tr>
+                          <td>NGT Relief</td>
+                          <td class="text-end" t-esc="order.ngt_rate or (order.gear_mgq_rate_id.ngt_rate if order.gear_mgq_rate_id else 0.0)"/>
+                          <td class="text-end" t-esc="final_rates.get('final_ngt_rate') or order.ngt_rate"/>
+                          <td class="text-end" t-esc="final_rates.get('dead_per_cum') or order.gear_dead_cost_per_cum"/>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <t t-if="order.x_inventory_mode == 'with_inventory'">
+            <div class="row g-3 mt-1">
+              <div class="col-12">
+                <div class="card">
+                  <div class="card-header">Material Cost (Inventory Mode)</div>
+                  <div class="card-body p-0">
+                    <div class="table-responsive mb-0">
+                      <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Material</th>
+                            <th class="text-end">Qty</th>
+                            <th>Unit</th>
+                            <th class="text-end">Rate</th>
+                            <th class="text-end">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <t t-foreach="material_breakdown.get('lines') or []" t-as="line">
+                            <tr>
+                              <td t-esc="line.get('label')"/>
+                              <td class="text-end" t-esc="line.get('qty')"/>
+                              <td t-esc="line.get('unit')"/>
+                              <td class="text-end" t-esc="line.get('rate')"/>
+                              <td class="text-end" t-esc="line.get('total')"/>
+                            </tr>
+                          </t>
+                        </tbody>
+                        <tfoot>
+                          <tr class="fw-semibold">
+                            <td colspan="4" class="text-end">Material Cost Total</td>
+                            <td class="text-end" t-esc="material_breakdown.get('total') or final_rates.get('material_cost')"/>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </t>
+
+          <div class="row g-3 mt-1">
             <div class="col-lg-6">
               <div class="card h-100">
-                <div class="card-header">Rates</div>
-                <div class="card-body">
-                  <table class="table table-sm mb-0">
-                    <thead>
-                      <tr><th>Label</th><th class="text-end">Rate</th></tr>
-                    </thead>
-                    <tbody>
-                      <tr t-if="order.x_inventory_mode == 'without_inventory'"><td>Prime</td><td class="text-end" t-esc="pdf_data['final_rates'].get('final_prime_rate')"/></tr>
-                      <tr t-if="order.x_inventory_mode == 'without_inventory'"><td>Optimize</td><td class="text-end" t-esc="pdf_data['final_rates'].get('final_optimize_rate')"/></tr>
-                      <tr t-if="order.x_inventory_mode == 'without_inventory'"><td>After MGQ</td><td class="text-end" t-esc="pdf_data['final_rates'].get('final_after_mgq_rate')"/></tr>
-                      <tr t-if="order.x_inventory_mode == 'with_inventory'"><td>Total (per CUM)</td><td class="text-end" t-esc="pdf_data['final_rates'].get('total_per_cum')"/></tr>
-                    </tbody>
-                  </table>
-                  <div class="mt-3">
-                    <p class="mb-1"><strong>Base Plant:</strong> <span t-esc="pdf_data['cost_breakdown'].get('base')"/></p>
-                    <p class="mb-1"><strong>Material:</strong> <span t-esc="pdf_data['cost_breakdown'].get('material')"/></p>
-                    <p class="mb-1"><strong>Optional:</strong> <span t-esc="pdf_data['cost_breakdown'].get('optional')"/></p>
-                    <p class="mb-0"><strong>Dead Cost:</strong> <span t-esc="pdf_data['cost_breakdown'].get('dead_cost')"/></p>
-                  </div>
+                <div class="card-header">Optional Services</div>
+                <div class="card-body p-0">
+                  <t t-if="optional_services">
+                        <div class="table-responsive mb-0">
+                          <table class="table table-sm mb-0 align-middle">
+                            <thead class="table-light">
+                              <tr>
+                                <th>Service</th>
+                                <th class="text-end">Rate</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Per CUM</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr t-foreach="optional_services" t-as="service">
+                                <td t-esc="service.get('name') or service.get('code')"/>
+                                <td class="text-end" t-esc="service.get('rate_value')"/>
+                                <td class="text-end" t-esc="service.get('quantity')"/>
+                                <td class="text-end" t-esc="service.get('per_cum')"/>
+                              </tr>
+                            </tbody>
+                            <tfoot>
+                              <tr class="fw-semibold">
+                                <td colspan="3" class="text-end">Optional Cost Total</td>
+                                <td class="text-end" t-esc="final_rates.get('optional_cost')"/>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                  </t>
+                  <t t-else="">
+                    <p class="mb-0 text-muted small p-3">No optional services were selected for this quotation.</p>
+                  </t>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card h-100">
+                <div class="card-header">Dead Cost / CAPEX</div>
+                <div class="card-body p-0">
+                  <t t-if="order.gear_civil_scope == 'vendor'">
+                    <div class="p-3">
+                      <p class="mb-1">
+                        <strong>Dead Cost per CUM:</strong>
+                        <span t-esc="capex_breakdown.get('dead_cost_per_cum') or final_rates.get('dead_cost') or 'Pending finalization'"/>
+                      </p>
+                      <p class="mb-3">
+                        <strong>CAPEX Total:</strong>
+                        <span t-esc="capex_breakdown.get('total_amount') or order.gear_dead_cost_amount or 'Pending finalization'"/>
+                      </p>
+                      <div class="table-responsive mb-0" t-if="capex_breakdown.get('items')">
+                        <table class="table table-sm mb-0 align-middle">
+                          <thead class="table-light">
+                            <tr><th>Component</th><th class="text-end">Status</th></tr>
+                          </thead>
+                          <tbody>
+                            <tr t-foreach="capex_breakdown.get('items')" t-as="capex">
+                              <td t-esc="capex.get('label')"/>
+                              <td class="text-end">
+                                <t t-set="capex_amount" t-value="capex.get('amount')"/>
+                                <t t-if="capex_amount not in (None, False)">
+                                  <span t-esc="capex_amount"/>
+                                </t>
+                                <t t-else="">
+                                  -
+                                </t>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <p class="mb-0 text-muted small" t-if="capex_breakdown.get('note')">
+                        <span t-esc="capex_breakdown.get('note')"/>
+                      </p>
+                    </div>
+                  </t>
+                  <t t-else="">
+                    <p class="mb-0 text-muted small p-3">Civil scope is client-side; no vendor CAPEX applied.</p>
+                  </t>
                 </div>
               </div>
             </div>
@@ -171,58 +415,114 @@
             </div>
           </div>
 
-          <div class="row g-3 mt-1">
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header">Cost Breakdown</div>
-                <div class="card-body text-center">
-                  <img t-if="chart_urls.get('cost_pie')" class="img-fluid" t-att-src="chart_urls.get('cost_pie')" alt="Cost breakdown"/>
+          <t t-if="show_cost_breakdown">
+            <div class="row g-3 mt-1">
+              <div class="col-lg-6">
+                <div class="card h-100">
+                  <div class="card-header">Cost Breakdown</div>
+                  <div class="card-body text-center">
+                    <img t-if="chart_urls.get('cost_pie')" class="img-fluid" t-att-src="chart_urls.get('cost_pie')" alt="Cost breakdown"/>
+                    <t t-set="source_map" t-value="pdf_data.get('source_map') or final_rates.get('source_map') or {}"/>
+                    <t t-set="running_map" t-value="source_map.get('running', {})"/>
+                    <t t-set="capex_map" t-value="source_map.get('capex', {})"/>
+                    <t t-set="dead_map" t-value="source_map.get('dead_cost', {})"/>
+                    <t t-set="intermediate_map" t-value="source_map.get('intermediate_values', {})"/>
+                    <t t-set="running_total_display" t-value="(running_map.get('manpower') or 0.0)
+                        + (running_map.get('land_investment') or 0.0)
+                        + (running_map.get('power') or 0.0)
+                        + (running_map.get('dg') or 0.0)
+                        + (running_map.get('admin') or 0.0)
+                        + (running_map.get('interest') or 0.0)
+                        + ((order.gear_jcb_opt_in and running_map.get('jcb')) or 0.0)"/>
+                    <table class="table table-sm mt-3" t-if="source_map">
+                      <thead>
+                        <tr><th>Component</th><th>Value</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td colspan="2"><strong>Running Cost (Monthly)</strong></td></tr>
+                        <tr><td colspan="2" class="text-muted small">Fixed Components</td></tr>
+                        <tr><td>Manpower</td><td t-esc="running_map.get('manpower')"/></tr>
+                        <tr t-if="running_map.get('land_investment')">
+                          <td>Land / Site Development</td>
+                          <td t-esc="running_map.get('land_investment')"/>
+                        </tr>
+                        <tr><td colspan="2" class="text-muted small">Variable Components</td></tr>
+                        <tr><td>Power</td><td t-esc="running_map.get('power')"/></tr>
+                        <tr><td>DG</td><td t-esc="running_map.get('dg')"/></tr>
+                        <t t-if="order.gear_jcb_opt_in">
+                          <tr><td>JCB</td><td t-esc="running_map.get('jcb')"/></tr>
+                        </t>
+                        <tr><td>Admin</td><td t-esc="running_map.get('admin')"/></tr>
+                        <tr><td>Interest</td><td t-esc="running_map.get('interest')"/></tr>
+                        <tr><td><strong>Running Total</strong></td><td t-esc="running_total_display"/></tr>
+                        <tr><td colspan="2"><strong>CAPEX</strong></td></tr>
+                        <tr><td>Plant &amp; Machinery</td><td t-esc="capex_map.get('plant_machinery')"/></tr>
+                        <tr><td>Furniture</td><td t-esc="capex_map.get('furniture')"/></tr>
+                        <tr><td>Equipment &amp; Fittings</td><td t-esc="capex_map.get('equipment_fittings')"/></tr>
+                        <tr><td>Computers &amp; Peripherals</td><td t-esc="capex_map.get('computers_peripherals')"/></tr>
+                        <tr><td><strong>Total CAPEX</strong></td><td t-esc="capex_map.get('total_capex')"/></tr>
+                        <tr><td>Monthly Depreciation</td><td t-esc="capex_map.get('monthly_depr')"/></tr>
+                        <tr><td colspan="2"><strong>Dead Cost</strong></td></tr>
+                        <tr><td>Factory Building</td><td t-esc="dead_map.get('civil_factory_building')"/></tr>
+                        <tr><td>Non-Factory Building</td><td t-esc="dead_map.get('civil_non_factory_building')"/></tr>
+                        <tr><td><strong>Dead Cost Total</strong></td><td t-esc="dead_map.get('dead_total')"/></tr>
+                        <tr><td colspan="2"><strong>Margin &amp; Prime</strong></td></tr>
+                        <tr><td>Margin / CUM</td><td t-esc="final_rates.get('margin_per_cum')"/></tr>
+                        <tr><td>Prime Rate (before margin)</td><td t-esc="final_rates.get('prime_rate')"/></tr>
+                        <tr><td>Final Prime Rate</td><td t-esc="final_rates.get('final_prime_rate') or final_rates.get('total_per_cum')"/></tr>
+                        <tr><td colspan="2" class="text-muted small">Final Prime Rate = Prime Rate + Margin / CUM</td></tr>
+                        <tr><td colspan="2"><strong>Calculation Inputs</strong></td></tr>
+                        <tr><td>Duration (months)</td><td t-esc="intermediate_map.get('duration_months')"/></tr>
+                        <tr><td>MGQ Used</td><td t-esc="intermediate_map.get('MGQ')"/></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card h-100">
+                  <div class="card-header">MGQ Billing</div>
+                  <div class="card-body text-center">
+                    <img t-if="chart_urls.get('mgq_bars')" class="img-fluid" t-att-src="chart_urls.get('mgq_bars')" alt="MGQ billing"/>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header">MGQ Billing</div>
-                <div class="card-body text-center">
-                  <img t-if="chart_urls.get('mgq_bars')" class="img-fluid" t-att-src="chart_urls.get('mgq_bars')" alt="MGQ billing"/>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div class="row g-3 mt-1">
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header">Diesel Escalation</div>
-                <div class="card-body text-center">
-                  <img t-if="chart_urls.get('diesel_line')" class="img-fluid" t-att-src="chart_urls.get('diesel_line')" alt="Diesel escalation"/>
+            <div class="row g-3 mt-1">
+              <div class="col-lg-6">
+                <div class="card h-100">
+                  <div class="card-header">Diesel Escalation</div>
+                  <div class="card-body text-center">
+                    <img t-if="chart_urls.get('diesel_line')" class="img-fluid" t-att-src="chart_urls.get('diesel_line')" alt="Diesel escalation"/>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="card h-100">
+                  <div class="card-header">Grade Comparison</div>
+                  <div class="card-body">
+                    <img t-if="chart_urls.get('grade_comparison')" class="img-fluid mb-2" t-att-src="chart_urls.get('grade_comparison')" alt="Grade comparison"/>
+                    <table class="table table-sm mb-0" t-if="pdf_data['grade_rows']">
+                      <thead>
+                        <tr><th>Grade</th><th>Base</th><th>Material</th><th>Optional</th><th>Dead</th><th>Total</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr t-foreach="pdf_data['grade_rows']" t-as="row">
+                          <td t-esc="row.get('grade')"/>
+                          <td t-esc="row.get('base')"/>
+                          <td t-esc="row.get('material')"/>
+                          <td t-esc="row.get('optional')"/>
+                          <td t-esc="row.get('dead_cost')"/>
+                          <td t-esc="row.get('total')"/>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header">Grade Comparison</div>
-                <div class="card-body">
-                  <img t-if="chart_urls.get('grade_comparison')" class="img-fluid mb-2" t-att-src="chart_urls.get('grade_comparison')" alt="Grade comparison"/>
-                  <table class="table table-sm mb-0" t-if="pdf_data['grade_rows']">
-                    <thead>
-                      <tr><th>Grade</th><th>Base</th><th>Material</th><th>Optional</th><th>Dead</th><th>Total</th></tr>
-                    </thead>
-                    <tbody>
-                      <tr t-foreach="pdf_data['grade_rows']" t-as="row">
-                        <td t-esc="row.get('grade')"/>
-                        <td t-esc="row.get('base')"/>
-                        <td t-esc="row.get('material')"/>
-                        <td t-esc="row.get('optional')"/>
-                        <td t-esc="row.get('dead_cost')"/>
-                        <td t-esc="row.get('total')"/>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
+          </t>
           <div class="row mt-4">
             <div class="col-12 text-center text-muted small">
               Powered by Tech Paras (SP Nexgen Automind Pvt Ltd) · Automate Excellence · www.smarterpeak.com
@@ -235,10 +535,14 @@
 
   <template id="portal_user_dropdown_batching" inherit_id="portal.user_dropdown">
     <xpath expr="//div[@id='o_logout_divider']" position="before">
-      <a t-attf-href="/my/batching-plant" role="menuitem" class="dropdown-item ps-3">
-        <i class="fa fa-fw fa-industry me-1 small text-primary-emphasis"/> Batching Plant Quotes
-      </a>
-      <div class="dropdown-divider"/>
+      <t t-set="bp_partner" t-value="request.env.user.partner_id.commercial_partner_id"/>
+      <t t-set="batching_quote_count" t-value="bp_partner and request.env['sale.order'].sudo().search_count([('partner_id', 'child_of', bp_partner.id), ('x_billing_category', '=', 'plant')]) or 0"/>
+      <t t-if="batching_quote_count">
+        <a t-attf-href="/my/batching-plant" role="menuitem" class="dropdown-item ps-3">
+          <i class="fa fa-fw fa-industry me-1 small text-primary-emphasis"/> Batching Plant Quotes
+        </a>
+        <div class="dropdown-divider"/>
+      </t>
     </xpath>
   </template>
 </odoo>

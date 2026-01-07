@@ -15,6 +15,11 @@
               parent="menu_gear_on_rent_operations"
               action="gear_on_rent.action_rmc_monthly_order"
               sequence="5"/>
+    <menuitem id="menu_gear_rmc_manual_operations"
+              name="Manual Operations"
+              parent="menu_gear_on_rent_operations"
+              action="gear_on_rent.action_gear_rmc_manual_operation"
+              sequence="8"/>
 
     <menuitem id="menu_gear_on_rent_compliance"
               name="Downtime Requests"

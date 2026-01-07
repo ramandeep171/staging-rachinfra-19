@@ -13,28 +13,57 @@
             </div>
           </div>
           <div class="row g-3 mt-3">
-            <t t-if="orders">
-              <t t-foreach="orders" t-as="order">
+            <t t-if="monthly_orders">
+              <t t-foreach="monthly_orders" t-as="mwo">
                 <div class="col-md-6">
                   <div class="card h-100 shadow-sm">
                     <div class="card-body">
-                      <h4 class="card-title" t-esc="order.name"/>
-                      <p class="card-text mb-1">
-                        <strong>Customer:</strong>
-                        <span t-esc="order.partner_id.display_name"/>
-                      </p>
-                      <p class="card-text mb-1">
-                        <strong>Billing Category:</strong>
-                        <span t-esc="order.x_billing_category or '—'"/>
-                      </p>
-                      <p class="card-text">
-                        <strong>MGQ:</strong>
-                        <span t-esc="order.x_monthly_mgq"/> units
-                      </p>
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                          <h5 class="card-title mb-0" t-esc="mwo['name']"/>
+                          <div class="small text-muted" t-if="mwo.get('start')">
+                            <t t-esc="mwo['start']"/> → <t t-esc="mwo['end'] or ''"/>
+                          </div>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary text-uppercase" t-esc="mwo.get('state')"/>
+                      </div>
+                      <div class="row small">
+                        <div class="col-6 mb-2">
+                          <div class="text-muted">Prime Output (m³)</div>
+                          <div class="fw-semibold" t-esc="mwo['prime_output'] or 0.0"/>
+                        </div>
+                        <div class="col-6 mb-2">
+                          <div class="text-muted">Standby (m³)</div>
+                          <div class="fw-semibold" t-esc="mwo['optimized_standby'] or 0.0"/>
+                        </div>
+                        <div class="col-6 mb-2">
+                          <div class="text-muted">NGT Relief (m³)</div>
+                          <div class="fw-semibold" t-esc="mwo['ngt_relief'] or 0.0"/>
+                        </div>
+                        <div class="col-6 mb-2">
+                          <div class="text-muted">NGT Hours</div>
+                          <div class="fw-semibold" t-esc="mwo['ngt_hours'] or 0.0"/>
+                        </div>
+                        <div class="col-6 mb-2">
+                          <div class="text-muted">LOTO Hours</div>
+                          <div class="fw-semibold" t-esc="mwo['loto_hours'] or 0.0"/>
+                        </div>
+                        <div class="col-6 mb-2">
+                          <div class="text-muted">Excess Diesel (L)</div>
+                          <div class="fw-semibold" t-esc="mwo['excess_diesel'] or 0.0"/>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </t>
+            </t>
+            <t t-elif="orders">
+              <div class="col-12">
+                <div class="alert alert-info mb-0">
+                  Contracts found but no monthly production data yet. Once MWOs are created, production stats will appear here.
+                </div>
+              </div>
             </t>
             <t t-else="">
               <div class="col-12">
@@ -50,14 +79,44 @@
   </template>
 
   <template id="portal_user_dropdown_inherit" inherit_id="portal.user_dropdown">
-    <xpath expr="//div[@id='o_logout_divider']" position="before">
-      <a t-attf-href="/my/gear-on-rent" role="menuitem" class="dropdown-item ps-3">
-        <i class="fa fa-fw fa-cogs me-1 small text-primary-emphasis"/> My Gear On Rent
-      </a>
-      <a t-attf-href="/my/gear-on-rent/reconciliations" role="menuitem" class="dropdown-item ps-3">
-        <i class="fa fa-fw fa-file-text-o me-1 small text-primary-emphasis"/> Annual Reconciliation
-      </a>
-      <div class="dropdown-divider"/>
+    <xpath expr="//div[@id='o_logout_divider']" position="before"/>
+  </template>
+
+  <!-- Add Gear On Rent card to the standard portal home -->
+  <template id="portal_my_home_inherit_gear_on_rent" inherit_id="portal.portal_my_home">
+    <xpath expr="//div[@id='oe_structure_portal_my_home_2']" position="before">
+      <t t-set="bp_partner" t-value="request.env.user.partner_id.commercial_partner_id"/>
+      <t t-set="gor_order_count" t-value="bp_partner and request.env['sale.order'].sudo().search_count([('partner_id', 'child_of', bp_partner.id), ('x_billing_category', 'in', ['rental', 'rmc']), ('state', 'in', ['sale', 'done'])]) or 0"/>
+      <t t-set="gor_monthly_count" t-value="bp_partner and request.env['gear.rmc.monthly.order'].sudo().search_count([('so_id.partner_id', 'child_of', bp_partner.id)]) or 0"/>
+      <t t-set="batching_quote_count" t-value="bp_partner and request.env['sale.order'].sudo().search_count([('partner_id', 'child_of', bp_partner.id), ('x_billing_category', '=', 'plant')]) or 0"/>
+      <t t-if="gor_order_count or gor_monthly_count">
+        <div class="col-md-4 mt-3">
+          <a t-attf-href="/my/gear-on-rent" class="card h-100 text-decoration-none border-0 shadow-sm">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex align-items-center mb-2">
+                <span class="fa fa-industry fa-lg text-primary me-2"/>
+                <h5 class="card-title mb-0">Gear On Rent</h5>
+              </div>
+              <p class="card-text text-muted mb-2">See your RMC monthly work orders, production, NGT/LOTO hours, and diesel overruns.</p>
+              <div class="mt-auto small text-primary">View dashboard →</div>
+            </div>
+          </a>
+        </div>
+      </t>
+      <t t-if="batching_quote_count">
+        <div class="col-md-4 mt-3">
+          <a t-attf-href="/my/batching-plant" class="card h-100 text-decoration-none border-0 shadow-sm">
+            <div class="card-body d-flex flex-column">
+              <div class="d-flex align-items-center mb-2">
+                <span class="fa fa-industry fa-lg text-primary me-2"/>
+                <h5 class="card-title mb-0">Batching Plant Quotations</h5>
+              </div>
+              <p class="card-text text-muted mb-2">Review and download your batching plant quotations created from the landing page.</p>
+              <div class="mt-auto small text-primary">View quotations →</div>
+            </div>
+          </a>
+        </div>
+      </t>
     </xpath>
   </template>
 

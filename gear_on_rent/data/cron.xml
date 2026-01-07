@@ -37,5 +37,17 @@
       <field name="priority">5</field>
       <field name="nextcall">1970-01-31 23:55:00</field>
     </record>
+    <record id="cron_email_daily_mo_reports" model="ir.cron">
+      <field name="name">Gear RMC: Email Daily MO Reports</field>
+      <field name="model_id" ref="mrp.model_mrp_production"/>
+      <field name="state">code</field>
+      <field name="code">model._cron_email_daily_reports()</field>
+      <field name="user_id" ref="base.user_root"/>
+      <field name="interval_type">days</field>
+      <field name="interval_number">1</field>
+      <field name="active">True</field>
+      <field name="priority">5</field>
+      <field name="nextcall">1970-01-01 02:00:00</field>
+    </record>
   </data>
 </odoo>

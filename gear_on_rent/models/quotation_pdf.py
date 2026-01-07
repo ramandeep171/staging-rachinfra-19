@@ -9,6 +9,7 @@ context. It does not generate or style the final PDF; it only prepares data and
 image assets for downstream QWeb rendering.
 """
 
+import base64
 import logging
 import math
 import tempfile
@@ -37,6 +38,14 @@ class GearBatchingQuotationPdf(models.AbstractModel):
         "penalty": "#C73E1D",
         "margin": "#BC4B51",
     }
+    _CAPEX_COMPONENTS = [
+        ("foundations", "Foundations & PCC"),
+        ("structures", "Structure & Sheds"),
+        ("electrical", "Electrical & Panels"),
+        ("water_supply", "Water Supply & Plumbing"),
+        ("dg_bays", "DG/Compressor Bays"),
+        ("roads", "Roads & Drainage"),
+    ]
 
     def _calculator(self):
         return self.env["gear.batching.quotation.calculator"]
@@ -46,17 +55,14 @@ class GearBatchingQuotationPdf(models.AbstractModel):
     # --------------------
     def _build_cost_breakdown(self, order, production_qty=None):
         calculator = self._calculator()
-        base = calculator.calculate_base_plant_rate(order, production_qty)
-        optional_cost = calculator.calculate_optional_services(order)
-        material_cost = calculator.calculate_material_cost(order)
-        dead_cost = calculator.calculate_dead_cost(order)
+        final_rates = calculator.generate_final_rates(order, production_qty)
 
         return {
-            "base": base.get("base_rate_per_cum", 0.0),
-            "material": material_cost,
-            "optional": optional_cost,
-            "dead_cost": dead_cost,
-            "margin": 0.0,
+            "base": (final_rates.get("running_per_cum", 0.0) + final_rates.get("depr_per_cum", 0.0)),
+            "material": final_rates.get("material_per_cum", 0.0),
+            "optional": final_rates.get("optional_per_cum", 0.0),
+            "dead_cost": final_rates.get("dead_per_cum", 0.0),
+            "margin": final_rates.get("margin_per_cum", 0.0),
         }
 
     def _build_mgq_scenarios(self, order):
@@ -75,7 +81,7 @@ class GearBatchingQuotationPdf(models.AbstractModel):
 
         scenarios = []
         for code, qty in scenario_qty:
-            base = calculator.calculate_base_plant_rate(order, qty)
+            base = calculator.generate_final_rates(order, qty)
             scenarios.append(
                 {
                     "code": code,
@@ -90,11 +96,11 @@ class GearBatchingQuotationPdf(models.AbstractModel):
 
     def _build_grade_comparison(self, order):
         calculator = self._calculator()
-        optional_cost = calculator.calculate_optional_services(order)
-        dead_cost = calculator.calculate_dead_cost(order)
+        final_rates = calculator.generate_final_rates(order)
+        optional_cost = final_rates.get("optional_per_cum", calculator.calculate_optional_services(order))
+        dead_cost = final_rates.get("dead_per_cum", calculator.calculate_dead_cost(order))
         material_area = order.gear_material_area_id
-        base = calculator.calculate_base_plant_rate(order)
-        base_rate = base.get("base_rate_per_cum", 0.0)
+        base_rate = final_rates.get("base_plant_rate") or calculator.calculate_base_plant_rate(order).get("base_rate_per_cum", 0.0)
 
         grade_rows = []
         design_mixes = self.env["gear.design.mix.master"].search([("active", "=", True)], order="grade")
@@ -117,6 +123,157 @@ class GearBatchingQuotationPdf(models.AbstractModel):
                 }
             )
         return grade_rows
+
+    def _build_capex_breakdown(self, order, final_rates):
+        scope = (order.gear_civil_scope or "").lower()
+        service_type = (order.gear_service_type or "").lower()
+        if scope != "vendor" and service_type != "turnkey":
+            return {}
+
+        per_cum = final_rates.get("dead_cost", 0.0) or 0.0
+        calculator = self._calculator()
+        total_amount = (
+            calculator._calculate_dead_capex_total(order)
+            if hasattr(calculator, "_calculate_dead_capex_total")
+            else 0.0
+        )
+        total_amount = total_amount or order.gear_dead_cost_amount or 0.0
+        component_records = calculator._capex_component_records(order)
+        capex_items = []
+        allowed_types = {"capex", "dead_cost"}
+        for component in component_records:
+            component_type = getattr(component, "component_type", False)
+            if component_type and component_type not in allowed_types:
+                continue
+
+            amount = calculator._capex_component_amount(component)
+            label = (
+                getattr(component, "display_name", False)
+                or getattr(component, "name", False)
+                or getattr(component, "code", False)
+            )
+            capex_items.append(
+                {
+                    "code": getattr(component, "code", False) or component.id,
+                    "label": label or "Component",
+                    "amount": amount if amount not in (None, False) else False,
+                }
+            )
+
+        if not capex_items:
+            capex_items = [
+                {"code": code, "label": label, "amount": False}
+                for code, label in self._CAPEX_COMPONENTS
+            ]
+
+        computed_total = sum(item.get("amount") or 0.0 for item in capex_items)
+        if computed_total:
+            total_amount = computed_total
+
+        breakdown = {
+            "items": capex_items,
+            "total_amount": total_amount,
+            "dead_cost_per_cum": per_cum,
+        }
+        if not total_amount and not per_cum:
+            breakdown["note"] = (
+                "Vendor scope CAPEX will be finalized after the detailed site survey. "
+                "The listed civil & infra components are included in the turnkey scope."
+            )
+        return breakdown
+
+    def _resolve_production_expectation(self, order, base_rates, final_rates):
+        """Return the most relevant production expectation value."""
+
+        candidates = [
+            getattr(order, "gear_expected_production_qty", False),
+            getattr(order, "gear_project_quantity", False),
+            getattr(order, "production_qty", False),
+            final_rates.get("production_qty"),
+            base_rates.get("production_qty"),
+        ]
+        for value in candidates:
+            try:
+                numeric = float(value or 0.0)
+            except (TypeError, ValueError):
+                continue
+            if numeric:
+                return numeric
+        return 0.0
+
+    def _material_breakdown(self, order):
+        calculator = self._calculator()
+        if order.x_inventory_mode != "with_inventory":
+            return {}
+
+        design = order.gear_design_mix_id
+        if not design:
+            return {}
+
+        bom_quantities = calculator._extract_bom_materials(design) if hasattr(calculator, "_extract_bom_materials") else {}
+
+        def _qty(key, fallback):
+            return bom_quantities.get(key, fallback or 0.0)
+
+        cement_qty = _qty("cement_qty", getattr(design, "cement_qty", 0.0))
+        agg10_qty = _qty("agg_10mm_qty", getattr(design, "agg_10mm_qty", 0.0))
+        agg20_qty = _qty("agg_20mm_qty", getattr(design, "agg_20mm_qty", 0.0))
+        admixture_qty = _qty("admixture_qty", getattr(design, "admixture_qty", 0.0))
+
+        def _rate(area, field):
+            return getattr(area, field, 0.0) if area else 0.0
+
+        area_override = order.gear_material_area_id
+        cement_area = order.gear_cement_area_id or area_override
+        agg10_area = order.gear_agg_10mm_area_id or area_override
+        agg20_area = order.gear_agg_20mm_area_id or area_override
+        admixture_area = order.gear_admixture_area_id or area_override
+
+        cement_rate = _rate(cement_area, "cement_rate")
+        agg10_rate = _rate(agg10_area, "agg_10mm_rate")
+        agg20_rate = _rate(agg20_area, "agg_20mm_rate")
+        admixture_rate = _rate(admixture_area, "admixture_rate")
+
+        cement_total = (cement_qty / 50.0) * cement_rate if cement_qty else 0.0
+        agg10_total = (agg10_qty / 1000.0) * agg10_rate if agg10_qty else 0.0
+        agg20_total = (agg20_qty / 1000.0) * agg20_rate if agg20_qty else 0.0
+        admixture_total = (admixture_qty / 1000.0) * admixture_rate if admixture_qty else 0.0
+
+        return {
+            "grade": design.grade,
+            "area": area_override or False,
+            "lines": [
+                {
+                    "label": "Cement",
+                    "qty": cement_qty,
+                    "unit": "kg",
+                    "rate": cement_rate,
+                    "total": cement_total,
+                },
+                {
+                    "label": "10mm Aggregate",
+                    "qty": agg10_qty,
+                    "unit": "kg",
+                    "rate": agg10_rate,
+                    "total": agg10_total,
+                },
+                {
+                    "label": "20mm Aggregate",
+                    "qty": agg20_qty,
+                    "unit": "kg",
+                    "rate": agg20_rate,
+                    "total": agg20_total,
+                },
+                {
+                    "label": "Admixture",
+                    "qty": admixture_qty,
+                    "unit": "ml",
+                    "rate": admixture_rate,
+                    "total": admixture_total,
+                },
+            ],
+            "total": cement_total + agg10_total + agg20_total + admixture_total,
+        }
 
     # --------------------
     # Chart generators
@@ -409,6 +566,18 @@ class GearBatchingQuotationPdf(models.AbstractModel):
         plt.close(fig)
         return path
 
+    def _encode_chart(self, path):
+        if not path:
+            return None
+        if isinstance(path, str) and path.startswith("data:image"):
+            return path
+        try:
+            with open(path, "rb") as handle:
+                encoded = base64.b64encode(handle.read()).decode("ascii")
+                return f"data:image/png;base64,{encoded}"
+        except FileNotFoundError:
+            return None
+
     # --------------------
     # Public API
     # --------------------
@@ -418,15 +587,56 @@ class GearBatchingQuotationPdf(models.AbstractModel):
         calculator = self._calculator()
         base_rates = calculator.calculate_base_plant_rate(order, production_qty)
         final_rates = calculator.generate_final_rates(order, production_qty)
+        source_map = final_rates.get("source_map", {})
+        capex_breakdown = calculator.calculate_capex_breakdown(order)
+
+        base_rates.update(
+            {
+                "prime_rate": final_rates.get("prime_rate", base_rates.get("prime_rate")),
+                "optimize_rate": final_rates.get("optimize_rate", base_rates.get("optimize_rate")),
+                "after_mgq_rate": final_rates.get("after_mgq_rate", base_rates.get("after_mgq_rate")),
+                "ngt_rate": final_rates.get("ngt_rate", base_rates.get("ngt_rate")),
+                "base_rate_per_cum": final_rates.get("base_rate_per_cum", base_rates.get("base_rate_per_cum")),
+                "mgq": final_rates.get("mgq", base_rates.get("mgq")),
+                "production_qty": final_rates.get("production_qty", base_rates.get("production_qty")),
+                "prime_bill": final_rates.get("prime_bill", base_rates.get("prime_bill")),
+                "optimize_bill": final_rates.get("optimize_bill", base_rates.get("optimize_bill")),
+                "after_mgq_bill": final_rates.get("after_mgq_bill", base_rates.get("after_mgq_bill")),
+            }
+        )
 
         breakdown = self._build_cost_breakdown(order, production_qty)
         mgq_scenarios = self._build_mgq_scenarios(order)
         grade_rows = self._build_grade_comparison(order) if order.x_inventory_mode == "with_inventory" else []
+        capex_breakdown = self._build_capex_breakdown(order, final_rates)
+        material_breakdown = self._material_breakdown(order)
 
         cost_pie_path = self._generate_cost_breakdown_pie(breakdown)
         mgq_chart_path = self._generate_mgq_bar_chart(mgq_scenarios) if mgq_scenarios else None
         diesel_chart_path = self._generate_diesel_escalation_chart(order)
         grade_chart_path = self._generate_grade_comparison_chart(grade_rows) if grade_rows else None
+
+        chart_urls = {
+            "cost_pie": self._encode_chart(cost_pie_path),
+            "mgq_bars": self._encode_chart(mgq_chart_path),
+            "diesel_line": self._encode_chart(diesel_chart_path),
+            "grade_comparison": self._encode_chart(grade_chart_path),
+        }
+
+        plant_slabs = {
+            "mgq": base_rates.get("mgq", 0.0),
+            "prime_rate": final_rates.get("final_prime_rate") or final_rates.get("prime_rate") or 0.0,
+            "optimize_rate": final_rates.get("final_optimize_rate") or final_rates.get("optimize_rate") or 0.0,
+            "after_mgq_rate": final_rates.get("final_after_mgq_rate") or final_rates.get("after_mgq_rate") or 0.0,
+            "ngt_rate": final_rates.get("final_ngt_rate")
+            or order.ngt_rate
+            or (order.gear_mgq_rate_id.ngt_rate if order.gear_mgq_rate_id else 0.0)
+            or 0.0,
+        }
+
+        optional_services = final_rates.get("full_rate_breakdown", {}).get("optional_services", [])
+        project_duration = order.gear_project_duration_years or order.gear_project_duration_months or False
+        production_expectation = self._resolve_production_expectation(order, base_rates, final_rates)
 
         summary_cards = [
             {"label": "Total Investment", "value": order.gear_dead_cost_amount or 0.0},
@@ -437,6 +647,12 @@ class GearBatchingQuotationPdf(models.AbstractModel):
                 "value": f"{math.floor(base_rates.get('prime_bill', 0.0))} - {math.ceil(base_rates.get('prime_bill', 0.0) + base_rates.get('optimize_bill', 0.0) + base_rates.get('after_mgq_bill', 0.0))}",
             },
         ]
+        dead_cost_value = final_rates.get("dead_per_cum", final_rates.get("dead_cost", 0.0))
+        dead_cost_total = capex_breakdown.get("total_amount") or order.gear_dead_cost_amount or 0.0
+        dead_cost_context = {
+            "per_cum": dead_cost_value,
+            "total": dead_cost_total,
+        }
 
         return {
             "order": order,
@@ -445,12 +661,24 @@ class GearBatchingQuotationPdf(models.AbstractModel):
             "cost_breakdown": breakdown,
             "mgq_scenarios": mgq_scenarios,
             "grade_rows": grade_rows,
-            "charts": {
-                "cost_pie": cost_pie_path,
-                "mgq_bars": mgq_chart_path,
-                "diesel_line": diesel_chart_path,
-                "grade_comparison": grade_chart_path,
-            },
+            "charts": chart_urls,
             "summary_cards": summary_cards,
+            "capex_breakdown": capex_breakdown,
+            "source_map": source_map,
+            # Required PDF data contract
+            "mgq": plant_slabs.get("mgq", 0.0),
+            "production_expectation": production_expectation,
+            "project_duration": project_duration,
+            "plant_slabs": plant_slabs,
+            "material_breakdown": material_breakdown,
+            "optional_services": optional_services,
+            "dead_cost": dead_cost_value,
+            "dead_cost_context": dead_cost_context,
+            "capex_items": capex_breakdown.get("items") or [],
+            "final_rate": final_rates.get("final_prime_rate") or final_rates.get("total_rate_per_cum", 0.0),
+            "grade_wise": grade_rows,
+            "cost_pie_chart": chart_urls.get("cost_pie"),
+            "mgq_billing_chart": chart_urls.get("mgq_bars"),
+            "diesel_chart": chart_urls.get("diesel_line"),
+            "grade_chart": chart_urls.get("grade_comparison"),
         }
-

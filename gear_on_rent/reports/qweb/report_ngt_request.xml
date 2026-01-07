@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="action_report_ngt_request" model="ir.actions.report">
+            <field name="name">NGT Request Annexure</field>
+            <field name="model">gear.ngt.request</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">gear_on_rent.report_ngt_request</field>
+            <field name="report_file">gear_on_rent.report_ngt_request</field>
+            <field name="print_report_name">(object.name or 'NGT Request')</field>
+            <field name="binding_model_id" ref="gear_on_rent.model_gear_ngt_request"/>
+            <field name="binding_type">report</field>
+        </record>
+
+        <template id="report_ngt_request">
+            <t t-call="web.basic_layout">
+                <t t-foreach="docs" t-as="doc">
+                    <t t-set="start_label" t-value="doc.date_start and doc.date_start.strftime('%d %b %Y, %H:%M') or '-'"/>
+                    <t t-set="end_label" t-value="doc.date_end and doc.date_end.strftime('%d %b %Y, %H:%M') or '-'"/>
+                    <t t-set="currency" t-value="doc.currency_id or doc.company_id.currency_id"/>
+                    <t t-set="currency_symbol" t-value="currency and currency.symbol or ''"/>
+                    <t t-set="meter_units" t-value="doc.electricity_units or 0.0"/>
+                    <t t-set="employee_cost" t-value="doc.employee_expense or 0.0"/>
+                    <t t-set="land_cost" t-value="doc.land_rent or 0.0"/>
+                    <t t-set="electricity_rate" t-value="doc.electricity_unit_rate or 0.0"/>
+                    <t t-set="electricity_cost" t-value="doc.electricity_expense or 0.0"/>
+                    <t t-set="total_cost" t-value="doc.total_expense or 0.0"/>
+                    <t t-set="ngt_hours" t-value="doc.hours_total or 0.0"/>
+                    <t t-set="ngt_factor" t-value="doc.ngt_hourly_prorata_factor or 0.0"/>
+                    <t t-set="ngt_hour_rate" t-value="doc.ngt_hourly_factor_effective or doc.ngt_hourly_rate or ngt_factor"/>
+                    <t t-set="ngt_qty" t-value="doc.ngt_qty or (ngt_hours * ngt_hour_rate)"/>
+                    <t t-set="mgq_monthly" t-value="doc.mgq_monthly or 0.0"/>
+
+                    <style>
+                        .ngt-annexure{
+                            font-family:"Lato","Helvetica","Arial",sans-serif;
+                            color:#0f172a;
+                            padding:12px 18px 24px;
+                            font-size:12px;
+                        }
+                        .ngt-header{
+                            border-bottom:2px solid #1e40af;
+                            margin-bottom:12px;
+                            padding-bottom:6px;
+                        }
+                        .ngt-title{
+                            font-size:20px;
+                            font-weight:700;
+                            color:#1e40af;
+                        }
+                        .ngt-subtitle{
+                            font-size:12px;
+                            color:#475569;
+                            letter-spacing:0.3px;
+                        }
+                        .ngt-meta{
+                            display:flex;
+                            flex-wrap:wrap;
+                            gap:8px 20px;
+                            margin-bottom:12px;
+                        }
+                        .ngt-meta div{
+                            min-width:200px;
+                        }
+                        .ngt-section{
+                            margin-top:12px;
+                        }
+                        .ngt-section-title{
+                            background:#0b5394;
+                            color:#fff;
+                            padding:6px 10px;
+                            font-weight:700;
+                            border-radius:4px 4px 0 0;
+                            text-transform:uppercase;
+                            letter-spacing:0.4px;
+                        }
+                        .ngt-table{
+                            width:100%;
+                            border-collapse:collapse;
+                        }
+                        .ngt-table th,
+                        .ngt-table td{
+                            border:1px solid #d5dbe6;
+                            padding:6px 8px;
+                        }
+                        .ngt-table thead th{
+                            background:#0b5394;
+                            color:#fff;
+                        }
+                        .ngt-table .ngt-total-row td{
+                            font-weight:700;
+                            background:#e2e8f0;
+                        }
+                        .text-end{
+                            text-align:right;
+                        }
+                        .ngt-notes{
+                            margin:8px 0 0 0;
+                            line-height:1.4;
+                        }
+                    </style>
+
+                    <div class="page ngt-annexure">
+                        <div class="ngt-header">
+                            <div class="ngt-brand" t-esc="doc.company_id.name or 'NGT Annexure'"/>
+                            <div class="ngt-title">NGT Request Annexure</div>
+                            <div class="ngt-subtitle">Expense &amp; Meter Summary</div>
+                        </div>
+
+                            <div class="ngt-meta">
+                            <div><strong>Reference:</strong> <span t-esc="doc.name"/></div>
+                            <div><strong>Contract / SO:</strong> <span t-esc="doc.so_id.display_name or '-'"/></div>
+                            <div><strong>Period:</strong> <span t-esc="start_label"/> -> <span t-esc="end_label"/></div>
+                            <div><strong>Status:</strong> <span t-esc="doc.state"/></div>
+                            <div><strong>MGQ (Monthly):</strong> <span t-esc="mgq_monthly"/></div>
+                        </div>
+
+                        <div class="ngt-section">
+                            <div class="ngt-section-title">Time &amp; Meter Window</div>
+                            <table class="ngt-table">
+                                <thead>
+                                    <tr>
+                                        <th>Start</th>
+                                        <th>Start Meter</th>
+                                        <th>End</th>
+                                        <th>End Meter</th>
+                                        <th>Total Hours</th>
+                                        <th>Metered Units</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td t-esc="start_label"/>
+                                        <td t-esc="doc.meter_reading_start or 0.0"/>
+                                        <td t-esc="end_label"/>
+                                        <td t-esc="doc.meter_reading_end or 0.0"/>
+                                        <td t-esc="ngt_hours"/>
+                                        <td t-esc="meter_units"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="ngt-section">
+                            <div class="ngt-section-title">NGT Calculation</div>
+                            <table class="ngt-table">
+                                <thead>
+                                    <tr>
+                                        <th>Label</th>
+                                        <th class="text-end">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Total Hours (NGT)</td>
+                                        <td class="text-end" t-esc="ngt_hours"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Per Hour Rate (m³/hr)</td>
+                                        <td class="text-end" t-esc="ngt_hour_rate"/>
+                                    </tr>
+                                    <tr class="ngt-total-row">
+                                        <td>NGT Quantity (m³)</td>
+                                        <td class="text-end" t-esc="'{0:,.2f}'.format(ngt_qty)"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="ngt-notes">
+                                NGT Calculation: = NGT Hours × Per Hour Rate = <t t-esc="ngt_hours"/> × <t t-esc="ngt_hour_rate"/> = <t t-esc="'{0:,.2f}'.format(ngt_qty)"/> m³
+                            </p>
+                        </div>
+
+                        <div class="ngt-section">
+                            <div class="ngt-section-title">Expense Breakdown</div>
+                            <table class="ngt-table">
+                                <thead>
+                                    <tr>
+                                        <th>Sr.</th>
+                                        <th>Expense Category</th>
+                                        <th>Details</th>
+                                        <th class="text-end">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>Employee Expense</td>
+                                        <td>Monthly employee cost</td>
+                                        <td class="text-end">
+                                            <span t-esc="currency_symbol"/> <span t-esc="'{0:,.2f}'.format(employee_cost)"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>Land Rent</td>
+                                        <td>Monthly land rent</td>
+                                        <td class="text-end">
+                                            <span t-esc="currency_symbol"/> <span t-esc="'{0:,.2f}'.format(land_cost)"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>Electricity Expense</td>
+                                        <td>
+                                            <div>
+                                                Meter reading: <t t-esc="doc.meter_reading_start or 0.0"/> -> <t t-esc="doc.meter_reading_end or 0.0"/> (<t t-esc="meter_units"/> units)
+                                            </div>
+                                            <div>
+                                                Unit rate: <span t-esc="currency_symbol"/> <span t-esc="'{0:,.2f}'.format(electricity_rate)"/> per unit
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <span t-esc="currency_symbol"/> <span t-esc="'{0:,.2f}'.format(electricity_cost)"/>
+                                        </td>
+                                    </tr>
+                                    <tr class="ngt-total-row">
+                                        <td colspan="3">Total Monthly Expense</td>
+                                        <td class="text-end">
+                                            <span t-esc="currency_symbol"/> <span t-esc="'{0:,.2f}'.format(total_cost)"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="ngt-section" t-if="doc.reason">
+                            <div class="ngt-section-title">Notes / Reason</div>
+                            <p class="ngt-notes" t-esc="doc.reason"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

@@ -14,13 +14,17 @@ class ReportBatchingPlantQuote(models.AbstractModel):
         
         pdf_data = {}
         chart_urls = {}
+        dead_cost_context = {}
         
         if doc:
             pdf_helper = self.env["gear.batching.quotation.pdf"]
             pdf_data = pdf_helper.prepare_pdf_assets(doc)
             
             def _encode_chart(path):
-                if not path: return None
+                if not path:
+                    return None
+                if isinstance(path, str) and path.startswith("data:image"):
+                    return path
                 try:
                     with open(path, "rb") as handle:
                         encoded = base64.b64encode(handle.read()).decode("ascii")
@@ -32,10 +36,30 @@ class ReportBatchingPlantQuote(models.AbstractModel):
                 key: _encode_chart(path) for key, path in pdf_data.get("charts", {}).items()
             }
 
+            capex_breakdown = pdf_data.get("capex_breakdown") or {}
+            final_rates = pdf_data.get("final_rates") or {}
+            dead_cost_context = (
+                pdf_data.get("dead_cost_context")
+                or (data or {}).get("dead_cost")
+                or {
+                    "per_cum": pdf_data.get("dead_cost")
+                    or final_rates.get("dead_cost")
+                    or doc.gear_dead_cost_per_cum
+                    or 0.0,
+                    "total": capex_breakdown.get("total_amount")
+                    or doc.gear_dead_cost_amount
+                    or 0.0,
+                }
+            )
+        else:
+            dead_cost_context = (data or {}).get("dead_cost") or {}
+
         return {
             'doc_ids': docids,
             'doc_model': 'sale.order',
             'docs': docs,
             'pdf_data': pdf_data,
             'chart_urls': chart_urls,
+            'dead_cost': dead_cost_context,
+            'dead_cost_context': dead_cost_context,
         }

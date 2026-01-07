@@ -30,6 +30,8 @@ class AccountMove(models.Model):
         string="Monthly Work Order",
         copy=False,
     )
+    gear_period_start = fields.Date(string="Billing From", copy=False)
+    gear_period_end = fields.Date(string="Billing To", copy=False)
     gear_target_qty = fields.Float(string="Monthly MGQ", copy=False)
     gear_adjusted_target_qty = fields.Float(string="Adjusted MGQ", copy=False)
     gear_prime_output_qty = fields.Float(string="Prime Output (m³)", copy=False)
@@ -90,9 +92,29 @@ class AccountMove(models.Model):
         month_start = month_date.replace(day=1)
         last_day = monthrange(month_start.year, month_start.month)[1]
         month_end = month_start.replace(day=last_day)
+        month_key = month_start
 
         orders = self._gear_get_related_sale_orders()
         contract = orders[:1]
+        ngt_requests = self.env["gear.ngt.request"].browse()
+        loto_requests = self.env["gear.loto.request"].browse()
+        if contract:
+            ngt_requests = self.env["gear.ngt.request"].search(
+                [
+                    ("so_id", "=", contract.id),
+                    ("month", "=", month_key),
+                    ("state", "=", "approved"),
+                ],
+                order="date_start asc",
+            )
+            loto_requests = self.env["gear.loto.request"].search(
+                [
+                    ("so_id", "=", contract.id),
+                    ("month", "=", month_key),
+                    ("state", "=", "approved"),
+                ],
+                order="date_start asc",
+            )
 
         month_orders = self.gear_monthly_order_id
         if not month_orders:
@@ -145,6 +167,9 @@ class AccountMove(models.Model):
             dockets = dockets.sorted(key=lambda d: (d.date, d.id))
             productions = month_orders.mapped("production_ids").filtered(
                 lambda p: p.date_start and month_start <= fields.Datetime.to_datetime(p.date_start).date() <= month_end
+            )
+            productions = productions.filtered(
+                lambda p: (p.x_prime_output_qty or p.qty_produced or p.actual_scrap_qty or 0.0) > 0.0
             )
             productions = productions.sorted(key=lambda p: (p.date_start or fields.Datetime.now(), p.id))
             manufacturing_orders = [
@@ -260,11 +285,135 @@ class AccountMove(models.Model):
                 for docket in dockets
             ],
             "manufacturing_orders": manufacturing_orders,
+            "loto_requests": [
+                {
+                    "name": request.name,
+                    "period_start": format_datetime(self.env, request.date_start) if request.date_start else "",
+                    "period_end": format_datetime(self.env, request.date_end) if request.date_end else "",
+                    "hours_total": request.hours_total or 0.0,
+                    "hours_waveoff": request.hours_waveoff_applied or 0.0,
+                    "hours_chargeable": request.hours_chargeable or 0.0,
+                    "reason": request.reason or "",
+                }
+                for request in loto_requests
+            ],
+            "ngt_requests": [
+                {
+                    "name": request.name,
+                    "company_name": request.company_id.display_name if request.company_id else "",
+                    "contract_name": request.so_id.display_name or "",
+                    "status": request.state,
+                    "mgq_monthly": request.mgq_monthly or 0.0,
+                    "period_start": format_datetime(self.env, request.date_start) if request.date_start else "",
+                    "period_end": format_datetime(self.env, request.date_end) if request.date_end else "",
+                    "hours": request.hours_total or 0.0,
+                    "hour_rate": request.ngt_hourly_factor_effective
+                    or request.ngt_hourly_rate
+                    or request.ngt_hourly_prorata_factor
+                    or 0.0,
+                    "qty": request.ngt_qty
+                    or ((request.hours_total or 0.0) * (request.ngt_hourly_factor_effective or request.ngt_hourly_rate or request.ngt_hourly_prorata_factor or 0.0)),
+                    "rate_per_m3": (request.total_expense / request.ngt_qty) if request.ngt_qty else 0.0,
+                    "meter_start": request.meter_reading_start or 0.0,
+                    "meter_end": request.meter_reading_end or 0.0,
+                    "meter_units": request.electricity_units or 0.0,
+                    "employee_expense": request.employee_expense or 0.0,
+                    "land_rent": request.land_rent or 0.0,
+                    "electricity_rate": request.electricity_unit_rate or 0.0,
+                    "electricity_expense": request.electricity_expense or 0.0,
+                    "total_expense": request.total_expense or 0.0,
+                    "reason": request.reason or "",
+                    "currency_symbol": request.currency_id and request.currency_id.symbol or (request.company_id.currency_id and request.company_id.currency_id.symbol) or "",
+                    "show_expenses": any(
+                        [
+                            request.employee_expense,
+                            request.land_rent,
+                            request.electricity_unit_rate,
+                            request.electricity_expense,
+                            request.total_expense,
+                        ]
+                    ),
+                }
+                for request in ngt_requests
+            ],
+            "show_cooling": any(
+                [
+                    cooling_totals.get("target_qty"),
+                    cooling_totals.get("prime_output_qty"),
+                    cooling_totals.get("ngt_m3"),
+                ]
+            ),
+            "show_wastage": any(
+                [
+                    prime_output,
+                    allowed_wastage_qty,
+                    actual_scrap_qty,
+                    over_wastage_qty,
+                    deduction_qty,
+                ]
+            ),
+            "show_diesel": bool(diesel_excess_litre or diesel_excess_amount),
         }
         return payload
 
+    def _gear_generate_invoice_pdf(self):
+        self.ensure_one()
+        report = self.partner_id.invoice_template_pdf_report_id or self.env.ref("account.account_invoices", raise_if_not_found=False)
+        if not report:
+            return False, False
+        try:
+            pdf_content, report_type = report._render_qweb_pdf(report.id, res_ids=self.ids)
+        except Exception:
+            return False, False
+        if report_type != "pdf" or not pdf_content:
+            return False, False
+        filename = self._get_invoice_report_filename(report=report)
+        return base64.b64encode(pdf_content), filename
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        for move, vals in zip(moves, vals_list):
+            if move.move_type == "out_refund" and not move.gear_monthly_order_id:
+                src = False
+                reversed_id = vals.get("reversed_entry_id")
+                if reversed_id:
+                    src = self.browse(reversed_id)
+                elif self.env.context.get("active_model") == "account.move":
+                    active_ids = self.env.context.get("active_ids") or []
+                    src = self.browse(active_ids[:1])
+                if src and src.gear_monthly_order_id:
+                    move.gear_monthly_order_id = src.gear_monthly_order_id.id
+            if not move.x_billing_category:
+                move._gear_sync_category_from_sale_orders()
+        return moves
     def action_post(self):
         res = super().action_post()
+        # Log invoice posting on the related Monthly Work Order
+        for move in self.filtered(lambda m: m.gear_monthly_order_id and m.move_type in ("out_invoice", "out_refund")):
+            doc_label = _("Invoice") if move.move_type == "out_invoice" else _("Credit/Debit Note")
+            attachment_id = False
+            pdf_data, filename = move._gear_generate_invoice_pdf()
+            if pdf_data:
+                attachment_vals = {
+                    "name": filename.replace("/", "_") if filename else f"{move.display_name}.pdf".replace("/", "_"),
+                    "type": "binary",
+                    "datas": pdf_data,
+                    "mimetype": "application/pdf",
+                    "res_model": move.gear_monthly_order_id._name,
+                    "res_id": move.gear_monthly_order_id.id,
+                }
+                attachment_id = self.env["ir.attachment"].create(attachment_vals).id
+
+            body = _("%(label)s %(name)s posted.") % {"label": doc_label, "name": move.display_name}
+            if attachment_id:
+                body += " " + _("PDF attached.")
+
+            move.gear_monthly_order_id.message_post(
+                body=body,
+                subtype_xmlid="mail.mt_note",
+                attachment_ids=[attachment_id] if attachment_id else False,
+            )
         self._gear_attach_month_end_report()
         return res
 

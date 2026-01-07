@@ -1,4 +1,5 @@
 from calendar import monthrange
+import calendar
 from datetime import datetime, time, timedelta
 from math import ceil
 
@@ -10,7 +11,8 @@ except ModuleNotFoundError:  # pragma: no cover
 import logging
 
 from odoo import _, api, fields, models
-from odoo.tools import format_date
+from odoo.tools import float_round, format_date
+from odoo.tools.safe_eval import safe_eval
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -141,6 +143,20 @@ class GearRmcMonthlyOrder(models.Model):
         tracking=True,
         help="Wave-off allowance captured from the sales order variables.",
     )
+    waveoff_hours_remaining = fields.Float(
+        string="Wave-Off Allowance Remaining",
+        digits=(16, 2),
+        compute="_compute_waveoff_remaining",
+        store=True,
+        help="Allowance minus applied wave-off hours.",
+    )
+    downtime_total_hours = fields.Float(
+        string="Downtime Hours Total",
+        digits=(16, 2),
+        compute="_compute_downtime_relief_qty",
+        store=True,
+        help="NGT hours plus chargeable LOTO hours used for downtime relief.",
+    )
     bank_pull_limit = fields.Float(
         string="Bank Pull Limit Snapshot",
         digits=(16, 2),
@@ -152,6 +168,55 @@ class GearRmcMonthlyOrder(models.Model):
         digits=(16, 4),
         tracking=True,
         help="Hourly to m³ conversion factor captured for NGT relief calculations.",
+    )
+    ngt_employee_expense = fields.Monetary(
+        string="NGT Employee Expense",
+        currency_field="currency_id",
+        default=0.0,
+        copy=False,
+        help="Manually entered monthly employee cost for the NGT annexure.",
+    )
+    ngt_land_rent = fields.Monetary(
+        string="NGT Land Rent",
+        currency_field="currency_id",
+        default=0.0,
+        copy=False,
+        help="Manually entered monthly land rent for the NGT annexure.",
+    )
+    ngt_electricity_unit_rate = fields.Monetary(
+        string="NGT Electricity Unit Rate",
+        currency_field="currency_id",
+        default=0.0,
+        copy=False,
+        help="Manually entered electricity unit rate for the NGT annexure.",
+    )
+    ngt_electricity_expense = fields.Monetary(
+        string="NGT Electricity Expense",
+        currency_field="currency_id",
+        compute="_compute_ngt_expense_totals",
+        store=True,
+        help="Electricity expense derived from meter units and unit rate.",
+    )
+    ngt_total_expense = fields.Monetary(
+        string="NGT Total Expense",
+        currency_field="currency_id",
+        compute="_compute_ngt_expense_totals",
+        store=True,
+        help="Total expense = employee + land rent + electricity expense.",
+    )
+    ngt_effective_rate = fields.Float(
+        string="NGT Rate (Derived)",
+        digits=(16, 2),
+        compute="_compute_ngt_effective_rate",
+        store=True,
+        help="Derived NGT rate = NGT Total Expense ÷ Monthly MGQ. Used on invoice when available.",
+    )
+    ngt_meter_units = fields.Float(
+        string="NGT Metered Units",
+        digits=(16, 2),
+        compute="_compute_ngt_expense_totals",
+        store=True,
+        help="Metered units pulled from the latest approved NGT request for this month.",
     )
     standard_loading_minutes = fields.Float(
         string="Standard Loading (min) Snapshot",
@@ -193,6 +258,16 @@ class GearRmcMonthlyOrder(models.Model):
         string="Dockets",
         readonly=True,
     )
+    invoice_ids = fields.One2many(
+        comodel_name="account.move",
+        inverse_name="gear_monthly_order_id",
+        string="Invoices",
+        readonly=True,
+    )
+    invoice_count = fields.Integer(compute="_compute_invoice_stats")
+    has_active_invoice = fields.Boolean(compute="_compute_invoice_stats")
+    last_billed_end = fields.Date(compute="_compute_invoice_stats")
+    has_remaining_invoice_window = fields.Boolean(compute="_compute_invoice_stats")
     monthly_target_qty = fields.Float(
         string="Monthly MGQ",
         digits=(16, 2),
@@ -209,6 +284,24 @@ class GearRmcMonthlyOrder(models.Model):
         string="Prime Output (m³)",
         digits=(16, 2),
         compute="_compute_prime_output",
+        store=True,
+    )
+    manual_on_qty = fields.Float(
+        string="Manual Qty (On Production)",
+        digits=(16, 3),
+        compute="_compute_manual_rollup",
+        store=True,
+    )
+    manual_after_qty = fields.Float(
+        string="Manual Qty (After Production)",
+        digits=(16, 3),
+        compute="_compute_manual_rollup",
+        store=True,
+    )
+    prime_with_manual_qty = fields.Float(
+        string="Prime + Manual (m³)",
+        digits=(16, 3),
+        compute="_compute_manual_rollup",
         store=True,
     )
     mwo_prime_output_qty = fields.Float(
@@ -295,7 +388,7 @@ class GearRmcMonthlyOrder(models.Model):
         store=True,
     )
     downtime_relief_qty = fields.Float(
-        string="NGT (m³)",
+        string="No-Generation Time (m³)",
         digits=(16, 2),
         compute="_compute_downtime_relief_qty",
         store=True,
@@ -423,6 +516,24 @@ class GearRmcMonthlyOrder(models.Model):
         for order in self:
             order.prime_output_qty = sum(order.production_ids.mapped("x_prime_output_qty"))
 
+    @api.depends("prime_output_qty", "docket_ids")
+    def _compute_manual_rollup(self):
+        ManualOp = self.env["gear.rmc.manual.operation"].sudo()
+        for order in self:
+            if not order.id:
+                order.manual_on_qty = 0.0
+                order.manual_after_qty = 0.0
+                order.prime_with_manual_qty = order.prime_output_qty or 0.0
+                continue
+            ops = ManualOp.search([("docket_id.monthly_order_id", "=", order.id)])
+            on_qty = sum(ops.filtered(lambda op: op.recipe_display_mode == "on_production").mapped("manual_qty_total"))
+            after_qty = sum(
+                ops.filtered(lambda op: op.recipe_display_mode == "after_production").mapped("manual_qty_total")
+            )
+            order.manual_on_qty = on_qty
+            order.manual_after_qty = after_qty
+            order.prime_with_manual_qty = (order.prime_output_qty or 0.0) + on_qty + after_qty
+
     @api.depends(
         "production_ids.prime_output_qty",
         "production_ids.wastage_allowed_qty",
@@ -479,6 +590,7 @@ class GearRmcMonthlyOrder(models.Model):
                 if month_key:
                     ngt_domain.append(("month", "=", month_key))
                     loto_domain.append(("month", "=", month_key))
+                ngt_domain.append(("request_id.state", "=", "approved"))
 
                 ngt_ledgers = NgTLedger.search(ngt_domain)
                 if ngt_ledgers:
@@ -493,6 +605,13 @@ class GearRmcMonthlyOrder(models.Model):
             allowance = order.so_id.x_loto_waveoff_hours or 0.0
             order.waveoff_hours_applied = min(loto_total, allowance)
             order.waveoff_hours_chargeable = max(loto_total - allowance, 0.0)
+            order.waveoff_hours_remaining = max(allowance - order.waveoff_hours_applied, 0.0)
+    @api.depends("so_id.x_loto_waveoff_hours", "waveoff_hours_applied")
+    def _compute_waveoff_remaining(self):
+        for order in self:
+            allowance = order.so_id.x_loto_waveoff_hours or 0.0
+            applied = order.waveoff_hours_applied or 0.0
+            order.waveoff_hours_remaining = max(allowance - applied, 0.0)
 
     @api.depends(
         "production_ids.x_ngt_hours",
@@ -501,6 +620,9 @@ class GearRmcMonthlyOrder(models.Model):
         "monthly_target_qty",
         "prime_output_qty",
         "x_is_cooling_period",
+        "waveoff_hours_chargeable",
+        "ngt_hours",
+        "waveoff_hours_remaining",
     )
     def _compute_downtime_relief_qty(self):
         for order in self:
@@ -508,14 +630,157 @@ class GearRmcMonthlyOrder(models.Model):
                 target = order.monthly_target_qty or 0.0
                 prime = order.prime_output_qty or 0.0
                 order.downtime_relief_qty = round(max(target - prime, 0.0), 2)
+                order.downtime_total_hours = 0.0
             else:
-                total_qty = 0.0
-                for production in order.production_ids:
-                    if production.x_ngt_hours:
-                        total_qty += production._gear_hours_to_qty(production.x_ngt_hours)
-                    if production.x_waveoff_hours_chargeable:
-                        total_qty += production._gear_hours_to_qty(production.x_waveoff_hours_chargeable)
-                order.downtime_relief_qty = round(total_qty, 2)
+                # Prefer ledger-backed hours on the monthly order; fall back to per-MO hours.
+                ngt_hours = order.ngt_hours or sum(order.production_ids.mapped("x_ngt_hours"))
+                waveoff_chargeable = order.waveoff_hours_chargeable or sum(order.production_ids.mapped("x_waveoff_hours_chargeable"))
+                allowance_remaining = order.waveoff_hours_remaining or 0.0
+
+                # Requested formula: (NGT Hours - Remaining Wave-Off) + chargeable LOTO hours.
+                effective_ngt = (ngt_hours or 0.0) - (allowance_remaining or 0.0)
+                hours = max((effective_ngt or 0.0) + (waveoff_chargeable or 0.0), 0.0)
+
+                factor = order._gear_get_ngt_factor()
+                order.downtime_relief_qty = round(hours * factor, 2)
+                order.downtime_total_hours = round(hours, 2)
+
+    def action_print_month_end_report(self):
+        self.ensure_one()
+        report = self.env.ref("gear_on_rent.action_report_month_end", raise_if_not_found=False)
+        if not report:
+            raise UserError(_("Month-End report configuration is missing."))
+
+        Invoice = self.env["account.move"]
+        invoice = Invoice.search(
+            [
+                ("gear_monthly_order_id", "=", self.id),
+                ("move_type", "in", ("out_invoice", "out_refund")),
+                ("state", "=", "posted"),
+            ],
+            order="invoice_date desc, id desc",
+            limit=1,
+        )
+        if not invoice:
+            invoice = Invoice.search(
+                [
+                    ("gear_monthly_order_id", "=", self.id),
+                    ("move_type", "in", ("out_invoice", "out_refund")),
+                ],
+                order="invoice_date desc, id desc",
+                limit=1,
+            )
+        if not invoice:
+            raise UserError(_("No invoice found to generate the Month-End report for this work order."))
+
+        return report.report_action(invoice)
+
+    @api.depends(
+        "so_id",
+        "date_start",
+        "ngt_employee_expense",
+        "ngt_land_rent",
+        "ngt_electricity_unit_rate",
+    )
+    def _compute_ngt_expense_totals(self):
+        for order in self:
+            meter_units = 0.0
+            employee_val = order.ngt_employee_expense or 0.0
+            land_val = order.ngt_land_rent or 0.0
+            unit_rate = order.ngt_electricity_unit_rate or 0.0
+            electricity_expense = 0.0
+            total_expense = 0.0
+            if order.so_id and order.date_start:
+                month_key = order.date_start.replace(day=1)
+                ngt_request = (
+                    order.env["gear.ngt.request"]
+                    .search(
+                        [
+                            ("so_id", "=", order.so_id.id),
+                            ("month", "=", month_key),
+                            ("state", "!=", "rejected"),
+                        ],
+                        order="approved_on desc, create_date desc, id desc",
+                        limit=1,
+                    )
+                )
+                if ngt_request:
+                    meter_units = ngt_request.electricity_units or 0.0
+                    if not employee_val:
+                        employee_val = ngt_request.employee_expense or 0.0
+                    if not land_val:
+                        land_val = ngt_request.land_rent or 0.0
+                    if not unit_rate:
+                        unit_rate = ngt_request.electricity_unit_rate or 0.0
+
+            # Electricity expense = (metered units × 10) × unit rate (as requested)
+            electricity_expense = meter_units * 10.0 * unit_rate
+            total_expense = employee_val + land_val + electricity_expense
+
+            order.ngt_meter_units = meter_units
+            order.ngt_electricity_expense = electricity_expense
+            order.ngt_total_expense = total_expense
+
+    @api.depends(
+        "ngt_total_expense",
+        "monthly_target_qty",
+        "adjusted_target_qty",
+        "mgq_monthly",
+        "x_monthly_mgq_snapshot",
+    )
+    def _compute_ngt_effective_rate(self):
+        for order in self:
+            base_mgq = (
+                order.monthly_target_qty
+                or order.adjusted_target_qty
+                or order.mgq_monthly
+                or order.x_monthly_mgq_snapshot
+                or 0.0
+            )
+            rate = 0.0
+            if base_mgq:
+                rate = (order.ngt_total_expense or 0.0) / base_mgq
+            order.ngt_effective_rate = rate
+
+    def write(self, vals):
+        res = super().write(vals)
+        tracked = {"ngt_employee_expense", "ngt_land_rent", "ngt_electricity_unit_rate"}
+        needs_sync = tracked.intersection(vals.keys())
+        if needs_sync:
+            self._gear_sync_ngt_request_expenses()
+        return res
+
+    def _gear_sync_ngt_request_expenses(self):
+        """Push master expense inputs into the latest NGT request for the month."""
+        for order in self:
+            if not order.so_id or not order.date_start:
+                continue
+            month_key = order.date_start.replace(day=1)
+            ngt_request = (
+                order.env["gear.ngt.request"]
+                .search(
+                    [
+                        ("so_id", "=", order.so_id.id),
+                        ("month", "=", month_key),
+                        ("state", "!=", "rejected"),
+                    ],
+                    order="approved_on desc, create_date desc, id desc",
+                    limit=1,
+                )
+            )
+            if not ngt_request:
+                continue
+            update = {
+                "employee_expense": order.ngt_employee_expense,
+                "land_rent": order.ngt_land_rent,
+                "electricity_unit_rate": order.ngt_electricity_unit_rate,
+            }
+            # Only write when there is a change to avoid needless chatter
+            if any(
+                ngt_request[field] != update[field]
+                for field in ("employee_expense", "land_rent", "electricity_unit_rate")
+            ):
+                ngt_request.write(update)
 
     @api.depends("docket_ids.runtime_minutes", "docket_ids.idle_minutes")
     def _compute_runtime_idle(self):
@@ -541,6 +806,26 @@ class GearRmcMonthlyOrder(models.Model):
     def _compute_docket_count(self):
         for order in self:
             order.docket_count = len(order.docket_ids)
+
+    def _gear_get_ngt_factor(self):
+        self.ensure_one()
+        # Priority: monthly snapshot -> contract snapshot -> derived from MGQ/days -> daily target fallback.
+        factor = self.ngt_hourly_prorata_factor or 0.0
+        contract = self.so_id
+        if not factor and contract:
+            factor = contract.ngt_hourly_prorata_factor or 0.0
+        if not factor:
+            mgq = self.mgq_monthly or self.monthly_target_qty or (contract and (contract.x_monthly_mgq or contract.mgq_monthly)) or 0.0
+            date_ref = self.date_start or fields.Date.context_today(self)
+            days_in_month = calendar.monthrange(date_ref.year, date_ref.month)[1]
+            if mgq and days_in_month:
+                factor = float_round((mgq / days_in_month) / 24.0, precision_digits=2)
+        if not factor:
+            # Last fallback: use the first daily target snapshot if present.
+            daily_target = sum(self.production_ids.mapped("x_daily_target_qty")) / len(self.production_ids) if self.production_ids else 0.0
+            if daily_target:
+                factor = float_round(daily_target / 24.0, precision_digits=2)
+        return float_round(factor or 0.0, precision_digits=2)
 
     def _gear_get_prorated_mgq(self):
         self.ensure_one()
@@ -836,6 +1121,23 @@ class GearRmcMonthlyOrder(models.Model):
         self.ensure_one()
         return self.wastage_penalty_rate or self.so_id.wastage_penalty_rate
 
+    @api.depends("invoice_ids.move_type", "invoice_ids.state", "invoice_ids.gear_period_end")
+    def _compute_invoice_stats(self):
+        for order in self:
+            invoices = order.invoice_ids.filtered(lambda m: m.move_type == "out_invoice" and m.state != "cancel")
+            order.invoice_count = len(invoices)
+            order.has_active_invoice = bool(invoices)
+            last_end = False
+            if invoices:
+                dated = [inv.gear_period_end or inv.invoice_date for inv in invoices if (inv.gear_period_end or inv.invoice_date)]
+                if dated:
+                    last_end = max(dated)
+            order.last_billed_end = last_end
+            if order.date_end:
+                order.has_remaining_invoice_window = not last_end or last_end < order.date_end
+            else:
+                order.has_remaining_invoice_window = True
+
     def _gear_prepare_debit_note_vals(self, rate, month_ref):
         self.ensure_one()
         partner = self.so_id.partner_invoice_id or self.so_id.partner_id
@@ -941,6 +1243,42 @@ class GearRmcMonthlyOrder(models.Model):
         )
         candidates._gear_create_over_wastage_debit_note()
 
+    def _check_invoice_constraints(self):
+        for order in self:
+            existing_invoice = order.invoice_ids.filtered(
+                lambda m: m.move_type == "out_invoice" and m.state != "cancel"
+            )
+            last_end = False
+            if existing_invoice:
+                dated = [inv.gear_period_end or inv.invoice_date for inv in existing_invoice if (inv.gear_period_end or inv.invoice_date)]
+                if dated:
+                    last_end = max(dated)
+            if last_end and order.date_end and last_end >= order.date_end:
+                raise UserError(_("This Monthly Work Order is fully billed up to its end date."))
+
+    def action_view_invoices(self):
+        self.ensure_one()
+        action = self.env.ref("account.action_move_out_invoice_type").read()[0]
+        action["domain"] = [("gear_monthly_order_id", "=", self.id), ("move_type", "=", "out_invoice")]
+        action_context = action.get("context", {}) or {}
+        if isinstance(action_context, str):
+            try:
+                action_context = safe_eval(action_context)
+            except Exception:
+                action_context = {}
+        if not isinstance(action_context, dict):
+            action_context = {}
+        action_context.update(
+            {
+                "default_move_type": "out_invoice",
+                "search_default_gear_monthly_order_id": self.id,
+                "default_gear_monthly_order_id": self.id,
+            }
+        )
+        action["context"] = action_context
+        action["name"] = _("Invoices")
+        return action
+
     def _gear_reassign_productions_to_windows(self):
         """Move daily productions under the window that matches their execution date."""
         all_orders = self.filtered("so_id")
@@ -963,6 +1301,7 @@ class GearRmcMonthlyOrder(models.Model):
                     production.x_monthly_order_id = target.id
                 if production.x_is_cooling_period != target.x_is_cooling_period:
                     production.x_is_cooling_period = target.x_is_cooling_period
+
     def _gear_ensure_daily_docket(self, production, start_dt, user_tz):
         """Ensure a draft docket exists for the given production day."""
         self.ensure_one()
@@ -999,13 +1338,15 @@ class GearRmcMonthlyOrder(models.Model):
             if updates:
                 docket.write(updates)
         else:
+            docket_reference = f"{production.name}-{local_date.strftime('%Y%m%d')}"
             docket_vals = {
                 "so_id": self.so_id.id,
                 "production_id": production.id,
                 "workorder_id": workorder.id if workorder else False,
                 "workcenter_id": target_workcenter.id if target_workcenter else False,
                 "date": local_date,
-                "docket_no": f"{production.name}-{local_date.strftime('%Y%m%d')}",
+                "docket_no": Docket._gear_allocate_docket_no(self.so_id),
+                "name": docket_reference,
                 "source": "cron",
                 "state": "draft",
                 "standard_loading_minutes": self.standard_loading_minutes,
@@ -1020,7 +1361,14 @@ class GearRmcMonthlyOrder(models.Model):
 
     def _gear_get_user_tz(self):
         self.ensure_one()
-        tz_name = self.env.context.get("tz") or self.env.user.tz or "UTC"
+        tz_name = (
+            self.env.context.get("tz")
+            or (self.so_id.partner_id.tz if self.so_id and self.so_id.partner_id and self.so_id.partner_id.tz else False)
+            or (self.so_id.user_id.tz if self.so_id and self.so_id.user_id and self.so_id.user_id.tz else False)
+            or (self.company_id.partner_id.tz if self.company_id and self.company_id.partner_id and self.company_id.partner_id.tz else False)
+            or self.env.user.tz
+            or "UTC"
+        )
         try:
             return pytz.timezone(tz_name)
         except Exception:
@@ -1240,6 +1588,7 @@ class GearRmcMonthlyOrder(models.Model):
 
     def action_open_prepare_invoice(self):
         self.ensure_one()
+        self._check_invoice_constraints()
         return {
             "type": "ir.actions.act_window",
             "res_model": "gear.prepare.invoice.mrp",

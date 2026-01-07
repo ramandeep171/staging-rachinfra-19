@@ -10,7 +10,11 @@
                     <group>
                         <field name="gear_cycle_reason_id"/>
                         <field name="gear_cycle_reason_type" readonly="1"/>
-                        <field name="scrap_qty"/>
+                        <field name="scrap_qty" readonly="1"/>
+                        <button name="action_open_scrap_wizard"
+                                type="object"
+                                string="Log Scrap"
+                                class="btn-secondary btn-sm"/>
                     </group>
                     <field name="gear_docket_ids"
                            context="{
@@ -27,6 +31,11 @@
                             <field name="quantity_ordered"/>
                             <field name="runtime_minutes"/>
                             <field name="idle_minutes"/>
+                            <field name="tm_number"/>
+                            <field name="driver_name"/>
+                            <field name="operator_user_id"/>
+                            <field name="recipe_id"/>
+                            <field name="batching_time"/>
                             <field name="cycle_reason_id"/>
                             <field name="cycle_reason_type" readonly="1"/>
                             <field name="source" optional="hide"/>
@@ -69,6 +78,47 @@
                         </list>
                     </field>
                 </page>
+            </xpath>
+            <xpath expr="//sheet/group[2]" position="replace">
+                <group string="RMC Details" name="gear_rmc_header_details">
+                    <group>
+                        <field name="gear_docket_no"/>
+                        <field name="gear_docket_qty_m3"/>
+                        <field name="gear_docket_tm_number"/>
+                        <field name="gear_docket_driver_name"/>
+                        <field name="scrap_qty" readonly="1"/>
+                        <button name="action_open_scrap_wizard"
+                                type="object"
+                                string="Log Scrap"
+                                class="btn-secondary btn-sm"/>
+                    </group>
+                    <group>
+                        <field name="gear_docket_operator_user_id"/>
+                        <field name="gear_docket_recipe_id"/>
+                        <field name="gear_docket_batching_time"/>
+                        <field name="gear_docket_customer_id" context="{'default_customer_rank': 1}"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="mrp_production_workorder_tree_editable_view_inherit_gear_qty_produced" model="ir.ui.view">
+        <field name="name">mrp.production.work.order.list.editable.inherit.gear.qty.produced</field>
+        <field name="model">mrp.workorder</field>
+        <field name="inherit_id" ref="mrp.mrp_production_workorder_tree_editable_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list/field[@name='product_id']" position="after">
+                <field name="gear_remaining_qty"
+                       string="Remaining Qty"
+                       optional="show"
+                       readonly="1"/>
+            </xpath>
+            <xpath expr="//field[@name='duration_expected']" position="after">
+                <field name="gear_cumulative_qty_produced"
+                       string="Produced Quantity (Total m³)"
+                       optional="show"
+                       readonly="1"/>
             </xpath>
         </field>
     </record>

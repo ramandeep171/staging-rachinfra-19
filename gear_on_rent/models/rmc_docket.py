@@ -201,6 +201,13 @@ class GearRmcDocket(models.Model):
     operator_completion_time = fields.Datetime(string="Operator Completion Time")
     operator_notes = fields.Text(string="Operator Notes")
     active = fields.Boolean(default=True)
+    customer_id = fields.Many2one(
+        "res.partner",
+        string="Customer",
+        index=True,
+        ondelete="set null",
+        help="Customer for whom this docket was produced (defaults from the contract).",
+    )
 
     _sql_constraints = [
         ("unique_docket_per_contract", "unique(so_id, docket_no)", "The docket number must be unique per contract."),
@@ -307,16 +314,50 @@ class GearRmcDocket(models.Model):
             else:
                 docket.vendor_bill_count = 0
 
+    @api.model
+    def _gear_allocate_docket_no(self, sale_order):
+        """Return the next sequential docket number for the provided contract."""
+        sale_order = sale_order if isinstance(sale_order, models.Model) else self.env["sale.order"].browse(sale_order)
+        if not sale_order:
+            return self.env["ir.sequence"].next_by_code("gear.rmc.docket") or "1"
+
+        sale_order = sale_order.sudo()
+        self.env.cr.execute("SELECT gear_last_docket_number FROM sale_order WHERE id = %s FOR UPDATE", (sale_order.id,))
+        row = self.env.cr.fetchone()
+        last_number = row[0] if row and row[0] is not None else 0
+
+        # Legacy dockets may not have updated the counter; align with current total to avoid reuse.
+        existing_total = self.search_count([("so_id", "=", sale_order.id)])
+        baseline = max(last_number, existing_total)
+        next_number = baseline + 1
+
+        self.env.cr.execute(
+            "UPDATE sale_order SET gear_last_docket_number = %s WHERE id = %s",
+            (next_number, sale_order.id),
+        )
+        self.env["sale.order"].invalidate_model(["gear_last_docket_number"])
+        return str(next_number)
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            so_id = vals.get("so_id")
+            provided_no = vals.get("docket_no")
+            if so_id:
+                # Treat incoming docket_no as a reference only; allocate the real sequential docket number.
+                if vals.get("name", "New") == "New" and provided_no and not str(provided_no).isdigit():
+                    vals["name"] = provided_no
+                if not provided_no or not str(provided_no).isdigit():
+                    vals["docket_no"] = self._gear_allocate_docket_no(so_id)
+            if not vals.get("docket_no"):
+                vals["docket_no"] = self._gear_allocate_docket_no(so_id or vals.get("so_id"))
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("gear.rmc.docket") or "New"
             if vals.get("docket_no") and not vals.get("state"):
                 vals["state"] = "in_production"
-            so_id = vals.get("so_id")
             if so_id:
                 order = self.env["sale.order"].browse(so_id)
+                vals.setdefault("customer_id", order.partner_id.id)
                 vals.setdefault("standard_loading_minutes", order.standard_loading_minutes)
                 vals.setdefault("diesel_burn_rate_per_hour", order.diesel_burn_rate_per_hour)
                 vals.setdefault("diesel_rate_per_litre", order.diesel_rate_per_litre)
@@ -581,10 +622,9 @@ class GearRmcDocket(models.Model):
         if not workorder:
             return self.browse()
         date_value = payload.get("date") or fields.Date.to_string(fields.Date.context_today(self))
-        docket_no = payload.get("docket_no") or f"{workorder.id}-{date_value}"
 
-        docket = self.search([("workorder_id", "=", workorder.id), ("docket_no", "=", docket_no)], limit=1)
         monthly_order = workorder.production_id.x_monthly_order_id if workorder.production_id else False
+        sale_order = workorder.production_id.x_sale_order_id
         if monthly_order and monthly_order.date_start and monthly_order.date_end:
             try:
                 parsed_date = fields.Date.from_string(date_value)
@@ -596,10 +636,14 @@ class GearRmcDocket(models.Model):
                 parsed_date = monthly_order.date_end
             date_value = fields.Date.to_string(parsed_date)
 
+        reference_no = payload.get("docket_no")
+        docket = self.search([("workorder_id", "=", workorder.id), ("date", "=", date_value)], limit=1)
+        if not docket and reference_no:
+            docket = self.search([("workorder_id", "=", workorder.id), ("docket_no", "=", reference_no)], limit=1)
+        docket_no = docket.docket_no if docket else self._gear_allocate_docket_no(sale_order)
+
         reason_id = payload.get("cycle_reason_id") or (workorder.gear_cycle_reason_id and workorder.gear_cycle_reason_id.id)
 
-        monthly_order = workorder.production_id.x_monthly_order_id if workorder.production_id else False
-        sale_order = workorder.production_id.x_sale_order_id
         standard_minutes = payload.get("standard_loading_minutes")
         if standard_minutes is None:
             standard_minutes = (
@@ -646,6 +690,8 @@ class GearRmcDocket(models.Model):
             "source": payload.get("source") or "ids",
             "state": "in_production",
         }
+        if reference_no:
+            vals["name"] = reference_no
         if reason_id:
             vals["cycle_reason_id"] = reason_id
         if docket:

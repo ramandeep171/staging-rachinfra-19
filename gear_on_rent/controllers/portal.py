@@ -11,6 +11,7 @@ import textwrap
 from odoo import fields, http
 from odoo.exceptions import UserError
 from odoo.http import request
+from odoo.addons.portal.controllers.portal import pager as portal_pager
 
 try:  # pragma: no cover - optional dependency in some test envs
     from reportlab.lib.pagesizes import letter as rl_letter
@@ -29,15 +30,40 @@ class GearOnRentPortal(http.Controller):
     def my_gear_on_rent(self, **kwargs):
         partner = request.env.user.partner_id.commercial_partner_id
         SaleOrder = request.env["sale.order"].sudo()
-        orders = SaleOrder.search(
-            [
-                ("partner_id", "child_of", partner.id),
-                ("x_billing_category", "in", ["rental", "rmc"]),
-            ]
+        order_domain = [
+            ("partner_id", "child_of", partner.id),
+            ("x_billing_category", "in", ["rental", "rmc"]),
+            ("state", "in", ["sale", "done"]),
+        ]
+        orders = SaleOrder.search(order_domain)
+        Monthly = request.env["gear.rmc.monthly.order"].sudo()
+        monthly_orders = Monthly.search(
+            [("so_id.partner_id", "child_of", partner.id)],
+            order="date_start desc",
+            limit=12,
         )
+        if not orders and not monthly_orders:
+            return request.redirect("/my")
+        monthly_summary = []
+        for mwo in monthly_orders:
+            monthly_summary.append(
+                {
+                    "name": mwo.display_name,
+                    "start": mwo.date_start,
+                    "end": mwo.date_end,
+                    "prime_output": mwo.prime_output_qty,
+                    "optimized_standby": mwo.optimized_standby_qty,
+                    "ngt_relief": mwo.downtime_relief_qty,
+                    "ngt_hours": mwo.ngt_hours,
+                    "loto_hours": mwo.waveoff_hours_chargeable,
+                    "excess_diesel": mwo.excess_diesel_litre_total,
+                    "state": mwo.state,
+                }
+            )
         values = {
             "page_name": "gear_on_rent_dashboard",
             "orders": orders,
+            "monthly_orders": monthly_summary,
         }
         return request.render("gear_on_rent.portal_gear_on_rent_dashboard", values)
 
@@ -369,6 +395,8 @@ class GearOnRentPortal(http.Controller):
     def _bp_encode_chart(self, path):
         if not path:
             return None
+        if isinstance(path, str) and path.startswith("data:image"):
+            return path
         try:
             with open(path, "rb") as handle:
                 data = handle.read()
@@ -380,20 +408,60 @@ class GearOnRentPortal(http.Controller):
     @http.route("/my/batching-plant", type="http", auth="user", website=True)
     def portal_batching_quotes(self, **kwargs):
         partner = self._bp_get_partner()
-        orders = (
-            request.env["sale.order"]
-            .sudo()
-            .search(
-                [
-                    ("partner_id", "child_of", partner.id),
-                    ("x_billing_category", "=", "plant"),
-                ],
-                order="create_date desc",
-            )
+        page = int(kwargs.get("page", 1)) if str(kwargs.get("page", "1")).isdigit() else 1
+        page_size = 10
+
+        SaleOrder = request.env["sale.order"].sudo()
+        domain = [
+            ("partner_id", "child_of", partner.id),
+            ("x_billing_category", "=", "plant"),
+        ]
+
+        order_count = SaleOrder.search_count(domain)
+        pager = portal_pager(
+            url="/my/batching-plant",
+            total=order_count,
+            page=page,
+            step=page_size,
         )
+
+        orders = SaleOrder.search(
+            domain,
+            order="create_date desc",
+            limit=page_size,
+            offset=pager.get("offset", 0),
+        )
+
+        calculator = request.env["gear.batching.quotation.calculator"].sudo()
+        display_rates = {}
+        for order in orders:
+            try:
+                final_rates = calculator.generate_final_rates(order)
+            except Exception:
+                final_rates = {}
+
+            if order.x_inventory_mode == "with_inventory":
+                rate = (
+                    order.gear_total_per_cum_rate
+                    or final_rates.get("total_rate_per_cum")
+                    or final_rates.get("total_per_cum")
+                    or final_rates.get("base_plant_rate")
+                )
+            else:
+                rate = (
+                    order.gear_prime_rate_final
+                    or final_rates.get("final_prime_rate")
+                    or final_rates.get("prime_rate_final")
+                    or final_rates.get("prime_rate")
+                )
+
+            display_rates[order.id] = rate
+
         values = {
             "page_name": "portal_batching_quotes",
             "orders": orders,
+            "pager": pager,
+            "display_rates": display_rates,
         }
         return request.render("gear_on_rent.portal_batching_quote_list", values)
 
@@ -409,11 +477,33 @@ class GearOnRentPortal(http.Controller):
             key: self._bp_encode_chart(path) for key, path in pdf_data.get("charts", {}).items()
         }
 
+        final_rates = pdf_data.get("final_rates", {})
+        rate_breakdown = final_rates.get("full_rate_breakdown", {})
+        optional_services = rate_breakdown.get("optional_services", [])
+
+        material_breakdown = {}
+        if order.x_inventory_mode == "with_inventory":
+            material_breakdown = self._bp_material_breakdown(order)
+
+        capex_breakdown = pdf_data.get("capex_breakdown") or {}
+        if not capex_breakdown and order.gear_civil_scope == "vendor":
+            capex_breakdown = pdf_helper._build_capex_breakdown(order, final_rates)
+        if not capex_breakdown and order.gear_dead_cost_amount:
+            capex_breakdown = {
+                "total_amount": order.gear_dead_cost_amount,
+                "dead_cost_per_cum": final_rates.get("dead_cost", 0.0),
+                "items": [],
+            }
+
         values = {
             "page_name": "portal_batching_quote_detail",
             "order": order,
             "pdf_data": pdf_data,
             "chart_urls": chart_urls,
+            "final_rates": final_rates,
+            "optional_services": optional_services,
+            "material_breakdown": material_breakdown,
+            "capex_breakdown": capex_breakdown,
         }
         return request.render("gear_on_rent.portal_batching_quote_detail", values)
 
@@ -440,7 +530,15 @@ class GearOnRentPortal(http.Controller):
         if not report_action:
             return request.not_found()
 
-        pdf_content, _ = report_action._render_qweb_pdf(report_action.id, [order.id], data={"pdf_data": pdf_data, "chart_urls": chart_urls})
+        report_data = {
+            "pdf_data": pdf_data,
+            "chart_urls": chart_urls,
+            "dead_cost": pdf_data.get("dead_cost_context") or {
+                "per_cum": pdf_data.get("dead_cost") or 0.0,
+                "total": (pdf_data.get("capex_breakdown") or {}).get("total_amount") or 0.0,
+            },
+        }
+        pdf_content, _ = report_action._render_qweb_pdf(report_action.id, [order.id], data=report_data)
         filename = f"{order.name.replace('/', '_')}_batching_quote.pdf"
         headers = {
             "Content-Type": "application/pdf",
@@ -465,3 +563,75 @@ class GearOnRentPortal(http.Controller):
         if so:
             return request.redirect(f"/my/orders/{so.id}")
         return request.redirect(f"/my/batching-plant/{order.id}")
+
+    def _bp_material_breakdown(self, order):
+        calculator = request.env["gear.batching.quotation.calculator"].sudo()
+
+        design = order.gear_design_mix_id
+        if not design:
+            return {}
+
+        bom_quantities = calculator._extract_bom_materials(design) if hasattr(calculator, "_extract_bom_materials") else {}
+
+        def _qty(key, fallback):
+            return bom_quantities.get(key, fallback or 0.0)
+
+        cement_qty = _qty("cement_qty", getattr(design, "cement_qty", 0.0))
+        agg10_qty = _qty("agg_10mm_qty", getattr(design, "agg_10mm_qty", 0.0))
+        agg20_qty = _qty("agg_20mm_qty", getattr(design, "agg_20mm_qty", 0.0))
+        admixture_qty = _qty("admixture_qty", getattr(design, "admixture_qty", 0.0))
+
+        def _rate(area, field):
+            return getattr(area, field, 0.0) if area else 0.0
+
+        area_override = order.gear_material_area_id
+        cement_area = order.gear_cement_area_id or area_override
+        agg10_area = order.gear_agg_10mm_area_id or area_override
+        agg20_area = order.gear_agg_20mm_area_id or area_override
+        admixture_area = order.gear_admixture_area_id or area_override
+
+        cement_rate = _rate(cement_area, "cement_rate")
+        agg10_rate = _rate(agg10_area, "agg_10mm_rate")
+        agg20_rate = _rate(agg20_area, "agg_20mm_rate")
+        admixture_rate = _rate(admixture_area, "admixture_rate")
+
+        cement_total = (cement_qty / 50.0) * cement_rate if cement_qty else 0.0
+        agg10_total = (agg10_qty / 1000.0) * agg10_rate if agg10_qty else 0.0
+        agg20_total = (agg20_qty / 1000.0) * agg20_rate if agg20_qty else 0.0
+        admixture_total = (admixture_qty / 1000.0) * admixture_rate if admixture_qty else 0.0
+
+        return {
+            "grade": design.grade,
+            "area": area_override or False,
+            "lines": [
+                {
+                    "label": "Cement",
+                    "qty": cement_qty,
+                    "unit": "kg",
+                    "rate": cement_rate,
+                    "total": cement_total,
+                },
+                {
+                    "label": "10mm Aggregate",
+                    "qty": agg10_qty,
+                    "unit": "kg",
+                    "rate": agg10_rate,
+                    "total": agg10_total,
+                },
+                {
+                    "label": "20mm Aggregate",
+                    "qty": agg20_qty,
+                    "unit": "kg",
+                    "rate": agg20_rate,
+                    "total": agg20_total,
+                },
+                {
+                    "label": "Admixture",
+                    "qty": admixture_qty,
+                    "unit": "ml",
+                    "rate": admixture_rate,
+                    "total": admixture_total,
+                },
+            ],
+            "total": cement_total + agg10_total + agg20_total + admixture_total,
+        }

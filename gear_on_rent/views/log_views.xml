@@ -11,6 +11,8 @@
                 <field name="date_start"/>
                 <field name="date_end"/>
                 <field name="hours_total"/>
+                <field name="electricity_expense"/>
+                <field name="total_expense"/>
                 <field name="state"/>
             </list>
         </field>
@@ -26,6 +28,7 @@
                     <button name="action_submit" type="object" string="Submit" class="btn-primary"/>
                     <button name="action_approve" type="object" string="Approve" class="btn-success" groups="gear_on_rent.group_gear_on_rent_manager"/>
                     <button name="action_reject" type="object" string="Reject" class="btn-danger" groups="gear_on_rent.group_gear_on_rent_manager"/>
+                    <button name="action_print_report" type="object" string="Print Annexure" class="btn-secondary" modifiers="{'invisible': [('id', '=', False)]}"/>
                     <field name="state" widget="statusbar"/>
                 </header>
                 <sheet>
@@ -39,10 +42,23 @@
                         <group>
                             <field name="so_id" required="1"/>
                             <field name="date_start" required="1"/>
+                            <field name="meter_reading_start"/>
                             <field name="date_end" required="1"/>
+                            <field name="meter_reading_end"/>
                             <field name="hours_total" readonly="1"/>
+                            <field name="ngt_hourly_prorata_factor" readonly="1" invisible="1"/>
+                            <field name="ngt_hourly_rate" readonly="1"/>
+                            <field name="ngt_hourly_factor_effective" readonly="1"  invisible="1"/>
+                            <field name="ngt_qty" readonly="1"/>
+                            <field name="mgq_monthly" readonly="1"/>
+                            <field name="electricity_units" readonly="1"/>
                         </group>
                         <group>
+                            <field name="employee_expense" readonly="1"/>
+                            <field name="land_rent" readonly="1"/>
+                            <field name="electricity_unit_rate" readonly="1"/>
+                            <field name="electricity_expense" readonly="1"/>
+                            <field name="total_expense" readonly="1"/>
                             <field name="approved_by" readonly="1"/>
                             <field name="approved_on" readonly="1"/>
                             <field name="company_id" readonly="1"/>
@@ -300,5 +316,134 @@
         <field name="name">RMC Dockets</field>
         <field name="res_model">gear.rmc.docket</field>
         <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_gear_rmc_manual_operation_list" model="ir.ui.view">
+        <field name="name">gear.rmc.manual.operation.list</field>
+        <field name="model">gear.rmc.manual.operation</field>
+        <field name="arch" type="xml">
+            <list string="Manual Operations" create="1" edit="1">
+                <field name="docket_id" string="Docket Number"/>
+                <field name="workorder_id"/>
+                <field name="workcenter_id"/>
+                <field name="product_id" string="Assigned Product"/>
+                <field name="quantity_produced"/>
+                <field name="quantity_ordered" string="Quantity Ordered (m³)"/>
+                <field name="qty_m3" string="Quantity (m³)"/>
+                <field name="tm_number"/>
+                <field name="driver_name"/>
+                <field name="operator_user_id"/>
+                <field name="recipe_id"/>
+                <field name="batching_time"/>
+                <field name="customer_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_rmc_manual_operation_line_tree" model="ir.ui.view">
+        <field name="name">gear.rmc.manual.operation.line.tree</field>
+        <field name="model">gear.rmc.manual.operation.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="material_name" readonly="1"/>
+                <field name="material_code" readonly="1"/>
+                <field name="design_qty"/>
+                <field name="actual_qty"/>
+                <field name="manual_qty"/>
+                <field name="variance" readonly="1"/>
+                <field name="variance_percentage" readonly="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_rmc_manual_operation_form" model="ir.ui.view">
+        <field name="name">gear.rmc.manual.operation.form</field>
+        <field name="model">gear.rmc.manual.operation</field>
+        <field name="arch" type="xml">
+            <form string="Manual Operation">
+                <sheet>
+                    <group>
+                        <field name="docket_id" required="1" string="Docket Number"/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="workorder_id"/>
+                            <field name="workcenter_id"/>
+                            <field name="product_id" string="Assigned Product"/>
+                            <field name="recipe_id"/>
+                            <field name="recipe_display_mode" string="Recipe Mode"/>
+                        </group>
+                        <group>
+                            <field name="quantity_produced"/>
+                            <field name="quantity_ordered" string="Quantity Ordered (m³)"/>
+                            <field name="qty_m3" string="Quantity (m³)"/>
+                            <field name="batching_time"/>
+                            <field name="date"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="tm_number"/>
+                            <field name="driver_name"/>
+                            <field name="operator_user_id"/>
+                        </group>
+                        <group>
+                            <field name="customer_id"/>
+                            <field name="manual_qty_total" invisible="recipe_display_mode != 'on_production'"/>
+                            <field name="manual_qty_total" readonly="1" invisible="recipe_display_mode == 'on_production'"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Recipe Lines">
+                            <field name="manual_recipe_line_ids" invisible="recipe_display_mode != 'on_production'">
+                                <list editable="bottom">
+                                    <field name="material_name" readonly="1"/>
+                                    <field name="material_code" readonly="1"/>
+                                    <field name="design_qty" readonly="1"/>
+                                    <field name="actual_qty" readonly="1"/>
+                                    <field name="manual_qty"/>
+                                    <field name="variance" readonly="1"/>
+                                    <field name="variance_percentage" readonly="1"/>
+                                </list>
+                            </field>
+                            <field name="manual_recipe_line_ids" invisible="recipe_display_mode != 'after_production'">
+                                <list editable="bottom">
+                                    <field name="material_name" readonly="1"/>
+                                    <field name="material_code" readonly="1"/>
+                                    <field name="design_qty"/>
+                                    <field name="actual_qty"/>
+                                    <field name="variance" readonly="1"/>
+                                    <field name="variance_percentage" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Batches">
+                            <field name="docket_batch_ids" readonly="1">
+                                <list>
+                                    <field name="batch_sequence"/>
+                                    <field name="batch_code"/>
+                                    <field name="quantity_ordered"/>
+                                    <field name="ten_mm"/>
+                                    <field name="twenty_mm"/>
+                                    <field name="facs"/>
+                                    <field name="water_batch"/>
+                                    <field name="flyash"/>
+                                    <field name="adm_plast"/>
+                                    <field name="waterr"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_rmc_manual_operation" model="ir.actions.act_window">
+        <field name="name">Manual Operations</field>
+        <field name="res_model">gear.rmc.manual.operation</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="gear_on_rent.view_gear_rmc_manual_operation_list"/>
+        <field name="domain">[('docket_id.source', '=', 'manual')]</field>
     </record>
 </odoo>

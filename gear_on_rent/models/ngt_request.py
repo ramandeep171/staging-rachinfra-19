@@ -1,3 +1,5 @@
+import calendar
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import float_round
@@ -82,6 +84,101 @@ class GearNgTRequest(models.Model):
         store=True,
         readonly=True,
     )
+    mgq_monthly = fields.Float(
+        string="MGQ (Monthly)",
+        related="so_id.mgq_monthly",
+        store=True,
+        readonly=True,
+        digits=(16, 2),
+    )
+    ngt_hourly_prorata_factor = fields.Float(
+        string="NGT Hourly Prorata Factor",
+        related="so_id.ngt_hourly_prorata_factor",
+        store=True,
+        readonly=True,
+        digits=(16, 4),
+    )
+    ngt_hourly_rate = fields.Float(
+        string="Per Hour Rate (m³/hr)",
+        compute="_compute_ngt_hourly_rate",
+        store=True,
+        digits=(16, 2),
+        readonly=True,
+        help="Derived as (MGQ per month / days in month) / 24 hours.",
+    )
+    ngt_hourly_factor_effective = fields.Float(
+        string="NGT Hourly Factor (m³/hr)",
+        compute="_compute_ngt_hourly_factor_effective",
+        store=True,
+        digits=(16, 2),
+        readonly=True,
+        help="Uses contract factor if set, otherwise falls back to derived per-hour rate.",
+    )
+    ngt_qty = fields.Float(
+        string="NGT Quantity (m³)",
+        compute="_compute_ngt_qty",
+        digits=(16, 2),
+    )
+    currency_id = fields.Many2one(
+        comodel_name="res.currency",
+        string="Currency",
+        related="so_id.currency_id",
+        store=True,
+        readonly=True,
+    )
+    employee_expense = fields.Monetary(
+        string="Employee Expense",
+        currency_field="currency_id",
+        tracking=True,
+        readonly=True,
+    )
+    land_rent = fields.Monetary(
+        string="Land Rent",
+        currency_field="currency_id",
+        tracking=True,
+        readonly=True,
+    )
+    meter_reading_start = fields.Float(
+        string="Start Meter Reading",
+        digits=(16, 2),
+        tracking=True,
+    )
+    meter_reading_end = fields.Float(
+        string="End Meter Reading",
+        digits=(16, 2),
+        tracking=True,
+    )
+    electricity_unit_rate = fields.Monetary(
+        string="Electricity Unit Rate",
+        currency_field="currency_id",
+        digits=(16, 2),
+        tracking=True,
+        readonly=True,
+        help="Rate per unit/kVAh used to compute electricity expense from meter readings.",
+    )
+    electricity_units = fields.Float(
+        string="Metered Units",
+        compute="_compute_expense_breakdown",
+        store=True,
+        digits=(16, 2),
+        readonly=True,
+    )
+    electricity_expense = fields.Monetary(
+        string="Electricity Expense",
+        currency_field="currency_id",
+        compute="_compute_expense_breakdown",
+        store=True,
+        digits=(16, 2),
+        readonly=True,
+    )
+    total_expense = fields.Monetary(
+        string="Total Expense",
+        currency_field="currency_id",
+        compute="_compute_expense_breakdown",
+        store=True,
+        digits=(16, 2),
+        readonly=True,
+    )
     company_id = fields.Many2one(
         comodel_name="res.company",
         related="so_id.company_id",
@@ -105,6 +202,92 @@ class GearNgTRequest(models.Model):
         for request in self:
             date_ref = request.date_start or fields.Datetime.now()
             request.month = fields.Date.to_date(date_ref).replace(day=1)
+
+    @api.depends(
+        "hours_total",
+        "ngt_hourly_factor_effective",
+        "ngt_hourly_prorata_factor",
+        "ngt_hourly_rate",
+        "mgq_monthly",
+        "date_start",
+    )
+    def _compute_ngt_qty(self):
+        for request in self:
+            factor = request.ngt_hourly_factor_effective or 0.0
+            request.ngt_qty = float_round((request.hours_total or 0.0) * factor, precision_digits=2)
+
+    @api.depends("mgq_monthly", "date_start")
+    def _compute_ngt_hourly_rate(self):
+        for request in self:
+            mgq = request.mgq_monthly or 0.0
+            date_ref = fields.Datetime.to_datetime(request.date_start) if request.date_start else fields.Datetime.now()
+            days = calendar.monthrange(date_ref.year, date_ref.month)[1]
+            per_hour = 0.0
+            if mgq > 0 and days > 0:
+                per_hour = float_round((mgq / days) / 24.0, precision_digits=2)
+            request.ngt_hourly_rate = per_hour
+
+    @api.depends("ngt_hourly_prorata_factor", "ngt_hourly_rate")
+    def _compute_ngt_hourly_factor_effective(self):
+        for request in self:
+            factor = request.ngt_hourly_prorata_factor or request.ngt_hourly_rate or 0.0
+            factor = float_round(factor, precision_digits=2)
+            request.ngt_hourly_factor_effective = factor
+
+    @api.depends(
+        "meter_reading_start",
+        "meter_reading_end",
+        "electricity_unit_rate",
+        "employee_expense",
+        "land_rent",
+    )
+    def _compute_expense_breakdown(self):
+        for request in self:
+            units = 0.0
+            start_reading = request.meter_reading_start or 0.0
+            end_reading = request.meter_reading_end or 0.0
+            if start_reading and end_reading:
+                if end_reading < start_reading:
+                    raise UserError(_("End meter reading must be greater than or equal to start reading."))
+                units = float_round(
+                    end_reading - start_reading, precision_digits=2
+                )
+            electricity_cost = float_round(units * (request.electricity_unit_rate or 0.0), precision_digits=2)
+            request.electricity_units = units
+            request.electricity_expense = electricity_cost
+            request.total_expense = float_round(
+                (request.employee_expense or 0.0) + (request.land_rent or 0.0) + electricity_cost,
+                precision_digits=2,
+            )
+            # Sync expense fields from the monthly master snapshot if available
+            request._gear_pull_master_expenses()
+
+    def _gear_pull_master_expenses(self):
+        """Pull expense inputs from the monthly work order master (if any) and lock edits."""
+        if not self.so_id or not self.month:
+            return
+        monthly = (
+            self.env["gear.rmc.monthly.order"]
+            .search(
+                [
+                    ("so_id", "=", self.so_id.id),
+                    ("date_start", "<=", self.date_end.date() if self.date_end else self.month),
+                    ("date_end", ">=", self.date_start.date() if self.date_start else self.month),
+                ],
+                limit=1,
+            )
+        )
+        if not monthly:
+            return
+        vals = {}
+        if monthly.ngt_employee_expense:
+            vals["employee_expense"] = monthly.ngt_employee_expense
+        if monthly.ngt_land_rent:
+            vals["land_rent"] = monthly.ngt_land_rent
+        if monthly.ngt_electricity_unit_rate:
+            vals["electricity_unit_rate"] = monthly.ngt_electricity_unit_rate
+        if vals:
+            self.update(vals)
 
     def action_submit(self):
         for request in self:
@@ -150,6 +333,10 @@ class GearNgTRequest(models.Model):
                 }
             )
         return True
+
+    def action_print_report(self):
+        self.ensure_one()
+        return self.env.ref("gear_on_rent.action_report_ngt_request").report_action(self)
 
     def _create_ledger_entry(self, month):
         self.ensure_one()

@@ -6,6 +6,7 @@ from . import account_move
 from . import workcenter_ext
 from . import mrp_production_ext
 from . import rmc_docket
+from . import rmc_manual_operation
 from . import rmc_work_order
 from . import product_template
 from . import product_extra
@@ -17,3 +18,7 @@ from . import batching_plant_master
 from . import quotation_calculator
 from . import quotation_pdf
 from . import website_visitor
+from . import cost_component
+from . import cost_masters
+from . import scrap_log
+from . import stock_scrap_ext

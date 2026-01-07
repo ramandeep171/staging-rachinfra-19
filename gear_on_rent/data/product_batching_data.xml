@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="1">
+
+    <record id="product_attr_billing_mode" model="product.attribute">
+      <field name="name">Billing Mode</field>
+      <field name="create_variant">dynamic</field>
+    </record>
+
+    <record id="product_attr_billing_prime" model="product.attribute.value">
+      <field name="name">Prime Output Production</field>
+      <field name="attribute_id" ref="gear_on_rent.product_attr_billing_mode"/>
+      <field name="sequence" eval="10"/>
+    </record>
+
+    <record id="product_attr_billing_optimize" model="product.attribute.value">
+      <field name="name">Optimized Standby Operations</field>
+      <field name="attribute_id" ref="gear_on_rent.product_attr_billing_mode"/>
+      <field name="sequence" eval="20"/>
+    </record>
+
+    <record id="product_attr_billing_ngt" model="product.attribute.value">
+      <field name="name">No-Generation Time (NGT) Period</field>
+      <field name="attribute_id" ref="gear_on_rent.product_attr_billing_mode"/>
+      <field name="sequence" eval="30"/>
+    </record>
+
+    <record id="product_batching_service" model="product.template">
+      <field name="name">Plant / Mixing Service</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+      <field name="attribute_line_ids" eval="[(0, 0, {'attribute_id': ref('gear_on_rent.product_attr_billing_mode'), 'value_ids': [(6, 0, [ref('gear_on_rent.product_attr_billing_prime'), ref('gear_on_rent.product_attr_billing_optimize'), ref('gear_on_rent.product_attr_billing_ngt')])]} )]"/>
+    </record>
+
+    <record id="product_batching_service_prime" model="product.product">
+      <field name="product_tmpl_id" ref="gear_on_rent.product_batching_service"/>
+      <field name="attribute_value_ids" eval="[(6, 0, [ref('gear_on_rent.product_attr_billing_prime')])]"/>
+      <field name="default_code">PLANT-PRIME</field>
+    </record>
+
+    <record id="product_batching_service_optimize" model="product.product">
+      <field name="product_tmpl_id" ref="gear_on_rent.product_batching_service"/>
+      <field name="attribute_value_ids" eval="[(6, 0, [ref('gear_on_rent.product_attr_billing_optimize')])]"/>
+      <field name="default_code">PLANT-OPT</field>
+    </record>
+
+    <record id="product_batching_service_ngt" model="product.product">
+      <field name="product_tmpl_id" ref="gear_on_rent.product_batching_service"/>
+      <field name="attribute_value_ids" eval="[(6, 0, [ref('gear_on_rent.product_attr_billing_ngt')])]"/>
+      <field name="default_code">PLANT-NGT</field>
+    </record>
+
+    <record id="product_material_supply" model="product.template">
+      <field name="name">Concrete Material Supply</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <record id="product_optional_generic" model="product.template">
+      <field name="name">Batching Optional Service</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <record id="product_dead_cost_amortization" model="product.template">
+      <field name="name">Dead Cost Amortization</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+
+    <record id="product_optional_transport" model="product.template">
+      <field name="name">Transport Service (per CUM)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <record id="product_optional_pump" model="product.template">
+      <field name="name">Concrete Pump Service (per CUM)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <record id="product_optional_manpower" model="product.template">
+      <field name="name">Site Manpower Support (per CUM)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <record id="product_optional_diesel" model="product.template">
+      <field name="name">Diesel Surcharge (per CUM)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+
+    <record id="product_optional_jcb" model="product.template">
+      <field name="name">JCB Rental (Monthly)</field>
+      <field name="type">service</field>
+      <field name="sale_ok">True</field>
+      <field name="purchase_ok">False</field>
+      <field name="invoice_policy">order</field>
+      <field name="list_price">0.0</field>
+    </record>
+  </data>
+</odoo>
