@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_move_form_asset_auto_create" model="ir.ui.view">
+        <field name="name">account.move.form.asset.auto.create</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='invoice_date']" position="after">
+                <label for="x_create_asset" invisible="move_type not in ('in_invoice', 'in_refund', 'in_receipt')"/>
+                <div class="o_row" invisible="move_type not in ('in_invoice', 'in_refund', 'in_receipt')" colspan="2">
+                    <field name="x_create_asset"/>
+                    <label for="x_asset_count" class="oe_read_only" invisible="x_asset_count == 0"/>
+                    <field name="x_asset_count" readonly="1" invisible="x_asset_count == 0"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
