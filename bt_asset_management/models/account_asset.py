@@ -40,16 +40,20 @@ class AccountAsset(models.Model):
         }
 
     def _ensure_bt_asset(self):
-        bt_asset_model = self.env['bt.asset']
+        clean_ctx = {k: v for k, v in self.env.context.items() if not k.startswith('default_')}
+        clean_ctx['from_account_asset'] = True
+        bt_asset_model = self.env['bt.asset'].with_context(clean_ctx)
         existing = bt_asset_model.search([('account_asset_id', 'in', self.ids)])
         existing_map = {asset.account_asset_id.id: asset for asset in existing}
         to_create = []
         for asset in self:
             if asset.id in existing_map:
                 continue
+            if getattr(asset, 'state', False) == 'model':
+                continue
             to_create.append(asset._prepare_bt_asset_vals())
         if to_create:
-            bt_asset_model.with_context(from_account_asset=True).create(to_create)
+            bt_asset_model.create(to_create)
 
     @api.model_create_multi
     def create(self, vals_list):

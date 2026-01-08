@@ -496,13 +496,14 @@ class BtAsset(models.Model):
     
     def action_move_vals(self):
         for asset in self:
-            scrap_location = asset.company_id.stock_scrap_location_id or self.env.company.stock_scrap_location_id
+            # Find a scrap location; prefer the standard stock scrap location if available,
+            # else any inventory-loss location for the company.
+            scrap_location = self.env.ref("stock.stock_location_scrap", raise_if_not_found=False)
             if not scrap_location:
                 scrap_location = self.env['stock.location'].search([
-                    ('scrap_location', '=', True),
                     ('usage', '=', 'inventory'),
                     ('company_id', 'in', [asset.company_id.id, False]),
-                ], limit=1)
+                ], order="id", limit=1)
             if not scrap_location:
                 raise UserError(_("Please set a scrap location first"))
             if asset.state == 'scrapped':

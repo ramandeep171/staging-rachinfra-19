@@ -139,8 +139,8 @@
                                 <div class="oe_right oe_button_box">
                                                                         <button name="action_split_quantity" string="Split Qty" type="object" class="btn-secondary" style="height:40px;"/>
                                                                         <button name="action_move_vals" string="Scrap" type="object" class="btn-primary" style="height:40px;" invisible="0"/>
-                                    <button name="action_open_maintenance_equipment" type="object" string="Equipment" class="oe_stat_button" icon="fa-wrench" invisible="0"/>
-                                    <button name="action_open_fleet_vehicle" type="object" string="Vehicle" class="oe_stat_button" icon="fa-car" invisible="0"/>
+                                    <button name="action_open_maintenance_equipment" type="object" string="Equipment" class="oe_stat_button" icon="fa-wrench" modifiers="{'invisible': [('maintenance_equipment_id', '=', False)]}"/>
+                                    <button name="action_open_fleet_vehicle" type="object" string="Vehicle" class="oe_stat_button" icon="fa-car" modifiers="{'invisible': [('fleet_vehicle_id', '=', False)]}"/>
                                                                 </div>
                                 <h1>
                                         <field name="name"/>
