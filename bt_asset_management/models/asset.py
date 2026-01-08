@@ -336,7 +336,8 @@ class BtAsset(models.Model):
         if self.env.context.get('from_account_asset'):
             for asset in assets.filtered(lambda a: a.account_asset_id):
                 try:
-                    asset._schedule_assign_equipment_activity()
+                    with self.env.cr.savepoint():
+                        asset._schedule_assign_equipment_activity()
                 except Exception:
                     _logger.exception("Failed to schedule equipment assignment activity for asset %s", asset.id)
         for asset in assets:
@@ -421,14 +422,15 @@ class BtAsset(models.Model):
             return existing
         user = self._get_assign_activity_user()
         try:
-            return self.env['mail.activity'].sudo().create({
-                'res_model': 'bt.asset',
-                'res_id': self.id,
-                'activity_type_id': todo_type.id,
-                'user_id': user.id if user else False,
-                'summary': _('Assign Equipment'),
-                'note': _('Please assign this asset to equipment to activate it.'),
-            })
+            with self.env.cr.savepoint():
+                return self.env['mail.activity'].sudo().create({
+                    'res_model': 'bt.asset',
+                    'res_id': self.id,
+                    'activity_type_id': todo_type.id,
+                    'user_id': user.id if user else False,
+                    'summary': _('Assign Equipment'),
+                    'note': _('Please assign this asset to equipment to activate it.'),
+                })
         except Exception:
             _logger.exception("Failed to create assign equipment activity for asset %s", self.id)
             return False
