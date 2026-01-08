@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_bt_asset_main" model="ir.sequence">
+            <field name="name">BT Asset Main</field>
+            <field name="code">bt.asset.main</field>
+            <field name="prefix">MAIN-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_bt_asset_component_default" model="ir.sequence">
+            <field name="name">BT Asset Component</field>
+            <field name="code">bt.asset.component</field>
+            <field name="prefix">COMP-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_bt_asset_component_pump" model="ir.sequence">
+            <field name="name">BT Asset Component Pump</field>
+            <field name="code">bt.asset.component.pump</field>
+            <field name="prefix">PUMP-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_bt_asset_component_membrane" model="ir.sequence">
+            <field name="name">BT Asset Component Membrane</field>
+            <field name="code">bt.asset.component.membrane</field>
+            <field name="prefix">MEM-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_bt_asset_component_panel" model="ir.sequence">
+            <field name="name">BT Asset Component Panel</field>
+            <field name="code">bt.asset.component.panel</field>
+            <field name="prefix">PANEL-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <record id="seq_bt_asset_component_flow_meter" model="ir.sequence">
+            <field name="name">BT Asset Component Flow Meter</field>
+            <field name="code">bt.asset.component.flow_meter</field>
+            <field name="prefix">FM-</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>
