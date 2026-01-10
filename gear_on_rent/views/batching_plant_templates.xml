@@ -1215,6 +1215,26 @@
                           <i class="fas fa-chart-line input-icon"></i>
                           <small class="help-text">Monthly Guaranteed Quantity</small>
                         </div>
+                         <div class="floating-label">
+                          <select id="gear_project_duration_years" name="gear_project_duration_years">
+                            <option value="" selected="selected"></option>
+                            <t t-foreach="project_durations" t-as="duration">
+                              <option t-att-value="duration[0]" t-esc="duration[1]"/>
+                            </t>
+                          </select>
+                          <label for="gear_project_duration_years">Project Duration (Years)</label>
+                          <i class="fas fa-calendar-alt input-icon"></i>
+                        </div>
+                        <div class="floating-label">
+                          <select id="gear_plant_running" name="gear_plant_running" required="required">
+                            <option value="" selected="selected" disabled="disabled"></option>
+                            <t t-foreach="plant_running_options" t-as="running_opt">
+                              <option t-att-value="running_opt[0]" t-esc="running_opt[1]"/>
+                            </t>
+                          </select>
+                          <label for="gear_plant_running">Plant Running *</label>
+                          <i class="fas fa-bolt input-icon"></i>
+                        </div>
                         <div class="floating-label">
                           <select id="gear_capacity_id" name="gear_capacity_id" required="required">
                             <option value="" selected="selected" disabled="disabled"></option>
@@ -1225,15 +1245,15 @@
                           <label for="gear_capacity_id">Plant Capacity *</label>
                           <i class="fas fa-industry input-icon"></i>
                         </div>
-                        <div class="floating-label">
-                          <select id="gear_project_duration_years" name="gear_project_duration_years">
-                            <option value="" selected="selected"></option>
-                            <t t-foreach="project_durations" t-as="duration">
-                              <option t-att-value="duration[0]" t-esc="duration[1]"/>
+                        <div class="floating-label wide">
+                          <select id="x_inventory_mode" name="x_inventory_mode" required="required">
+                            <option value="" selected="selected" disabled="disabled"></option>
+                            <t t-foreach="inventory_modes" t-as="mode">
+                              <option t-att-value="mode[0]" t-esc="mode[1]"/>
                             </t>
                           </select>
-                          <label for="gear_project_duration_years">Project Duration (Years)</label>
-                          <i class="fas fa-calendar-alt input-icon"></i>
+                          <label for="x_inventory_mode">Select Inventory Mode *</label>
+                          <i class="fas fa-boxes input-icon"></i>
                         </div>
                         <div class="floating-label">
                           <input type="number" step="0.01" min="0" id="gear_expected_production_qty" name="gear_expected_production_qty" placeholder=" "/>
@@ -1348,16 +1368,6 @@
                             </div>
                           </div>
                           <div class="additional-details-grid floating-grid">
-                            <div class="floating-label wide">
-                              <select id="x_inventory_mode" name="x_inventory_mode" required="required">
-                                <option value="" selected="selected" disabled="disabled"></option>
-                                <t t-foreach="inventory_modes" t-as="mode">
-                                  <option t-att-value="mode[0]" t-esc="mode[1]"/>
-                                </t>
-                              </select>
-                              <label for="x_inventory_mode">Select Inventory Mode *</label>
-                              <i class="fas fa-boxes input-icon"></i>
-                            </div>
                             <div class="floating-label" id="civilScopeWrapper">
                               <select id="gear_civil_scope" name="gear_civil_scope">
                                 <option value="" selected="selected"></option>
@@ -1428,7 +1438,8 @@
                               <t t-foreach="optional_services" t-as="opt">
                                 <div class="optional-service-card"
                                      t-att-data-rate="opt['rate_value']"
-                                     t-att-data-charge-type="opt['charge_type']">
+                                     t-att-data-charge-type="opt['charge_type']"
+                                     t-att-data-lock-qty="opt.get('lock_quantity') and '1' or None">
                                   <label class="optional-service-toggle">
                                     <input type="checkbox"
                                            t-att-name="opt['flag_field']"
@@ -1440,19 +1451,31 @@
                                       <small class="text-muted" t-esc="opt['charge_label']"/>
                                     </div>
                                   </label>
-                                  <div class="optional-service-body">
-                                    <label class="optional-service-qty">
-                                      <span t-esc="opt['quantity_placeholder'] or 'Qty'"/>
-                                      <input type="number"
-                                             step="0.01"
-                                             min="0"
+                                    <div class="optional-service-body">
+                                    <t t-if="opt.get('lock_quantity')">
+                                      <input type="hidden"
                                              class="js-optional-rate-input"
+                                             value="1"
                                              t-att-name="opt['value_field']"
                                              t-att-data-rate="opt['rate_value']"
                                              t-att-data-flag-field="opt['flag_field']"
                                              t-att-data-charge-type="opt['charge_type']"
-                                             t-att-placeholder="opt['quantity_placeholder'] or 'Qty'"/>
-                                    </label>
+                                             data-lock-qty="1"/>
+                                    </t>
+                                    <t t-else="">
+                                      <label class="optional-service-qty">
+                                        <span t-esc="opt['quantity_placeholder'] or 'Qty'"/>
+                                        <input type="number"
+                                               step="0.01"
+                                               min="0"
+                                               class="js-optional-rate-input"
+                                               t-att-name="opt['value_field']"
+                                               t-att-data-rate="opt['rate_value']"
+                                               t-att-data-flag-field="opt['flag_field']"
+                                               t-att-data-charge-type="opt['charge_type']"
+                                               t-att-placeholder="opt['quantity_placeholder'] or 'Qty'"/>
+                                      </label>
+                                    </t>
                                     <p class="optional-service-note">
                                       <t t-esc="opt['helper_text']"/>
                                     </p>
@@ -1614,6 +1637,7 @@
                         <ul class="service-preview-list">
                           <li><span>Service Type</span><strong id="previewService">—</strong></li>
                           <li><span>Inventory Mode</span><strong id="previewInventory">—</strong></li>
+                          <li><span>Plant Running</span><strong id="previewPlantRunning">—</strong></li>
                           <li><span>Design Mix</span><strong id="previewDesignMix">—</strong></li>
                           <li><span>Optional Services</span><strong id="previewOptional">—</strong></li>
                         </ul>
@@ -1656,6 +1680,11 @@
               </div>
             </div>
           </section>
+
+          <a href="#contact" class="floating-quote-btn" id="floatingQuoteBtn" aria-label="Get quotation">
+            <i class="fas fa-file-signature"></i>
+            <span>Get Quotation</span>
+          </a>
 
           <!-- Back to Top Button -->
           <button class="back-to-top" id="backToTop">

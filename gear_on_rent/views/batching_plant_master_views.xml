@@ -94,10 +94,53 @@
         <field name="view_mode">list,form</field>
     </record>
 
+    <record id="view_gear_optional_service_master_list" model="ir.ui.view">
+        <field name="name">gear.optional.service.master.list</field>
+        <field name="model">gear.optional.service.master</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="charge_type"/>
+                <field name="rate"/>
+                <field name="diesel_per_cum"/>
+                <field name="default_enabled"/>
+                <field name="currency_id"/>
+                <field name="company_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_optional_service_master_form" model="ir.ui.view">
+        <field name="name">gear.optional.service.master.form</field>
+        <field name="model">gear.optional.service.master</field>
+        <field name="arch" type="xml">
+            <form string="Optional Service">
+                <sheet>
+                    <group col="2">
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="charge_type"/>
+                        <field name="rate"/>
+                        <field name="default_enabled"/>
+                        <field name="diesel_per_cum"/>
+                        <field name="product_id"/>
+                        <field name="currency_id"/>
+                        <field name="company_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <record id="action_gear_optional_service_master" model="ir.actions.act_window">
         <field name="name">Optional Services</field>
         <field name="res_model">gear.optional.service.master</field>
+        <field name="view_id" ref="view_gear_optional_service_master_list"/>
         <field name="view_mode">list,form</field>
+        <field name="context">{'active_test': False}</field>
     </record>
 
     <record id="view_gear_running_cost_master_list" model="ir.ui.view">
@@ -105,10 +148,8 @@
         <field name="model">gear.running.cost.master</field>
         <field name="arch" type="xml">
             <list>
-                <field name="manpower_monthly"/>
                 <field name="power_monthly"/>
-                <field name="dg_monthly"/>
-                <field name="jcb_monthly"/>
+                <field name="diesel_monthly"/>
                 <field name="admin_monthly"/>
                 <field name="interest_monthly"/>
                 <field name="land_investment"/>
@@ -126,12 +167,11 @@
             <form string="Running Cost Master">
                 <sheet>
                     <group col="2">
-                        <field name="manpower_monthly"/>
                         <field name="power_monthly"/>
-                        <field name="dg_monthly"/>
-                        <field name="jcb_monthly"/>
+                        <field name="diesel_monthly"/>
                         <field name="admin_monthly"/>
                         <field name="interest_monthly"/>
+                        <field name="interest_percent"/>
                         <field name="land_investment"/>
                         <field name="total_monthly" readonly="1"/>
                         <field name="company_id"/>
@@ -271,16 +311,15 @@
                     <notebook>
                         <page string="Running Cost Breakdown">
                             <group col="2">
-                                <field name="running_manpower"/>
                                 <field name="running_power"/>
                                 <field name="running_dg"/>
-                                <field name="running_jcb"/>
+                                <field name="running_diesel"/>
                                 <field name="running_admin"/>
                                 <field name="running_interest"/>
                                 <field name="running_land"/>
                                 <field name="running_total" readonly="1"/>
                             </group>
-                            <div class="o_form_label">Running Monthly = sum(Manpower + Power + DG + JCB + Admin + Interest + Land)</div>
+                            <div class="o_form_label">Running Monthly = sum(Power + DG + Diesel + Admin + Interest + Land)</div>
                         </page>
                         <page string="CAPEX Breakdown">
                             <group col="2">

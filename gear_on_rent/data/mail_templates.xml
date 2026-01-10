@@ -41,12 +41,12 @@
       <li>Capacity: <t t-out="object.gear_capacity_id.name or '—'"/></li>
       <li>MGQ: <t t-out="object.mgq_monthly or object.x_monthly_mgq or 0.0"/> m³</li>
       <li>Inventory Mode: <t t-out="object.x_inventory_mode or '—'"/></li>
-      <li>Final Rate: <t t-out="object.gear_total_per_cum_rate or object.gear_prime_rate_final or '—'"/></li>
+      <li>Final Rate: <t t-out="object.gear_prime_rate_final or object.prime_rate or 0.0"/></li>
     </ul>
     <p>You can review the generated Sales Order here: <a t-att-href="object.get_portal_url()"><t t-out="object.get_portal_url()"/></a>.</p>
     <p>PDF copy of your quotation is available anytime from the portal: <a t-att-href="'/my/batching-plant/%s/pdf' % object.id">Download PDF</a>.</p>
     <p>We will process the sales order and share the finalized PDF shortly.</p>
-    <p>--<br/>SP Nexgen Automind Pvt Ltd — Tech Paras<br/>Automate Excellence<br/>www.smarterpeak.com</p>
+    <p>--<br/><t t-out="object.company_id.name or ''"/><br/><t t-out="object.company_id.website or ''"/></p>
 </div>
       </field>
     </record>
@@ -58,7 +58,7 @@
       <field name="partner_to">{{ object.partner_id.id }}</field>
       <field name="body_html" type="html">
 <div style="margin: 0px; padding: 0px;">
-    <p>Namaste <t t-out="object.partner_id.name or 'Customer'"/>,</p>
+    <p>Hello  <t t-out="object.partner_id.name or 'Customer'"/>,</p>
     <p>Your batching plant quotation <strong><t t-out="object.name"/></strong> is ready for review.</p>
     <p><strong>Highlights</strong></p>
     <ul>
@@ -66,10 +66,13 @@
       <li>Capacity: <t t-out="object.gear_capacity_id.name or '—'"/></li>
       <li>MGQ: <t t-out="object.mgq_monthly or object.x_monthly_mgq or 0.0"/> m³</li>
       <li>Inventory Mode: <t t-out="object.x_inventory_mode or '—'"/></li>
+      <li>Final Rate: <t t-out="object.gear_prime_rate_final or object.prime_rate or object.gear_total_per_cum_rate or 0.0"/></li>
+      <li>Optimize Rate: <t t-out="object.optimize_rate or 0.0"/></li>
+      <li>After MGQ Rate: <t t-out="object.gear_after_mgq_rate_final or object.excess_rate or 0.0"/></li>
     </ul>
     <p>You can review and accept the quotation online: <a t-att-href="object.get_portal_url()"><t t-out="object.get_portal_url()"/></a>.</p>
     <p>A PDF copy is also attached.</p>
-    <p>--<br/>SP Nexgen Automind Pvt Ltd — Tech Paras<br/>Automate Excellence<br/>www.smarterpeak.com</p>
+    <p>--<br/><t t-out="object.company_id.name or ''"/><br/><t t-out="object.company_id.website or ''"/></p>
 </div>
       </field>
       <field name="report_template_ids" eval="[(4, ref('gear_on_rent.action_report_batching_plant_quote'))]"/>

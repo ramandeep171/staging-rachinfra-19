@@ -42,15 +42,22 @@
                             <field name="gear_service_type" widget="selection"/>
                             <field name="gear_service_id" domain="[('category', '=', gear_service_type)]"/>
                             <field name="gear_capacity_id"/>
-                            <field name="gear_mgq_rate_id" domain="[('service_id', '=', gear_service_id), ('capacity_id', '=', gear_capacity_id)]"/>
-                            <field name="gear_design_mix_id"/>
-                            <field name="gear_design_mix_ids" widget="many2many_tags"/>
-                            <field name="gear_material_area_id"/>
+                            <field name="gear_plant_running"/>
+                            </group>
+                            <group invisible="not show_inventory_fields">
+                                <field name="gear_design_mix_id"/>
+                                <field name="gear_design_mix_ids" widget="many2many_tags"/>
+                                <field name="gear_material_area_id"/>
+                            </group>
+                            <group>
+                            <field name="mgq_monthly"/>
+                             <field name="gear_project_duration_years"/>
+                            <field name="gear_project_duration_months"/>
                             <field name="gear_expected_production_qty"/>
                             <field name="gear_project_quantity"/>
                             <field name="gear_civil_scope"/>
                         </group>
-                        <group string="Material Source (Area-wise)">
+                        <group string="Material Source (Area-wise)" invisible="not show_inventory_fields">
                             <field name="gear_cement_area_id"/>
                             <field name="gear_agg_10mm_area_id"/>
                             <field name="gear_agg_20mm_area_id"/>
@@ -64,12 +71,15 @@
                     <group string="Optional Services">
                         <group>
                             <field name="gear_transport_opt_in"/>
+                            <field name="gear_transport_qty" invisible="not gear_transport_opt_in"/>
                             <field name="gear_pumping_opt_in"/>
+                            <field name="gear_pumping_qty" invisible="not gear_pumping_opt_in"/>
                             <field name="gear_manpower_opt_in"/>
                         </group>
                         <group>
                             <field name="gear_diesel_opt_in"/>
                             <field name="gear_jcb_opt_in"/>
+                            <field name="gear_jcb_qty" invisible="not gear_jcb_opt_in"/>
                             <field name="gear_optional_service_ids" widget="many2many_tags"/>
                         </group>
                     </group>
@@ -93,9 +103,6 @@
                 <page string="Variable Billing">
                     <group col="4">
                         <group colspan="2">
-                            <field name="mgq_monthly"/>
-                            <field name="gear_project_duration_years"/>
-                            <field name="gear_project_duration_months"/>
                             <field name="wastage_allowed_percent"/>
                             <field name="wastage_penalty_rate"/>
                             <field name="prime_rate"/>

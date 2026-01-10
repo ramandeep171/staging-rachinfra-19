@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class GearServiceMaster(models.Model):
@@ -152,10 +153,24 @@ class GearOptionalServiceMaster(models.Model):
     _name = "gear.optional.service.master"
     _description = "Optional Service Charge"
 
+    _PROTECTED_XMLIDS = [
+        "gear_on_rent.optional_service_transport",
+        "gear_on_rent.optional_service_pump",
+        "gear_on_rent.optional_service_manpower",
+        "gear_on_rent.optional_service_diesel",
+        "gear_on_rent.optional_service_jcb",
+    ]
+
     name = fields.Char(required=True)
     code = fields.Char(string="Code")
     charge_type = fields.Selection(selection=[("per_cum", "Per CUM"), ("per_month", "Per Month"), ("fixed", "Fixed")], required=True)
     rate = fields.Monetary(currency_field="currency_id", digits=(16, 2))
+    diesel_per_cum = fields.Monetary(
+        string="Diesel (Per CUM)",
+        currency_field="currency_id",
+        digits=(16, 2),
+        help="Optional diesel surcharge captured for this service.",
+    )
     default_enabled = fields.Boolean(string="Enabled by Default", default=False)
     product_id = fields.Many2one(
         "product.product",
@@ -166,6 +181,17 @@ class GearOptionalServiceMaster(models.Model):
     currency_id = fields.Many2one("res.currency", string="Currency", required=True, default=lambda self: self.env.company.currency_id.id)
     company_id = fields.Many2one("res.company", string="Company", required=True, default=lambda self: self.env.company.id)
     active = fields.Boolean(default=True)
+
+    @api.model
+    def compute_diesel_surcharge_total(self, include_inactive=False):
+        """Return the summed Diesel (Per CUM) for all non-diesel optional services."""
+
+        domain = [("code", "!=", "diesel")]
+        if not include_inactive:
+            domain.append(("active", "=", True))
+
+        services = self.sudo().search(domain)
+        return sum(services.mapped("diesel_per_cum") or [])
 
     def _ensure_product_id(self):
         ProductTemplate = self.env["product.template"]
@@ -196,3 +222,17 @@ class GearOptionalServiceMaster(models.Model):
             for service in self.filtered("product_id"):
                 service.product_id.list_price = service.rate or 0.0
         return res
+
+    def unlink(self):
+        protected_ids = []
+        for xmlid in self._PROTECTED_XMLIDS:
+            rec = self.env.ref(xmlid, raise_if_not_found=False)
+            if rec:
+                protected_ids.append(rec.id)
+        protected_records = self.filtered(lambda record: record.id in protected_ids)
+        if protected_records:
+            raise UserError(
+                _("You cannot delete protected optional services: %s")
+                % ", ".join(protected_records.mapped("name"))
+            )
+        return super().unlink()

@@ -1,4 +1,5 @@
 from odoo import models, api
+from odoo.tools.misc import formatLang as _format_lang
 import base64
 
 class ReportBatchingPlantQuote(models.AbstractModel):
@@ -54,6 +55,10 @@ class ReportBatchingPlantQuote(models.AbstractModel):
         else:
             dead_cost_context = (data or {}).get("dead_cost") or {}
 
+        def formatLang(value, digits=None, currency_obj=None):
+            """Expose Odoo number formatter to QWeb to avoid KeyError when missing in context."""
+            return _format_lang(self.env, value, digits=digits, currency_obj=currency_obj)
+
         return {
             'doc_ids': docids,
             'doc_model': 'sale.order',
@@ -62,4 +67,5 @@ class ReportBatchingPlantQuote(models.AbstractModel):
             'chart_urls': chart_urls,
             'dead_cost': dead_cost_context,
             'dead_cost_context': dead_cost_context,
+            'formatLang': formatLang,
         }

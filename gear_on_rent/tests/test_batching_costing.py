@@ -16,10 +16,9 @@ class TestBatchingCostingEngine(SavepointCase):
 
         cls.running_master = cls.env["gear.running.cost.master"].create(
             {
-                "manpower_monthly": 265000,
                 "power_monthly": 95000,
                 "dg_monthly": 48000,
-                "jcb_monthly": 85000,
+                "diesel_monthly": 0,
                 "admin_monthly": 13000,
                 "interest_monthly": 39000,
                 "land_investment": 75000,
@@ -121,10 +120,9 @@ class TestBatchingCostingEngine(SavepointCase):
             self.running_master.total_monthly,
             sum(
                 [
-                    self.running_master.manpower_monthly,
                     self.running_master.power_monthly,
                     self.running_master.dg_monthly,
-                    self.running_master.jcb_monthly,
+                    self.running_master.diesel_monthly,
                     self.running_master.admin_monthly,
                     self.running_master.interest_monthly,
                     self.running_master.land_investment,
@@ -146,10 +144,9 @@ class TestBatchingCostingEngine(SavepointCase):
 
     def test_costing_overview_rollup(self):
         overview = self.env["gear.costing.overview"].create({"name": "Overview"})
-        self.assertAlmostEqual(overview.running_manpower, self.running_master.manpower_monthly)
         self.assertAlmostEqual(overview.running_power, self.running_master.power_monthly)
         self.assertAlmostEqual(overview.running_dg, self.running_master.dg_monthly)
-        self.assertAlmostEqual(overview.running_jcb, self.running_master.jcb_monthly)
+        self.assertAlmostEqual(overview.running_diesel, self.running_master.diesel_monthly)
         self.assertAlmostEqual(overview.running_admin, self.running_master.admin_monthly)
         self.assertAlmostEqual(overview.running_interest, self.running_master.interest_monthly)
         self.assertAlmostEqual(overview.running_land, self.running_master.land_investment)

@@ -63,6 +63,7 @@ class GearOnRentWebsite(http.Controller):
         OptionalService = request.env['gear.optional.service.master'].sudo()
         services = OptionalService.search([('active', '=', True)], order='name asc, id asc')
         currency = company.currency_id
+        diesel_surcharge_total = OptionalService.compute_diesel_surcharge_total()
         charge_labels = {
             "per_cum": "per CUM",
             "per_month": "per Month",
@@ -83,7 +84,10 @@ class GearOnRentWebsite(http.Controller):
             if not field_map:
                 continue
             rate_value = service.rate or 0.0
+            if service.code == "diesel":
+                rate_value = diesel_surcharge_total or rate_value
             charge_type = service.charge_type or "per_cum"
+            lock_quantity = service.code in {"diesel", "manpower"}
             entries.append(
                 {
                     "label": service.name or field_map.get("label_fallback"),
@@ -95,7 +99,10 @@ class GearOnRentWebsite(http.Controller):
                     "charge_type": charge_type,
                     "charge_label": charge_labels.get(charge_type, charge_type.title()),
                     "quantity_placeholder": service.charge_type == "per_month" and "Months" or "Qty / Multiplier",
-                    "helper_text": "Standard rate auto-applies from master.",
+                    "helper_text": lock_quantity
+                    and "Standard rate auto-applies (no quantity needed)."
+                    or "Standard rate auto-applies from master.",
+                    "lock_quantity": lock_quantity,
                 }
             )
         return entries
@@ -165,6 +172,7 @@ class GearOnRentWebsite(http.Controller):
             'inventory_modes': Order._fields['x_inventory_mode'].selection,
             'project_durations': Order._fields['gear_project_duration_years'].selection,
             'civil_scopes': Order._fields['gear_civil_scope'].selection,
+            'plant_running_options': Order._fields['gear_plant_running'].selection,
             'capacities': capacity_model.search([('active', '=', True)], order='capacity_cum_hour'),
             'design_mixes': design_model.search([('active', '=', True)], order='grade'),
             'material_areas': material_model.search([('active', '=', True)], order='name'),
@@ -290,6 +298,11 @@ class GearOnRentWebsite(http.Controller):
         )
         expected_production = _to_float(kwargs.get('gear_expected_production_qty'))
         inventory_mode = kwargs.get('x_inventory_mode') or 'without_inventory'
+        allowed_running = {val for val, _label in Order._fields['gear_plant_running'].selection}
+        running_labels = dict(Order._fields['gear_plant_running'].selection)
+        plant_running = kwargs.get('gear_plant_running')
+        plant_running = plant_running if plant_running in allowed_running else False
+        plant_running_label = running_labels.get(plant_running, plant_running)
         grade_ids = _to_int_list(kwargs.get('gear_design_mix_ids')) if inventory_mode == 'with_inventory' else []
         grade_id = grade_ids[0] if grade_ids else False
         if inventory_mode == 'with_inventory' and not grade_id:
@@ -332,7 +345,7 @@ class GearOnRentWebsite(http.Controller):
         if not partner_name or not email or not phone:
             return {'error': 'Missing required fields'}
 
-        if not service_type or not capacity_id:
+        if not service_type or not capacity_id or not plant_running:
             return {'error': 'Missing project inputs'}
 
         if inventory_mode == 'with_inventory' and not grade_ids:
@@ -380,6 +393,7 @@ class GearOnRentWebsite(http.Controller):
             f"Project Quantity: {project_quantity or '-'}\n"
             f"Expected Production: {expected_production}\n"
             f"Inventory Mode: {inventory_mode}\n"
+            f"Plant Running: {plant_running_label or '-'}\n"
             f"Grade IDs: {', '.join(map(str, grade_ids)) if grade_ids else '-'}\n"
             f"Area ID: {area_id or '-'}\n"
             f"Project Duration (Years): {project_duration_years or '-'}\n"
@@ -431,6 +445,7 @@ class GearOnRentWebsite(http.Controller):
             'x_monthly_mgq': mgq_monthly,
             'mgq_monthly': mgq_monthly,
             'gear_expected_production_qty': expected_production,
+            'gear_plant_running': plant_running,
             'note': note_text,
             'gear_transport_per_cum': transport_rate,
             'gear_pump_per_cum': pump_rate,

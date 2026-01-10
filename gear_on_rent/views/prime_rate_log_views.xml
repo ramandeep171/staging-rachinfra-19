@@ -30,7 +30,7 @@
             <form string="Prime Rate Log" create="0" edit="0">
                 <sheet>
                     <group>
-                        <group>
+                        <group string="Quotation">
                             <field name="order_id"/>
                             <field name="calc_time"/>
                             <field name="inventory_mode"/>
@@ -42,83 +42,58 @@
                         </group>
                         <group string="Prime Rate Summary">
                             <field name="prime_rate"/>
+                            <field name="margin_per_cum"/>
+                            <field name="material_per_cum"/>
+                            <field name="optional_per_cum"/>
                             <field name="final_prime_rate"/>
-                            <field name="mgq_prime_rate"/>
                             <field name="raw_prime_rate"/>
-                            <field name="final_optimize_rate"/>
-                            <field name="final_after_mgq_rate"/>
+                            <field name="mgq_prime_rate"/>
                             <field name="prime_rate_source"/>
                         </group>
+                        <group string="Optimize Rate Summary">
+                            <field name="optimize_rate"/>
+                            <field name="after_mgq_rate"/>
+                        </group>
                     </group>
-                    <group string="Running &amp; Depreciation">
-                        <group>
+                    <group string="Cost Components" colspan="2">
+                        <group string="Running">
                             <field name="running_monthly"/>
                             <field name="running_per_cum"/>
                             <field name="running_source"/>
                         </group>
-                        <group>
+                        <group string="Depreciation">
+                            <field name="capex_total" string="Component Total"/>
                             <field name="depreciation_monthly"/>
                             <field name="depreciation_per_cum"/>
                             <field name="depreciation_source"/>
                         </group>
-                    </group>
-                    <group string="Dead Cost &amp; Margin">
-                        <group>
+                        <group string="Dead Cost"
+                               modifiers='{"invisible": [["dead_total", "=", 0.0], ["dead_per_cum", "=", 0.0]]}'>
                             <field name="dead_total"/>
                             <field name="dead_per_cum"/>
                             <field name="dead_source"/>
                         </group>
-                        <group>
-                            <field name="margin_per_cum"/>
+                        <group string="Interest"
+                               modifiers='{"invisible": [["interest_monthly", "=", 0.0], ["interest_per_cum", "=", 0.0]]}'>
+                            <field name="interest_per_cum"/>
+                            <field name="interest_monthly"/>
+                            <field name="interest_source"/>
                         </group>
                     </group>
-                    <group string="Running Cost Breakdown" colspan="2">
-                        <group>
-                            <field name="running_manpower"/>
-                            <field name="running_power"/>
-                            <field name="running_dg"/>
-                            <field name="running_jcb"/>
-                        </group>
-                        <group>
-                            <field name="running_admin"/>
-                            <field name="running_interest"/>
-                            <field name="running_land_investment"/>
-                            <field name="running_total_breakdown"/>
-                        </group>
-                    </group>
-                    <group string="CAPEX Breakdown" colspan="2">
-                        <group>
-                            <field name="capex_plant_machinery"/>
-                            <field name="capex_furniture"/>
-                            <field name="capex_equipment_fittings"/>
-                        </group>
-                        <group>
-                            <field name="capex_computers_peripherals"/>
-                            <field name="capex_total"/>
-                            <field name="capex_monthly_depr"/>
-                        </group>
-                    </group>
-                    <group string="Dead Cost Breakdown" colspan="2">
-                        <group>
-                            <field name="dead_civil_factory"/>
-                            <field name="dead_civil_non_factory"/>
-                        </group>
-                        <group>
-                            <field name="dead_total"/>
-                        </group>
-                    </group>
-                    <group string="Material &amp; Optional Summary" colspan="2">
-                        <group>
-                            <field name="material_per_cum"/>
-                            <field name="material_source"/>
-                        </group>
-                        <group>
-                            <field name="optional_per_cum"/>
-                        </group>
-                    </group>
-                    <group string="Optional Services">
-                        <field name="optional_line_ids"
-                               options="{'no_create': True, 'no_edit': True, 'no_open': True}"/>
+                    <group string="Optional Services"
+                           modifiers='{"invisible": [["optional_per_cum", "=", 0.0], ["optional_line_ids", "=", false]]}'>
+                        <field name="optional_per_cum"/>
+                        <field name="optional_line_ids" nolabel="1"
+                               options="{'no_create': True, 'no_edit': True, 'no_open': True}">
+                            <list create="0" edit="0">
+                                <field name="name"/>
+                                <field name="rate_value"/>
+                                <field name="quantity"/>
+                                <field name="per_cum"/>
+                                <field name="total_amount"/>
+                                <field name="charge_type"/>
+                            </list>
+                        </field>
                     </group>
                 </sheet>
             </form>

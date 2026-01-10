@@ -27,6 +27,8 @@ _logger = logging.getLogger(__name__)
 PRIME_LOG_SOURCE_SELECTION = [
     ("master", "Master Template"),
     ("cost_component", "Cost Component"),
+    ("capacity", "Capacity"),
+    ("percent", "Percent"),
     ("calculator", "Calculator"),
     ("fallback", "Field Fallback"),
     ("not_applicable", "Not Applicable"),
@@ -72,6 +74,8 @@ class GearPrimeRateLogOptional(models.Model):
     )
     rate_value = fields.Monetary(string="Rate Value", currency_field="currency_id")
     per_cum = fields.Monetary(string="Per CUM", currency_field="currency_id")
+    quantity = fields.Float(string="Qty", digits=(16, 2))
+    total_amount = fields.Monetary(string="Total", currency_field="currency_id")
     currency_id = fields.Many2one("res.currency", related="log_id.currency_id", store=True, readonly=True)
 
 
@@ -132,6 +136,9 @@ class GearPrimeRateLog(models.Model):
     running_interest = fields.Monetary(string="Interest (Monthly)", currency_field="currency_id")
     running_land_investment = fields.Monetary(string="Land / Site Dev. (Monthly)", currency_field="currency_id")
     running_total_breakdown = fields.Monetary(string="Running Total (Monthly)", currency_field="currency_id")
+    interest_monthly = fields.Monetary(string="Interest Monthly", currency_field="currency_id")
+    interest_per_cum = fields.Monetary(string="Interest / CUM", currency_field="currency_id")
+    interest_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Interest Source")
     # CAPEX breakdown
     capex_plant_machinery = fields.Monetary(string="Plant & Machinery", currency_field="currency_id")
     capex_furniture = fields.Monetary(string="Furniture", currency_field="currency_id")
@@ -354,6 +361,12 @@ class SaleOrder(models.Model):
         tracking=True,
         help="Engagement model for the batching plant (dedicated site setup or full turnkey factory).",
     )
+    gear_plant_running = fields.Selection(
+        selection=[("power", "On Power"), ("diesel", "On Diesel")],
+        string="Plant Running",
+        tracking=True,
+        help="Preferred power source for running the plant captured from the landing page.",
+    )
     gear_capacity_id = fields.Many2one(
         comodel_name="gear.plant.capacity.master",
         string="Plant Capacity",
@@ -382,6 +395,10 @@ class SaleOrder(models.Model):
         string="Material Area",
         tracking=True,
         help="Area-wise rate card to value cement/aggregate/admixture inputs.",
+    )
+    show_inventory_fields = fields.Boolean(
+        compute="_compute_show_inventory_flag",
+        store=True,
     )
     gear_cement_area_id = fields.Many2one(
         comodel_name="gear.material.area.master",
@@ -415,9 +432,14 @@ class SaleOrder(models.Model):
     )
     gear_transport_opt_in = fields.Boolean(string="Transport Required", tracking=True)
     gear_pumping_opt_in = fields.Boolean(string="Pumping Required", tracking=True)
-    gear_manpower_opt_in = fields.Boolean(string="Manpower Required", tracking=True)
+    gear_manpower_opt_in = fields.Boolean(string="Manpower Required", tracking=True, default=False)
     gear_diesel_opt_in = fields.Boolean(string="Diesel Required", tracking=True)
-    gear_jcb_opt_in = fields.Boolean(string="JCB Required", tracking=True)
+    gear_jcb_opt_in = fields.Boolean(string="JCB Required", tracking=True, default=False)
+    gear_transport_qty = fields.Float(string="Transport Qty", digits=(16, 2), tracking=True)
+    gear_pumping_qty = fields.Float(string="Pumping Qty", digits=(16, 2), tracking=True)
+    gear_manpower_qty = fields.Float(string="Manpower Qty", digits=(16, 2), tracking=True)
+    gear_diesel_qty = fields.Float(string="Diesel Qty", digits=(16, 2), tracking=True)
+    gear_jcb_qty = fields.Float(string="JCB Qty", digits=(16, 2), tracking=True)
     gear_margin_per_cum = fields.Monetary(
         string="Margin / CUM (Override)",
         currency_field="currency_id",
@@ -498,6 +520,56 @@ class SaleOrder(models.Model):
         tracking=True,
         help="Overall project quantity captured from the batching plant request (used when production expectation is not provided).",
     )
+
+    @api.onchange("gear_project_duration_years", "gear_project_duration_months", "mgq_monthly")
+    def _onchange_project_duration_expected_production(self):
+        """Keep duration fields in sync and auto-compute expected production = MGQ * months."""
+        for order in self:
+            months = order.gear_project_duration_months or 0
+            # If years is set, derive months.
+            if order.gear_project_duration_years:
+                try:
+                    months = int(order.gear_project_duration_years) * 12
+                except Exception:
+                    months = months or 0
+                order.gear_project_duration_months = months
+            # If months is a full-year value that matches the selection, reflect it in years.
+            elif months and months % 12 == 0:
+                years_val = str(int(months / 12))
+                if years_val in dict(self._fields["gear_project_duration_years"].selection):
+                    order.gear_project_duration_years = years_val
+            # Auto-compute expected production from MGQ and duration in months.
+            if months and order.mgq_monthly:
+                order.gear_expected_production_qty = order.mgq_monthly * months
+
+    @api.depends("gear_service_id.inventory_mode")
+    def _compute_show_inventory_flag(self):
+        for rec in self:
+            rec.show_inventory_fields = bool(
+                rec.gear_service_id and rec.gear_service_id.inventory_mode == "with_inventory"
+            )
+
+    @api.onchange(
+        "gear_transport_opt_in",
+        "gear_pumping_opt_in",
+        "gear_manpower_opt_in",
+        "gear_diesel_opt_in",
+        "gear_jcb_opt_in",
+    )
+    def _onchange_optional_service_qty_reset(self):
+        """Reset quantities when an optional service is unchecked."""
+        for rec in self:
+            if not rec.gear_transport_opt_in:
+                rec.gear_transport_qty = 0.0
+            if not rec.gear_pumping_opt_in:
+                rec.gear_pumping_qty = 0.0
+            if not rec.gear_manpower_opt_in:
+                rec.gear_manpower_qty = 0.0
+            if not rec.gear_diesel_opt_in:
+                rec.gear_diesel_qty = 0.0
+                rec.gear_diesel_per_cum = 0.0
+            if not rec.gear_jcb_opt_in:
+                rec.gear_jcb_qty = 0.0
     gear_prime_rate_final = fields.Float(
         string="Prime Rate (Final)",
         digits=(16, 2),
@@ -1520,6 +1592,7 @@ class SaleOrder(models.Model):
         running = components.get("running", {}) or {}
         depreciation = components.get("depreciation", {}) or {}
         dead_cost = components.get("dead_cost", {}) or {}
+        interest = components.get("interest", {}) or {}
         margin = components.get("margin", {}) or {}
         material = components.get("material", {}) or {}
         optional = components.get("optional", {}) or {}
@@ -1541,6 +1614,8 @@ class SaleOrder(models.Model):
                         "charge_type": service.get("charge_type"),
                         "rate_value": service.get("rate_value", 0.0),
                         "per_cum": service.get("per_cum", 0.0),
+                        "quantity": service.get("quantity", 0.0),
+                        "total_amount": service.get("total_amount", 0.0),
                     },
                 )
             )
@@ -1584,6 +1659,9 @@ class SaleOrder(models.Model):
             "running_interest": running_breakdown.get("interest", 0.0),
             "running_land_investment": running_breakdown.get("land_investment", 0.0),
             "running_total_breakdown": running_breakdown.get("running_total", running.get("monthly_total", 0.0)),
+            "interest_monthly": interest.get("monthly_total", 0.0),
+            "interest_per_cum": interest.get("per_cum", 0.0),
+            "interest_source": interest.get("source"),
             "capex_plant_machinery": capex_breakdown.get("plant_machinery", 0.0),
             "capex_furniture": capex_breakdown.get("furniture", 0.0),
             "capex_equipment_fittings": capex_breakdown.get("equipment_fittings", 0.0),
@@ -1650,6 +1728,9 @@ class SaleOrder(models.Model):
             if not service:
                 return
             rate = service.rate or 0.0
+            if code == "diesel":
+                component_total = self.env["gear.optional.service.master"].sudo().compute_diesel_surcharge_total()
+                rate = component_total or service.diesel_per_cum or rate
             if service.charge_type == "per_cum":
                 result[target_key] = rate
             elif service.charge_type in ("per_month", "fixed") and mgq:

@@ -185,24 +185,54 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             ("jcb", order.gear_jcb_opt_in, order.gear_jcb_monthly, "per_month"),
         ]
 
+        OptionalService = self.env["gear.optional.service.master"].sudo()
+        diesel_master_total = OptionalService.compute_diesel_surcharge_total()
+        resolved_services = {}
+        enabled_definitions = []
+        diesel_component_total = 0.0
+        entries = []
+
         for code, enabled, custom_rate, custom_charge in service_defs:
             if not enabled:
                 continue
-
             service = self._resolve_optional_service(order, code)
-            charge_type = service.charge_type or custom_charge
-            base_rate = service.rate or 0.0
-            entered_amount = custom_rate or 0.0
+            resolved_services[code] = service
+            enabled_definitions.append((code, custom_rate, custom_charge))
+            if code != "diesel" and service:
+                diesel_component_total += service.diesel_per_cum or 0.0
 
-            quantity = 0.0
-            if base_rate and entered_amount:
-                quantity = entered_amount / base_rate if base_rate else 0.0
-            elif base_rate:
-                quantity = 1.0
+        for code, custom_rate, custom_charge in enabled_definitions:
+            service = resolved_services.get(code)
+            diesel_value = (service.diesel_per_cum if service else 0.0) or 0.0
+            charge_type = "per_cum" if code == "diesel" else ((service.charge_type if service else None) or custom_charge)
+            base_rate = 0.0
+            entered_amount = 0.0
+
+            if code == "diesel":
+                service_rate = service.rate if service else 0.0
+                component_total = diesel_component_total or diesel_master_total
+                base_rate = (
+                    custom_rate
+                    or diesel_value
+                    or service_rate
+                    or component_total
+                    or 0.0
+                )
                 entered_amount = base_rate
-            elif entered_amount:
-                base_rate = entered_amount
                 quantity = 1.0
+            else:
+                base_rate = (service.rate if service else 0.0) or 0.0
+                entered_amount = custom_rate or 0.0
+
+                quantity = 0.0
+                if base_rate and entered_amount:
+                    quantity = entered_amount / base_rate if base_rate else 0.0
+                elif base_rate:
+                    quantity = 1.0
+                    entered_amount = base_rate
+                elif entered_amount:
+                    base_rate = entered_amount
+                    quantity = 1.0
 
             amount_per_period = base_rate * quantity
 
@@ -214,15 +244,23 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             else:
                 per_cum = amount_per_period
 
-            yield {
+            if code == "diesel":
+                diesel_per_cum_value = base_rate
+            else:
+                diesel_per_cum_value = diesel_value
+            entries.append({
                 "code": code,
                 "rate_value": base_rate,
                 "charge_type": charge_type,
                 "per_cum": per_cum,
+                "diesel_per_cum": diesel_per_cum_value,
                 "quantity": quantity,
                 "total_amount": amount_per_period,
                 "name": service.display_name if service else code,
-            }
+            })
+
+        for entry in entries:
+            yield entry
 
     def calculate_optional_services(self, order):
         mgq, _production = self._get_mgq_context(order)
@@ -438,11 +476,11 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
 
     def _should_include_dead_cost(self, order):
         civil_scope = (order.gear_civil_scope or "").lower()
-        service_type = (order.gear_service_type or "").lower()
+        # Vendor scope should include dead/civil amortization; customer scope excludes.
+        if civil_scope == "vendor":
+            return True
         if civil_scope == "customer":
             return False
-        if civil_scope == "vendor" or service_type == "turnkey":
-            return True
         return False
 
     # --------------------
@@ -523,7 +561,7 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             return 0.0
 
         # Civil scope "customer" maps to client-side responsibility; exclude amortization.
-        if order.gear_civil_scope and order.gear_civil_scope != "vendor":
+        if order.gear_civil_scope and order.gear_civil_scope == "customer":
             return 0.0
 
         duration_months = 0.0
@@ -565,7 +603,7 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             ]
 
         civil_scope = order.gear_civil_scope or ""
-        if civil_scope and civil_scope != "vendor":
+        if civil_scope == "customer":
             filtered_components = [c for c in components if c.get("classification") != "civil"]
         else:
             filtered_components = list(components)
@@ -620,6 +658,26 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             if hasattr(self.env, "registry")
             else {}
         )
+        if running_totals:
+            # Exclude DG cost from running computations per latest requirement.
+            running_totals["dg_monthly"] = 0.0
+            if order.gear_plant_running == "power":
+                running_totals["diesel_monthly"] = 0.0
+            elif order.gear_plant_running == "diesel":
+                running_totals["power_monthly"] = 0.0
+        if running_totals and order.gear_service_type != "turnkey":
+            running_totals["land_investment"] = 0.0
+        if running_totals:
+            running_totals["running_total"] = sum(
+                [
+                    running_totals.get("power_monthly", 0.0) or 0.0,
+                    running_totals.get("dg_monthly", 0.0) or 0.0,
+                    running_totals.get("diesel_monthly", 0.0) or 0.0,
+                    running_totals.get("admin_monthly", 0.0) or 0.0,
+                    running_totals.get("interest_monthly", 0.0) or 0.0,
+                    running_totals.get("land_investment", 0.0) or 0.0,
+                ]
+            )
         running_monthly_master = running_totals.get("running_total", 0.0)
         running_monthly_component = cost_components.get_running_cost()
         running_fallback = self._calculate_running_monthly_total(order)
@@ -630,7 +688,6 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             running_source = "cost_component"
         else:
             running_source = "fallback"
-        running_per_cum = self._safe_divide(running_monthly, mgq)
 
         capacity_rec = order.gear_capacity_id
         capacity_total = capacity_rec.component_total if capacity_rec else 0.0
@@ -640,12 +697,38 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             if hasattr(self.env, "registry")
             else {}
         )
-        capex_total = capex_totals.get("total_capex", 0.0)
+        # Build CAPEX totals: plant machinery comes from capacity if selected, others from master.
+        plant_machinery_capex = capacity_total if capacity_rec else capex_totals.get("plant_machinery_capex", 0.0)
+        furniture_capex = capex_totals.get("furniture_capex", 0.0)
+        equipment_capex = capex_totals.get("equipment_fittings_capex", 0.0)
+        computers_capex = capex_totals.get("computers_peripherals_capex", 0.0)
+        capex_total = plant_machinery_capex + furniture_capex + equipment_capex + computers_capex
+        capex_totals.update(
+            {
+                "plant_machinery_capex": plant_machinery_capex,
+                "furniture_capex": furniture_capex,
+                "equipment_fittings_capex": equipment_capex,
+                "computers_peripherals_capex": computers_capex,
+                "total_capex": capex_total,
+            }
+        )
+        if capacity_rec:
+            # Combine capacity-specific depreciation with master assets.
+            other_total = capex_total - plant_machinery_capex
+            other_useful_months = (capex_totals.get("useful_life_years") or 0.0) * 12.0
+            other_depr = self._safe_divide(other_total, other_useful_months) if other_useful_months else 0.0
+            capacity_depr = capacity_rec.depreciation_monthly or self._safe_divide(
+                plant_machinery_capex, (capacity_rec.depreciation_years or 0.0) * 12.0
+            )
+            capex_totals["monthly_depreciation"] = capacity_depr + other_depr
         depreciation_component = cost_components.get_monthly_depreciation(project_months)
         depreciation_monthly = 0.0
         depreciation_source = "fallback"
         master_monthly_depr = capex_totals.get("monthly_depreciation", 0.0)
-        if master_monthly_depr:
+        if capacity_rec and master_monthly_depr:
+            depreciation_monthly = master_monthly_depr
+            depreciation_source = "capacity"
+        elif master_monthly_depr:
             depreciation_monthly = master_monthly_depr
             depreciation_source = "master"
         elif capex_total and capex_totals.get("useful_life_years"):
@@ -687,6 +770,31 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
         else:
             dead_per_cum = 0.0
 
+        # Interest: derive from Component Total + Dead Cost Total using master-set percentage when available.
+        interest_percent = running_totals.get("interest_percent", 0.0) or 0.0
+        interest_monthly = running_totals.get("interest_monthly", 0.0) or 0.0
+        interest_source = running_source
+        if interest_percent:
+            interest_base = (capex_totals.get("total_capex", 0.0) or 0.0) + (dead_cost_total or 0.0)
+            interest_monthly = (interest_base * interest_percent / 100.0) 
+            interest_source = "percent"
+            running_totals["interest_monthly"] = interest_monthly
+
+        # Recompose running monthly with the latest interest value.
+        running_monthly = sum(
+            [
+                running_totals.get("power_monthly", 0.0) or 0.0,
+                running_totals.get("dg_monthly", 0.0) or 0.0,
+                running_totals.get("diesel_monthly", 0.0) or 0.0,
+                running_totals.get("admin_monthly", 0.0) or 0.0,
+                running_totals.get("interest_monthly", 0.0) or 0.0,
+                running_totals.get("land_investment", 0.0) or 0.0,
+            ]
+        )
+        running_totals["running_total"] = running_monthly
+        running_per_cum = self._safe_divide(running_monthly, mgq)
+        interest_per_cum = self._safe_divide(interest_monthly, mgq)
+
         base_prime_rate = running_per_cum + depr_per_cum + dead_per_cum
         raw_prime_rate = base_prime_rate
         prime_rate = base_prime_rate
@@ -707,14 +815,14 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
                 material_source = "calculator"
                 material_per_cum = self.calculate_material_cost(order)
 
-        optional_per_cum = cost_components.get_optional_cost_per_cum(order)
         optional_services_breakdown = list(self._iter_optional_services(order, mgq))
+        optional_per_cum = cost_components.get_optional_cost_per_cum(order)
 
         rates = self._get_mgq_rates(order, mgq)
         mgq_prime_rate = rates.get("prime_rate") or 0.0
         optimize_rate = rates.get("optimize_rate") or prime_rate
         after_mgq_rate = rates.get("after_mgq_rate") or prime_rate
-        ngt_rate = rates.get("ngt_rate") or after_mgq_rate
+        ngt_rate = 0.0  # NGT not used
 
         prime_rate_source = "cost_engine"
         if prime_rate <= 0.0 and mgq_prime_rate:
@@ -728,15 +836,35 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
 
         final_prime_rate = prime_with_margin + material_per_cum + optional_per_cum
 
+        # Diesel adjustments: reuse optional breakdown to derive optimize/after rates.
+        diesel_optional_per_cum = sum(
+            (entry.get("per_cum") or 0.0)
+            for entry in optional_services_breakdown
+            if entry.get("code") == "diesel"
+        )
+        diesel_running_per_cum = self._safe_divide(running_totals.get("diesel_monthly", 0.0), mgq)
+
+        # Optimize rate derived from Final Prime less diesel surcharge per CUM plus diesel running per CUM.
+        derived_optimize_rate = final_prime_rate
+        if diesel_optional_per_cum:
+            derived_optimize_rate = final_prime_rate - (diesel_optional_per_cum + diesel_running_per_cum)
+            if derived_optimize_rate < 0.0:
+                derived_optimize_rate = 0.0
+        optimize_rate = derived_optimize_rate
+        final_optimize_rate = derived_optimize_rate
+
+        # After MGQ rate derived from diesel optional + diesel running + margin per CUM.
+        after_mgq_rate = diesel_optional_per_cum + diesel_running_per_cum + margin_per_cum
+        final_after_mgq_rate = after_mgq_rate
+
         display_plant_machinery = capacity_total or capex_totals.get("plant_machinery_capex", 0.0)
         display_total_capex = capex_totals.get("total_capex", capex_total) or capacity_total
 
         source_map = {
             "running": {
-                "manpower": running_totals.get("manpower_monthly", 0.0),
                 "power": running_totals.get("power_monthly", 0.0),
                 "dg": running_totals.get("dg_monthly", 0.0),
-                "jcb": running_totals.get("jcb_monthly", 0.0),
+                "diesel": running_totals.get("diesel_monthly", 0.0),
                 "admin": running_totals.get("admin_monthly", 0.0),
                 "interest": running_totals.get("interest_monthly", 0.0),
                 "land_investment": running_totals.get("land_investment", 0.0),
@@ -781,6 +909,11 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
                     "project_months": project_months,
                     "source": depreciation_source,
                 },
+                "interest": {
+                    "monthly_total": interest_monthly,
+                    "per_cum": interest_per_cum,
+                    "source": interest_source,
+                },
                 "dead_cost": {
                     "total": dead_cost_total,
                     "per_cum": dead_per_cum,
@@ -799,8 +932,8 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             },
             "prime_rate": prime_rate,
             "final_prime_rate": final_prime_rate,
-            "final_optimize_rate": optimize_rate + material_per_cum + optional_per_cum,
-            "final_after_mgq_rate": after_mgq_rate + material_per_cum + optional_per_cum,
+            "final_optimize_rate": final_optimize_rate,
+            "final_after_mgq_rate": final_after_mgq_rate,
             "optimize_rate": optimize_rate,
             "after_mgq_rate": after_mgq_rate,
             "ngt_rate": ngt_rate,
@@ -833,8 +966,8 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             "after_mgq_rate": after_mgq_rate,
             "ngt_rate": ngt_rate,
             "final_prime_rate": final_prime_rate,
-            "final_optimize_rate": optimize_rate + material_per_cum + optional_per_cum,
-            "final_after_mgq_rate": after_mgq_rate + material_per_cum + optional_per_cum,
+            "final_optimize_rate": final_optimize_rate,
+            "final_after_mgq_rate": final_after_mgq_rate,
             "prime_rate_log": prime_rate_log,
             "source_map": source_map,
         }

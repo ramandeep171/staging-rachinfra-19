@@ -271,6 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const emailField = document.getElementById('email');
     const phoneField = document.getElementById('phone');
     const capacityField = document.getElementById('gear_capacity_id');
+    const plantRunningField = document.getElementById('gear_plant_running');
     const materialAreaField = document.getElementById('gear_material_area_id');
     const expectedProductionField = document.getElementById('gear_expected_production_qty');
     const designMixField = document.getElementById('gear_design_mix_ids');
@@ -285,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const pricingCancelBtn = document.getElementById('pricingTypeCancel');
     const previewService = document.getElementById('previewService');
     const previewInventory = document.getElementById('previewInventory');
+    const previewPlantRunning = document.getElementById('previewPlantRunning');
     const previewCapacity = document.getElementById('previewCapacity');
     const previewMgq = document.getElementById('previewMgq');
     const previewDuration = document.getElementById('previewDuration');
@@ -335,6 +337,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         const numeric = typeof value === 'number' ? value : parseFloat(value);
         return Number.isFinite(numeric) ? numeric.toFixed(2) : '';
+    };
+
+    const snapMgqToNearestHundred = (value) => {
+        const numeric = typeof value === 'number' ? value : parseFloat(value);
+        if (!Number.isFinite(numeric)) {
+            return '';
+        }
+        return Math.round(numeric / 100) * 100;
+    };
+
+    const normalizeMgqField = () => {
+        if (!mgqField) {
+            return '';
+        }
+        const rawValue = (mgqField.value || '').toString().trim();
+        if (!rawValue) {
+            return '';
+        }
+        const snapped = snapMgqToNearestHundred(rawValue);
+        if (snapped === '' || Number.isNaN(snapped)) {
+            mgqField.value = '';
+            setFloatingLabelState(mgqField);
+            return '';
+        }
+        const snappedStr = snapped.toString();
+        if (mgqField.value !== snappedStr) {
+            mgqField.value = snappedStr;
+            setFloatingLabelState(mgqField);
+        }
+        return snapped;
     };
 
     const setLinkedQuantityValue = (value, options = {}) => {
@@ -625,10 +657,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const totalQty = parseFloat(totalProjectQtyField ? totalProjectQtyField.value : '') || 0;
         const months = computeDurationMonths();
         if (totalQty > 0 && months > 0) {
-            const suggested = totalQty / months;
-            if (!mgqManuallyEdited || !(mgqField && mgqField.value)) {
+            const suggested = snapMgqToNearestHundred(totalQty / months);
+            const hasSuggested = Number.isFinite(suggested);
+            if (hasSuggested && (!mgqManuallyEdited || !(mgqField && mgqField.value))) {
                 if (mgqField) {
-                    mgqField.value = suggested.toFixed(2);
+                    mgqField.value = suggested.toString();
                     setFloatingLabelState(mgqField);
                 }
                 mgqManuallyEdited = false;
@@ -637,9 +670,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (mgqSuggestionText) {
                 mgqSuggestionText.textContent = mgqManuallyEdited
                     ? 'Updated MGQ applied.'
-                    : `Suggested MGQ: ${suggested.toFixed(2)} m³/month`;
+                    : hasSuggested
+                        ? `Suggested MGQ: ${suggested} m³/month`
+                        : 'Enter values to see suggested MGQ.';
             }
-            return suggested;
+            return hasSuggested ? suggested : false;
         }
         if (mgqSuggestionText) {
             mgqSuggestionText.textContent = mgqManuallyEdited ? 'Updated MGQ applied.' : 'Enter values to see suggested MGQ.';
@@ -654,15 +689,17 @@ document.addEventListener('DOMContentLoaded', function () {
         window.updateMgqSuggestion = updateMgqSuggestion;
     }
 
-    function updateProjectQtyFromMgq() {
+    function updateProjectQtyFromMgq(options = {}) {
         if (!mgqField || (!totalProjectQtyField && !expectedProductionField)) {
             return;
         }
-        const mgq = parseFloat(mgqField.value || '');
+        const { normalize = false } = options;
+        const mgqValueRaw = normalize ? normalizeMgqField() : snapMgqToNearestHundred(mgqField.value);
+        const mgqValue = Number.isFinite(mgqValueRaw) ? mgqValueRaw : parseFloat(mgqField.value || '');
         const months = computeDurationMonths();
-        if (mgq && months) {
-            setLinkedQuantityValue(mgq * months);
-        } else if (!mgq || !months) {
+        if (mgqValue && months) {
+            setLinkedQuantityValue(mgqValue * months);
+        } else if (!mgqValue || !months) {
             setLinkedQuantityValue('', { manual: true });
         }
     }
@@ -673,13 +710,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const setSuggestedMgq = () => {
         mgqManuallyEdited = false;
         const suggested = updateMgqSuggestion();
-        if (suggested && mgqField) {
-            mgqField.value = suggested.toFixed(2);
+        const hasSuggested = Number.isFinite(suggested);
+        if (hasSuggested && mgqField) {
+            mgqField.value = suggested.toString();
             setFloatingLabelState(mgqField);
             if (mgqSuggestionText) {
-                mgqSuggestionText.textContent = `Suggested MGQ: ${suggested.toFixed(2)} m³/month`;
+                mgqSuggestionText.textContent = `Suggested MGQ: ${suggested} m³/month`;
             }
-            updateProjectQtyFromMgq();
+            updateProjectQtyFromMgq({ normalize: true });
             updatePreview();
         }
     };
@@ -709,8 +747,26 @@ document.addEventListener('DOMContentLoaded', function () {
         return services;
     };
 
+    const setMetricValue = (el, valueText) => {
+        if (!el) return;
+        const card = el.closest('.metric-card');
+        const hasValue = Boolean(valueText);
+        el.textContent = hasValue ? valueText : '—';
+        card?.classList.toggle('has-value', hasValue);
+        card?.classList.toggle('is-empty', !hasValue);
+    };
+
+    const setListValue = (el, valueText) => {
+        if (!el) return;
+        const item = el.closest('li');
+        const hasValue = Boolean(valueText);
+        el.textContent = hasValue ? valueText : '—';
+        item?.classList.toggle('has-value', hasValue);
+        item?.classList.toggle('is-empty', !hasValue);
+    };
+
     const updatePreview = () => {
-        if (!(previewService && previewInventory && previewCapacity && previewMgq && previewDuration && previewArea && previewDesignMix && previewOptional)) return;
+        if (!(previewService && previewInventory && previewPlantRunning && previewCapacity && previewMgq && previewDuration && previewArea && previewDesignMix && previewOptional)) return;
         const capacitySelect = document.getElementById('gear_capacity_id');
         const areaSelect = document.getElementById('gear_material_area_id');
         const designSelect = document.getElementById('gear_design_mix_ids');
@@ -747,38 +803,35 @@ document.addEventListener('DOMContentLoaded', function () {
         const serviceLabel = getSelectedServiceTypeLabel();
         const inventoryText = inventoryMode && inventoryMode.selectedOptions[0]?.textContent || '';
         const capacityText = capacitySelect && capacitySelect.selectedOptions[0]?.textContent || '';
-        previewService.textContent = serviceLabel || '';
-        previewService.parentElement?.classList.toggle('has-value', Boolean(serviceLabel));
-        previewInventory.textContent = inventoryText;
-        previewInventory.parentElement?.classList.toggle('has-value', Boolean(inventoryText));
-        previewCapacity.textContent = capacityText;
-        previewCapacity.parentElement?.classList.toggle('has-value', Boolean(capacityText));
-        const mgqValue = mgqField && mgqField.value ? `${mgqField.value} m³` : '';
-        previewMgq.textContent = mgqValue;
-        previewMgq.closest('.metric-card')?.classList.toggle('has-value', Boolean(mgqValue));
-
+        const plantRunningText = plantRunningField && plantRunningField.selectedOptions[0]?.textContent || '';
+        setListValue(previewService, serviceLabel);
+        setListValue(previewInventory, inventoryText);
+        setListValue(previewPlantRunning, plantRunningText);
+        setMetricValue(previewCapacity, capacityText);
+        const mgqValueRaw = mgqField && mgqField.value ? snapMgqToNearestHundred(mgqField.value) : '';
+        const hasMgqDisplay = Number.isFinite(mgqValueRaw) && Boolean(mgqField && mgqField.value);
+        const mgqValue = hasMgqDisplay ? `${mgqValueRaw} m³` : '';
+        setMetricValue(previewMgq, mgqValue);
         const years = durationYearsField && durationYearsField.selectedOptions[0]?.textContent;
         const months = durationMonthsField && durationMonthsField.value ? `${durationMonthsField.value} months` : '';
         const durationValue = months || years || '';
-        previewDuration.textContent = durationValue;
-        previewDuration.closest('.metric-card')?.classList.toggle('has-value', Boolean(durationValue));
-
+        setMetricValue(previewDuration, durationValue);
         const areaValue = areaSelect && areaSelect.selectedOptions[0]?.textContent || '';
-        previewArea.textContent = areaValue;
-        previewArea.closest('.metric-card')?.classList.toggle('has-value', Boolean(areaValue));
+        setMetricValue(previewArea, areaValue);
         if (designSelect) {
             const selectedDesigns = Array.from(designSelect.selectedOptions).map(option => option.textContent);
-            previewDesignMix.textContent = selectedDesigns.length ? selectedDesigns.join(', ') : '';
-            previewDesignMix.parentElement?.classList.toggle('has-value', Boolean(selectedDesigns.length));
+            setListValue(previewDesignMix, selectedDesigns.length ? selectedDesigns.join(', ') : '');
         } else {
-            previewDesignMix.textContent = '';
+            setListValue(previewDesignMix, '');
         }
 
         const optionalList = collectOptionalServices();
-        previewOptional.textContent = optionalList.length ? optionalList.join(', ') : '';
-        previewOptional.parentElement?.classList.toggle('has-value', Boolean(optionalList.length));
-        toggleSectionVisibility('.requirements-panel', Boolean(mgqValue || durationValue || areaValue || capacityText));
-        toggleSectionVisibility('.service-panel', Boolean(serviceLabel || inventoryText || (designSelect && designSelect.value) || optionalList.length));
+        setListValue(previewOptional, optionalList.length ? optionalList.join(', ') : '');
+
+        const requirementsHasValues = Boolean(document.querySelector('.requirements-panel .has-value'));
+        const serviceHasValues = Boolean(document.querySelector('.service-panel .has-value'));
+        toggleSectionVisibility('.requirements-panel', requirementsHasValues);
+        toggleSectionVisibility('.service-panel', serviceHasValues);
         toggleSectionVisibility('.estimate-panel', Boolean(mgqValue && capacityText && durationValue));
         scheduleEstimatePreview();
     };
@@ -836,6 +889,10 @@ document.addEventListener('DOMContentLoaded', function () {
             updateProjectQtyFromMgq();
             updatePreview();
         });
+        mgqField.addEventListener('blur', () => {
+            updateProjectQtyFromMgq({ normalize: true });
+            updatePreview();
+        });
     }
 
     const handleManualQuantityInput = (source) => {
@@ -864,7 +921,7 @@ document.addEventListener('DOMContentLoaded', function () {
         applyMgqSuggestionBtn.addEventListener('click', setSuggestedMgq);
     }
 
-    ['gear_capacity_id', 'gear_material_area_id', 'gear_design_mix_ids', 'gear_project_duration_years', 'gear_civil_scope'].forEach(id => {
+    ['gear_capacity_id', 'gear_material_area_id', 'gear_design_mix_ids', 'gear_project_duration_years', 'gear_civil_scope', 'gear_plant_running'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('change', updatePreview);
@@ -899,15 +956,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!qtyInput) {
                 return;
             }
-            if (toggle.checked) {
-                qtyInput.readOnly = false;
-                if (!qtyInput.value) {
-                    qtyInput.value = 1;
-                }
-            } else {
-                qtyInput.readOnly = true;
-                qtyInput.value = '';
-            }
+            const lockQty = qtyInput.dataset.lockQty === '1';
+            const newValue = toggle.checked ? (qtyInput.value || 1) : '';
+            qtyInput.value = newValue;
+            qtyInput.readOnly = lockQty || !toggle.checked;
         };
         toggle.addEventListener('change', syncOptionalState);
         syncOptionalState();
@@ -1118,6 +1170,7 @@ document.addEventListener('DOMContentLoaded', function () {
             : [];
 
         const optionalAmounts = collectOptionalAmounts();
+        const snappedMgq = snapMgqToNearestHundred(mgqField ? mgqField.value : '');
         const isChecked = (name) => {
             const field = document.querySelector(`input[name='${name}']`);
             return field ? field.checked : false;
@@ -1130,7 +1183,8 @@ document.addEventListener('DOMContentLoaded', function () {
             phone: phoneField ? phoneField.value.trim() : '',
             gear_service_type: getSelectedServiceTypeValue(),
             gear_capacity_id: capacityField ? capacityField.value : '',
-            mgq_monthly: mgqField ? mgqField.value : '',
+            gear_plant_running: plantRunningField ? plantRunningField.value : '',
+            mgq_monthly: Number.isFinite(snappedMgq) ? snappedMgq : (mgqField ? mgqField.value : ''),
             project_quantity: totalProjectQtyField ? totalProjectQtyField.value : '',
             gear_expected_production_qty: expectedProductionField ? expectedProductionField.value : '',
             x_inventory_mode: inventoryMode ? inventoryMode.value : '',
@@ -1170,6 +1224,7 @@ document.addEventListener('DOMContentLoaded', function () {
             && formData.phone
             && formData.mgq_monthly
             && formData.gear_capacity_id
+            && formData.gear_plant_running
             && formData.gear_service_type
             && formData.x_inventory_mode
             && hasDuration
@@ -1230,6 +1285,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const validateForm = (formData) => {
         let isValid = true;
         clearInlineErrors();
+        normalizeMgqField();
 
         const requireField = (field, message) => {
             if (!field) {
@@ -1246,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', function () {
         requireField(phoneField, 'Phone number is required.');
         requireField(mgqField, 'MGQ Monthly is required.');
         requireField(capacityField, 'Select a plant capacity.');
+        requireField(plantRunningField, 'Select how the plant will run.');
         requireField(inventoryMode, 'Choose an inventory mode.');
 
         const hasDuration = (formData.gear_project_duration_years && formData.gear_project_duration_years.trim()) ||
@@ -1397,6 +1454,7 @@ document.addEventListener('DOMContentLoaded', function () {
         contactForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
+            normalizeMgqField();
             const formData = collectFormData();
             if (!validateForm(formData)) {
                 return;
@@ -1416,6 +1474,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     pricingContinueBtn.disabled = true;
                     return;
                 }
+                normalizeMgqField();
                 const formData = collectFormData();
                 if (!validateForm(formData)) {
                     return;

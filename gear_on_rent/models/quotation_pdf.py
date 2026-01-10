@@ -127,6 +127,7 @@ class GearBatchingQuotationPdf(models.AbstractModel):
     def _build_capex_breakdown(self, order, final_rates):
         scope = (order.gear_civil_scope or "").lower()
         service_type = (order.gear_service_type or "").lower()
+        # Vendor scope should include CAPEX; customer scope skips unless turnkey.
         if scope != "vendor" and service_type != "turnkey":
             return {}
 

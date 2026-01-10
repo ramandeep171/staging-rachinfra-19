@@ -427,13 +427,12 @@
                     <t t-set="capex_map" t-value="source_map.get('capex', {})"/>
                     <t t-set="dead_map" t-value="source_map.get('dead_cost', {})"/>
                     <t t-set="intermediate_map" t-value="source_map.get('intermediate_values', {})"/>
-                    <t t-set="running_total_display" t-value="(running_map.get('manpower') or 0.0)
-                        + (running_map.get('land_investment') or 0.0)
+                    <t t-set="running_total_display" t-value="(running_map.get('land_investment') or 0.0)
                         + (running_map.get('power') or 0.0)
                         + (running_map.get('dg') or 0.0)
+                        + (running_map.get('diesel') or 0.0)
                         + (running_map.get('admin') or 0.0)
-                        + (running_map.get('interest') or 0.0)
-                        + ((order.gear_jcb_opt_in and running_map.get('jcb')) or 0.0)"/>
+                        + (running_map.get('interest') or 0.0)"/>
                     <table class="table table-sm mt-3" t-if="source_map">
                       <thead>
                         <tr><th>Component</th><th>Value</th></tr>
@@ -441,7 +440,6 @@
                       <tbody>
                         <tr><td colspan="2"><strong>Running Cost (Monthly)</strong></td></tr>
                         <tr><td colspan="2" class="text-muted small">Fixed Components</td></tr>
-                        <tr><td>Manpower</td><td t-esc="running_map.get('manpower')"/></tr>
                         <tr t-if="running_map.get('land_investment')">
                           <td>Land / Site Development</td>
                           <td t-esc="running_map.get('land_investment')"/>
@@ -449,9 +447,7 @@
                         <tr><td colspan="2" class="text-muted small">Variable Components</td></tr>
                         <tr><td>Power</td><td t-esc="running_map.get('power')"/></tr>
                         <tr><td>DG</td><td t-esc="running_map.get('dg')"/></tr>
-                        <t t-if="order.gear_jcb_opt_in">
-                          <tr><td>JCB</td><td t-esc="running_map.get('jcb')"/></tr>
-                        </t>
+                        <tr><td>Diesel</td><td t-esc="running_map.get('diesel')"/></tr>
                         <tr><td>Admin</td><td t-esc="running_map.get('admin')"/></tr>
                         <tr><td>Interest</td><td t-esc="running_map.get('interest')"/></tr>
                         <tr><td><strong>Running Total</strong></td><td t-esc="running_total_display"/></tr>

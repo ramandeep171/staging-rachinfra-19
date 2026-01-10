@@ -37,12 +37,19 @@
 
 html {
     scroll-behavior: smooth;
+    width: 100%;
 }
 
 body {
     font-family: var(--font-primary);
     color: var(--gray-800);
     line-height: 1.6;
+    overflow-x: hidden;
+    width: 100%;
+}
+
+#wrap,
+.batching-plant-page {
     overflow-x: hidden;
 }
 
@@ -1366,14 +1373,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modern-quote-form .advanced-scroll-controls {
-    position: sticky;
-    top: 120px;
-    right: -20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 0;
-    z-index: 5;
+    display: none;
 }
 
 .modern-quote-form .advanced-card .scroll-btn {
@@ -1398,15 +1398,7 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 992px) {
     .modern-quote-form .advanced-scroll-controls {
-        position: sticky;
-        top: auto;
-        bottom: 12px;
-        right: auto;
-        transform: none;
-        justify-content: flex-end;
-        flex-direction: row;
-        gap: 12px;
-        padding: 12px 16px 0 16px;
+        display: none;
     }
 }
 
@@ -1651,6 +1643,11 @@ h1, h2, h3, h4, h5, h6 {
 .summary-panel.has-values {
     visibility: visible;
     opacity: 1;
+}
+
+.summary-metrics-grid .metric-card.is-empty,
+.service-preview-list li.is-empty {
+    display: none;
 }
 
 .contact-meta {
@@ -2579,8 +2576,38 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
 }
 
+/* Floating Quote Button */
+.floating-quote-btn {
+    position: fixed;
+    bottom: 110px;
+    right: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--gradient-blue);
+    color: var(--white);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 12px;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all var(--transition-normal);
+    z-index: 950;
+}
+
+.floating-quote-btn i {
+    font-size: 16px;
+}
+
+.floating-quote-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2xl);
+}
+
 /* Back to Top Button */
 .back-to-top {
+    display: none;
     position: fixed;
     bottom: 30px;
     right: 30px;
@@ -2624,6 +2651,11 @@ h1, h2, h3, h4, h5, h6 {
         grid-template-columns: 1fr;
     }
     
+    .floating-quote-btn {
+        bottom: 90px;
+        right: 14px;
+    }
+    
     .contact-form.modern-quote-form {
         padding: 36px;
     }
@@ -2640,6 +2672,15 @@ h1, h2, h3, h4, h5, h6 {
     
     .hero-subtitle {
         font-size: 16px;
+    }
+    
+    .floating-quote-btn {
+        bottom: 72px;
+        right: 12px;
+        padding: 10px 12px;
+        gap: 8px;
+        font-size: 14px;
+        border-radius: 10px;
     }
     
     .hero-cta {

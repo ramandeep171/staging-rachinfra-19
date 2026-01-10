@@ -23,12 +23,12 @@ class GearRunningCostMaster(models.Model):
     _name = "gear.running.cost.master"
     _description = "Running Cost Master"
 
-    manpower_monthly = fields.Float(string="Manpower (Monthly)")
     power_monthly = fields.Float(string="Power (Monthly)")
     dg_monthly = fields.Float(string="DG (Monthly)")
-    jcb_monthly = fields.Float(string="JCB (Monthly)")
+    diesel_monthly = fields.Float(string="Diesel (Monthly)")
     admin_monthly = fields.Float(string="Admin (Monthly)")
     interest_monthly = fields.Float(string="Interest (Monthly)")
+    interest_percent = fields.Float(string="Interest %")
     total_monthly = fields.Float(string="Total Monthly", compute="_compute_total_monthly", store=True)
     land_investment = fields.Float(string="Land / Site Development")
     active = fields.Boolean(default=True)
@@ -54,22 +54,28 @@ class GearRunningCostMaster(models.Model):
             return sum(records.mapped(field) or [])
 
         totals = {
-            "manpower_monthly": _sum("manpower_monthly"),
             "power_monthly": _sum("power_monthly"),
-            "dg_monthly": _sum("dg_monthly"),
-            "jcb_monthly": _sum("jcb_monthly"),
+            # DG intentionally excluded from running totals per latest requirement.
+            "dg_monthly": 0.0,
+            "diesel_monthly": _sum("diesel_monthly"),
             "admin_monthly": _sum("admin_monthly"),
             "interest_monthly": _sum("interest_monthly"),
             "land_investment": _sum("land_investment"),
+            "interest_percent": records[:1].interest_percent if records else 0.0,
         }
-        totals["running_total"] = sum(totals.values())
+        totals["running_total"] = (
+            totals["power_monthly"]
+            + totals["diesel_monthly"]
+            + totals["admin_monthly"]
+            + totals["interest_monthly"]
+            + totals["land_investment"]
+        )
         return totals
 
     @api.depends(
-        "manpower_monthly",
         "power_monthly",
         "dg_monthly",
-        "jcb_monthly",
+        "diesel_monthly",
         "admin_monthly",
         "interest_monthly",
         "land_investment",
@@ -77,10 +83,9 @@ class GearRunningCostMaster(models.Model):
     def _compute_total_monthly(self):
         for record in self:
             record.total_monthly = (
-                (record.manpower_monthly or 0.0)
-                + (record.power_monthly or 0.0)
-                + (record.dg_monthly or 0.0)
-                + (record.jcb_monthly or 0.0)
+                (record.power_monthly or 0.0)
+                # DG intentionally ignored
+                + (record.diesel_monthly or 0.0)
                 + (record.admin_monthly or 0.0)
                 + (record.interest_monthly or 0.0)
                 + (record.land_investment or 0.0)
@@ -306,10 +311,9 @@ class GearCostingOverview(models.Model):
         "res.currency", string="Currency", related="company_id.currency_id", store=True, readonly=True
     )
     running_total = fields.Monetary(string="Running Monthly", compute="_compute_overview", currency_field="currency_id")
-    running_manpower = fields.Monetary(string="Manpower", compute="_compute_overview", currency_field="currency_id")
     running_power = fields.Monetary(string="Power", compute="_compute_overview", currency_field="currency_id")
     running_dg = fields.Monetary(string="DG", compute="_compute_overview", currency_field="currency_id")
-    running_jcb = fields.Monetary(string="JCB", compute="_compute_overview", currency_field="currency_id")
+    running_diesel = fields.Monetary(string="Diesel", compute="_compute_overview", currency_field="currency_id")
     running_admin = fields.Monetary(string="Admin", compute="_compute_overview", currency_field="currency_id")
     running_interest = fields.Monetary(string="Interest", compute="_compute_overview", currency_field="currency_id")
     running_land = fields.Monetary(string="Land / Site Development", compute="_compute_overview", currency_field="currency_id")
@@ -345,10 +349,9 @@ class GearCostingOverview(models.Model):
             running_totals = Running.compute_totals(company)
             capex_totals = Capex.compute_totals(company)
             dead_totals = Dead.compute_totals(company)
-            record.running_manpower = running_totals.get("manpower_monthly", 0.0)
             record.running_power = running_totals.get("power_monthly", 0.0)
             record.running_dg = running_totals.get("dg_monthly", 0.0)
-            record.running_jcb = running_totals.get("jcb_monthly", 0.0)
+            record.running_diesel = running_totals.get("diesel_monthly", 0.0)
             record.running_admin = running_totals.get("admin_monthly", 0.0)
             record.running_interest = running_totals.get("interest_monthly", 0.0)
             record.running_land = running_totals.get("land_investment", 0.0)
