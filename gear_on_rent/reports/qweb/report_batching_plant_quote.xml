@@ -250,8 +250,8 @@
                         <t t-set="mgq_value" t-value="plant_slabs.get('mgq') or final_rates.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 0.0"/>
                         <t t-set="margin_per_cum" t-value="components.get('margin', {}).get('per_cum') or 0.0"/>
                         <t t-set="margin_monthly" t-value="margin_per_cum * (mgq_value or 0.0)"/>
-                        <t t-set="prime_base_monthly" t-value="running_monthly + depr_monthly + dead_total + interest_monthly"/>
-                        <t t-set="prime_base_per_cum" t-value="(running_per_cum or 0.0) + (depr_per_cum or 0.0) + (dead_per_cum or 0.0) + (interest_per_cum or 0.0)"/>
+                        <t t-set="prime_base_monthly" t-value="running_monthly + depr_monthly + dead_total"/>
+                        <t t-set="prime_base_per_cum" t-value="(running_per_cum or 0.0) + (depr_per_cum or 0.0) + (dead_per_cum or 0.0)"/>
                         <t t-set="prime_output_monthly" t-value="prime_base_monthly + margin_monthly"/>
                         <t t-set="prime_output_per_cum" t-value="prime_base_per_cum + margin_per_cum"/>
                         <t t-set="optional_cost_per_cum" t-value="final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0"/>
