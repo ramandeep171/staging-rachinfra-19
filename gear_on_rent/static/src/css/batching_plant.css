@@ -2628,7 +2628,10 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 768px) {
     .floating-action-stack {
         bottom: 20px;
-        right: 12px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        align-items: center;
     }
 
     .fab-btn {
@@ -2638,6 +2641,48 @@ h1, h2, h3, h4, h5, h6 {
 
     .fab-btn i {
         font-size: 17px;
+    }
+
+    /* Keep the form/cards centered on mobile */
+    .batching-plant-page .container {
+        width: calc(100% - 6px);
+        max-width: 340px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+
+    .batching-plant-page .contact-wrapper {
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .batching-plant-page .contact-form,
+    .batching-plant-page .contact-summary-section,
+    .batching-plant-page .modern-quote-form {
+        min-width: 0;
+        width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .batching-plant-page .contact-form.modern-quote-form {
+        margin-left: auto;
+        margin-right: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Slightly inset individual cards/fields to prevent edge clipping */
+    .batching-plant-page .modern-quote-form .form-card,
+    .batching-plant-page .modern-quote-form .field-grid,
+    .batching-plant-page .modern-quote-form .contact-summary-section {
+        width: calc(100% - 8px);
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
     }
 }
 
