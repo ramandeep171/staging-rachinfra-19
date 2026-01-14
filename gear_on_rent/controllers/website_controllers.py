@@ -88,14 +88,19 @@ class GearOnRentWebsite(http.Controller):
                 rate_value = diesel_surcharge_total or rate_value
             charge_type = service.charge_type or "per_cum"
             lock_quantity = service.code in {"diesel", "manpower"}
+            default_enabled = service.default_enabled
+            # Never auto-opt diesel on the website; user must explicitly select it.
+            if service.code == "diesel":
+                default_enabled = False
             entries.append(
                 {
+                    "code": service.code,
                     "label": service.name or field_map.get("label_fallback"),
                     "flag_field": field_map["flag_field"],
                     "value_field": field_map["value_field"],
                     "rate_value": rate_value,
                     "rate_display": _format_rate(rate_value),
-                    "default_enabled": service.default_enabled,
+                    "default_enabled": default_enabled,
                     "charge_type": charge_type,
                     "charge_label": charge_labels.get(charge_type, charge_type.title()),
                     "quantity_placeholder": service.charge_type == "per_month" and "Months" or "Qty / Multiplier",
@@ -335,12 +340,66 @@ class GearOnRentWebsite(http.Controller):
         manpower_rate = _to_float(kwargs.get('gear_manpower_per_cum'))
         diesel_rate = _to_float(kwargs.get('gear_diesel_per_cum'))
         jcb_rate = _to_float(kwargs.get('gear_jcb_monthly'))
+        transport_qty = _to_float(kwargs.get('gear_transport_qty'))
+        pump_qty = _to_float(kwargs.get('gear_pumping_qty'))
+        manpower_qty = _to_float(kwargs.get('gear_manpower_qty'))
+        diesel_qty = _to_float(kwargs.get('gear_diesel_qty'))
+        jcb_qty = _to_float(kwargs.get('gear_jcb_qty'))
 
-        transport_opt = _to_bool(kwargs.get('gear_transport_opt_in')) or bool(transport_rate)
-        pump_opt = _to_bool(kwargs.get('gear_pumping_opt_in')) or bool(pump_rate)
-        manpower_opt = _to_bool(kwargs.get('gear_manpower_opt_in')) or bool(manpower_rate)
-        diesel_opt = _to_bool(kwargs.get('gear_diesel_opt_in')) or bool(diesel_rate)
-        jcb_opt = _to_bool(kwargs.get('gear_jcb_opt_in')) or bool(jcb_rate)
+        def _explicit_bool(key):
+            return key in kwargs and _to_bool(kwargs.get(key))
+
+        transport_opt = _explicit_bool('gear_transport_opt_in')
+        pump_opt = _explicit_bool('gear_pumping_opt_in')
+        manpower_opt = _explicit_bool('gear_manpower_opt_in')
+        diesel_opt = _explicit_bool('gear_diesel_opt_in')
+        jcb_opt = _explicit_bool('gear_jcb_opt_in')
+
+        OptionalService = request.env['gear.optional.service.master'].sudo()
+        optional_service_map = {
+            svc.code: svc for svc in OptionalService.search([('code', 'in', list(OPTIONAL_SERVICE_FIELD_MAP.keys()))])
+        }
+
+        # Align diesel surcharge with the enabled optional services instead of the master-wide sum.
+        def _diesel_component_total():
+            total = 0.0
+            for code, enabled in (("transport", transport_opt), ("pump", pump_opt), ("manpower", manpower_opt), ("jcb", jcb_opt)):
+                if not enabled:
+                    continue
+                service = optional_service_map.get(code)
+                if service:
+                    total += service.diesel_per_cum or 0.0
+            return total
+
+        if diesel_opt:
+            diesel_component_total = _diesel_component_total()
+            if diesel_component_total:
+                diesel_rate = diesel_component_total
+
+        # If no optional flag is enabled, zero-out all optional fields to avoid accidental defaults.
+        any_optional = transport_opt or pump_opt or manpower_opt or diesel_opt or jcb_opt
+        if not any_optional:
+            transport_opt = pump_opt = manpower_opt = diesel_opt = jcb_opt = False
+            transport_rate = pump_rate = manpower_rate = diesel_rate = jcb_rate = 0.0
+            transport_qty = pump_qty = manpower_qty = diesel_qty = jcb_qty = 0.0
+        else:
+            # If diesel wasn't explicitly selected, strip its rate/qty.
+            if not diesel_opt:
+                diesel_rate = 0.0
+                diesel_qty = 0.0
+                # Also ensure diesel_opt stays False so it doesn't sneak into the order.
+                diesel_opt = False
+            # If transport wasn't selected, clear its qty/rate so it doesn't appear downstream.
+            if not transport_opt:
+                transport_rate = 0.0
+                transport_qty = 0.0
+
+        # Auto-suggest Transit Mixer qty only when transport is opted in: 1 TM per 750 m³ of MGQ.
+        if transport_opt and not transport_qty and mgq_monthly:
+            try:
+                transport_qty = round(float(mgq_monthly) / 750.0)
+            except Exception:
+                transport_qty = 0.0
 
         if not partner_name or not email or not phone:
             return {'error': 'Missing required fields'}
@@ -452,6 +511,11 @@ class GearOnRentWebsite(http.Controller):
             'gear_manpower_per_cum': manpower_rate,
             'gear_diesel_per_cum': diesel_rate,
             'gear_jcb_monthly': jcb_rate,
+            'gear_transport_qty': transport_qty,
+            'gear_pumping_qty': pump_qty,
+            'gear_manpower_qty': manpower_qty,
+            'gear_diesel_qty': diesel_qty,
+            'gear_jcb_qty': jcb_qty,
             'gear_transport_opt_in': transport_opt,
             'gear_pumping_opt_in': pump_opt,
             'gear_manpower_opt_in': manpower_opt,

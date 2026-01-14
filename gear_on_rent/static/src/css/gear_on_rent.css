@@ -2223,3 +2223,58 @@ img {
         padding: 2rem;
     }
 }
+
+/* Mobile */
+@media (max-width: 767px) {
+    html,
+    body,
+    #wrap,
+    .gear-on-rent-page {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    #rmc_location_chip {
+        width: calc(100% - 20px);
+        margin: 10px auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+    #rmc_location_chip .rmc-location-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #rmc_location_chip .rmc-location-city span,
+    #rmc_location_chip .rmc-location-zip {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #rmc_location_chip .rmc-location-change {
+        margin-left: auto;
+    }
+
+    .container {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+    #rmc_location_chip {
+        width: auto;
+        margin: 12px 16px 0;
+    }
+
+    .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}

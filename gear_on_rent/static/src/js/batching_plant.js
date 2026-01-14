@@ -42,6 +42,22 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     // Smooth Scrolling for Anchor Links
     // ========================================
+    const scrollToSection = (targetId, offset = 80) => {
+        const target = document.getElementById(targetId);
+        if (!target) {
+            return false;
+        }
+        const top = target.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+        // Persist hash for accessibility/history
+        if (history.replaceState) {
+            history.replaceState(null, '', `#${targetId}`);
+        } else {
+            window.location.hash = `#${targetId}`;
+        }
+        return true;
+    };
+
     if (batchingPlantPage) {
         // Smooth scroll for only real anchors within batching plant page
         batchingPlantPage.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -76,14 +92,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 e.preventDefault();
                 e.stopImmediatePropagation();
 
-                const offsetTop = target.offsetTop - 80;
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
+                scrollToSection(targetId, 80);
             });
         });
     }
+
+    // Dedicated fallback for floating "Get Quotation" button on mobile
+    const floatingQuoteBtn = document.getElementById('floatingQuoteBtn');
+    const handleQuoteClick = (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        if (!scrollToSection('contact', 70)) {
+            window.location.hash = '#contact';
+        }
+    };
+    if (floatingQuoteBtn) {
+        ['click', 'touchstart'].forEach(evt => {
+            floatingQuoteBtn.addEventListener(evt, handleQuoteClick, { passive: false });
+        });
+    }
+
+    // Fallback: explicitly wire any "scroll-to-contact" buttons
+    document.querySelectorAll('a[href="#contact"], button[data-scroll="contact"]').forEach(el => {
+        el.addEventListener('click', function (e) {
+            e.preventDefault();
+            scrollToSection('contact', 70);
+        }, { passive: false });
+    });
 
 
     // ========================================
@@ -345,6 +381,50 @@ document.addEventListener('DOMContentLoaded', function () {
             return '';
         }
         return Math.round(numeric / 100) * 100;
+    };
+
+    const getTransportQtyInput = () => document.querySelector('.optional-service-card[data-code="transport"] .js-optional-rate-input');
+
+    const computeTransportQtyFromMgq = () => {
+        if (!mgqField) {
+            return null;
+        }
+        const snapped = snapMgqToNearestHundred(mgqField.value);
+        const mgqValue = Number.isFinite(snapped) ? snapped : parseFloat(mgqField.value || '');
+        if (!Number.isFinite(mgqValue) || mgqValue <= 0) {
+            return null;
+        }
+        const qty = mgqValue / 750;
+        return Number.isFinite(qty) && qty > 0 ? qty : null;
+    };
+
+    const autoFillTransportQty = (force = false) => {
+        const input = getTransportQtyInput();
+        if (!input) {
+            return;
+        }
+        const toggle = document.querySelector('.optional-service-card[data-code="transport"] .js-optional-service-toggle');
+        if (!toggle || !toggle.checked) {
+            if (force) {
+                input.value = '';
+                input.dataset.userEdited = '0';
+            }
+            return;
+        }
+        const suggestedQty = computeTransportQtyFromMgq();
+        const userEdited = input.dataset.userEdited === '1';
+
+        if (!suggestedQty) {
+            if (!userEdited || force) {
+                input.value = '';
+            }
+            return;
+        }
+        if (userEdited && !force) {
+            return;
+        }
+        const formatted = formatAutoQuantity(suggestedQty);
+        input.value = formatted || suggestedQty;
     };
 
     const normalizeMgqField = () => {
@@ -664,6 +744,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     mgqField.value = suggested.toString();
                     setFloatingLabelState(mgqField);
                 }
+                autoFillTransportQty(true);
                 mgqManuallyEdited = false;
                 updatePreview();
             }
@@ -718,6 +799,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 mgqSuggestionText.textContent = `Suggested MGQ: ${suggested} m³/month`;
             }
             updateProjectQtyFromMgq({ normalize: true });
+            autoFillTransportQty(true);
             updatePreview();
         }
     };
@@ -887,10 +969,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             updateProjectQtyFromMgq();
+            autoFillTransportQty();
             updatePreview();
         });
         mgqField.addEventListener('blur', () => {
             updateProjectQtyFromMgq({ normalize: true });
+            autoFillTransportQty();
             updatePreview();
         });
     }
@@ -965,10 +1049,18 @@ document.addEventListener('DOMContentLoaded', function () {
         syncOptionalState();
     });
 
+    document.querySelectorAll('.js-optional-rate-input').forEach(input => {
+        input.addEventListener('input', () => {
+            input.dataset.userEdited = '1';
+        });
+    });
+
     document.querySelectorAll('.optional-service-card input, #gear_expected_production_qty').forEach(el => {
         el.addEventListener('input', updatePreview);
         el.addEventListener('change', updatePreview);
     });
+
+    autoFillTransportQty(true);
 
     if (advancedCard && advancedToggle && advancedSection) {
         const initExpanded = advancedCard.classList.contains('expanded');
@@ -1150,17 +1242,31 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const collectOptionalAmounts = () => {
-        const amounts = {};
+        const qtyFieldMap = {
+            transport: 'gear_transport_qty',
+            pump: 'gear_pumping_qty',
+            manpower: 'gear_manpower_qty',
+            diesel: 'gear_diesel_qty',
+            jcb: 'gear_jcb_qty',
+        };
+        const rates = {};
+        const quantities = {};
         document.querySelectorAll('.js-optional-rate-input').forEach(input => {
             const fieldName = input.getAttribute('name');
             const flagField = input.dataset.flagField;
             const checkbox = flagField ? document.querySelector(`input[name='${flagField}']`) : null;
             const isEnabled = checkbox ? checkbox.checked : false;
-            const qty = parseFloat(input.value || 0);
-            const rate = parseFloat(input.dataset.rate || 0);
-            amounts[fieldName] = isEnabled ? qty * rate : 0;
+            const qty = parseFloat(input.value || 0) || 0;
+            const rate = parseFloat(input.dataset.rate || 0) || 0;
+            const code = input.closest('.optional-service-card')?.dataset?.code || '';
+            const qtyFieldName = qtyFieldMap[code] || '';
+
+            rates[fieldName] = isEnabled ? rate : 0;
+            if (qtyFieldName) {
+                quantities[qtyFieldName] = isEnabled ? qty : 0;
+            }
         });
-        return amounts;
+        return { rates, quantities };
     };
 
     const collectFormData = () => {
@@ -1197,15 +1303,20 @@ document.addEventListener('DOMContentLoaded', function () {
             gear_civil_scope: civilScope ? civilScope.value : '',
             note: noteField ? noteField.value : '',
             gear_transport_opt_in: isChecked('gear_transport_opt_in'),
-            gear_transport_per_cum: optionalAmounts.gear_transport_per_cum || 0,
+            gear_transport_per_cum: optionalAmounts.rates.gear_transport_per_cum || 0,
+            gear_transport_qty: optionalAmounts.quantities.gear_transport_qty || 0,
             gear_pumping_opt_in: isChecked('gear_pumping_opt_in'),
-            gear_pump_per_cum: optionalAmounts.gear_pump_per_cum || 0,
+            gear_pump_per_cum: optionalAmounts.rates.gear_pump_per_cum || 0,
+            gear_pumping_qty: optionalAmounts.quantities.gear_pumping_qty || 0,
             gear_manpower_opt_in: isChecked('gear_manpower_opt_in'),
-            gear_manpower_per_cum: optionalAmounts.gear_manpower_per_cum || 0,
+            gear_manpower_per_cum: optionalAmounts.rates.gear_manpower_per_cum || 0,
+            gear_manpower_qty: optionalAmounts.quantities.gear_manpower_qty || 0,
             gear_diesel_opt_in: isChecked('gear_diesel_opt_in'),
-            gear_diesel_per_cum: optionalAmounts.gear_diesel_per_cum || 0,
+            gear_diesel_per_cum: optionalAmounts.rates.gear_diesel_per_cum || 0,
+            gear_diesel_qty: optionalAmounts.quantities.gear_diesel_qty || 0,
             gear_jcb_opt_in: isChecked('gear_jcb_opt_in'),
-            gear_jcb_monthly: optionalAmounts.gear_jcb_monthly || 0,
+            gear_jcb_monthly: optionalAmounts.rates.gear_jcb_monthly || 0,
+            gear_jcb_qty: optionalAmounts.quantities.gear_jcb_qty || 0,
             pricing_type: pricingTypeInput ? pricingTypeInput.value : '',
         };
     };

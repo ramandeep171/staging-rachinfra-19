@@ -148,53 +148,44 @@
     <record id="optional_service_transport" model="gear.optional.service.master">
       <field name="name">Transit mixer rental</field>
       <field name="code">transport</field>
-      <field name="charge_type">per_cum</field>
-      <field name="rate">100</field>
-      <field name="default_enabled">True</field>
+      <field name="charge_type">per_month</field>
+    
+     
     </record>
     <record id="optional_service_pump" model="gear.optional.service.master">
       <field name="name">Pump rental</field>
       <field name="code">pump</field>
-      <field name="charge_type">per_cum</field>
-      <field name="rate">150</field>
+      <field name="charge_type">per_month</field>
+     
     </record>
     <record id="optional_service_manpower" model="gear.optional.service.master">
       <field name="name">Manpower per CUM</field>
       <field name="code">manpower</field>
-      <field name="charge_type">per_cum</field>
-      <field name="rate">80</field>
+      <field name="charge_type">per_month</field>
+      
     </record>
     <record id="optional_service_diesel" model="gear.optional.service.master">
       <field name="name">Diesel surcharge per CUM</field>
       <field name="code">diesel</field>
       <field name="charge_type">per_cum</field>
-      <field name="rate">0</field>
+     
     </record>
     <record id="optional_service_jcb" model="gear.optional.service.master">
       <field name="name">JCB quarterly rental</field>
       <field name="code">jcb</field>
-      <field name="charge_type">fixed</field>
-      <field name="rate">36000</field>
+      <field name="charge_type">per_month</field>
     </record>
 
     <!-- Default monthly running cost master so prime-rate math has seed data -->
     <record id="gear_running_cost_master_demo" model="gear.running.cost.master">
       <field name="company_id" ref="base.main_company"/>
-      <field name="power_monthly">95000</field>
-      <field name="diesel_monthly">30000</field>
-      <field name="admin_monthly">13000</field>
       <field name="interest_monthly">0</field>
-      <field name="land_investment">75000</field>
       <field name="active">True</field>
     </record>
 
     <!-- Default CAPEX master entry for depreciation roll-up -->
     <record id="gear_capex_master_demo" model="gear.capex.master">
       <field name="company_id" ref="base.main_company"/>
-      <field name="plant_machinery_capex">20000000</field>
-      <field name="furniture_capex">500000</field>
-      <field name="equipment_fittings_capex">250000</field>
-      <field name="computers_peripherals_capex">150000</field>
       <field name="useful_life_years">10</field>
       <field name="active">True</field>
     </record>

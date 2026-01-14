@@ -765,15 +765,116 @@ class SaleOrder(models.Model):
         for order in self:
             order.x_cooling_period_months = order.cooling_months
 
+    def _gear_apply_optional_defaults(self):
+        """Auto-fill optional service quantities/rates when missing."""
+        if self.env.context.get("skip_optional_defaults"):
+            return
+        OptionalService = self.env["gear.optional.service.master"].sudo()
+        service_map = {svc.code: svc for svc in OptionalService.search([("code", "in", ["transport", "pump", "manpower", "diesel", "jcb"])])}
+
+        for order in self:
+            mgq = order.mgq_monthly or order.x_monthly_mgq or order.qty_mgq or 0.0
+            updates = {}
+
+            # If no optional flag is enabled, hard-reset all optional rates/qty to avoid stray defaults.
+            if not any([order.gear_transport_opt_in, order.gear_pumping_opt_in, order.gear_manpower_opt_in, order.gear_diesel_opt_in, order.gear_jcb_opt_in]):
+                updates.update(
+                    {
+                        "gear_transport_qty": 0.0,
+                        "gear_pumping_qty": 0.0,
+                        "gear_manpower_qty": 0.0,
+                        "gear_diesel_qty": 0.0,
+                        "gear_jcb_qty": 0.0,
+                        "gear_transport_per_cum": 0.0,
+                        "gear_pump_per_cum": 0.0,
+                        "gear_manpower_per_cum": 0.0,
+                        "gear_diesel_per_cum": 0.0,
+                        "gear_jcb_monthly": 0.0,
+                        "gear_transport_opt_in": False,
+                        "gear_pumping_opt_in": False,
+                        "gear_manpower_opt_in": False,
+                        "gear_diesel_opt_in": False,
+                        "gear_jcb_opt_in": False,
+                    }
+                )
+                if updates:
+                    order.with_context(mail_notrack=True, skip_optional_defaults=True).write(updates)
+                continue
+
+            if order.gear_transport_opt_in and (not order.gear_transport_qty or order.gear_transport_qty <= 0.0):
+                try:
+                    suggested_qty = round(float(mgq) / 750.0, 2) if mgq else 0.0
+                except Exception:
+                    suggested_qty = 0.0
+                if suggested_qty <= 0.0:
+                    suggested_qty = 1.0
+                updates["gear_transport_qty"] = suggested_qty
+                if not order.gear_transport_per_cum:
+                    service = service_map.get("transport")
+                    if service:
+                        updates["gear_transport_per_cum"] = service.rate or 0.0
+
+            if order.gear_diesel_opt_in and not order.gear_diesel_per_cum:
+                diesel_total = 0.0
+                for code, enabled in (
+                    ("transport", order.gear_transport_opt_in),
+                    ("pump", order.gear_pumping_opt_in),
+                    ("manpower", order.gear_manpower_opt_in),
+                    ("jcb", order.gear_jcb_opt_in),
+                ):
+                    if not enabled:
+                        continue
+                    service = service_map.get(code)
+                    if service:
+                        diesel_total += service.diesel_per_cum or 0.0
+                if diesel_total:
+                    updates["gear_diesel_per_cum"] = diesel_total
+
+            if updates:
+                order.with_context(mail_notrack=True, skip_optional_defaults=True).write(updates)
+
     @api.model_create_multi
     def create(self, vals_list):
-        normalized_vals = [self._normalize_design_mix_vals(vals) for vals in vals_list]
+        def _sanitize_optional(vals):
+            flag_fields = [
+                "gear_transport_opt_in",
+                "gear_pumping_opt_in",
+                "gear_manpower_opt_in",
+                "gear_diesel_opt_in",
+                "gear_jcb_opt_in",
+            ]
+            if any(vals.get(flag) for flag in flag_fields):
+                return vals
+            zero_defaults = {
+                "gear_transport_per_cum": 0.0,
+                "gear_pump_per_cum": 0.0,
+                "gear_manpower_per_cum": 0.0,
+                "gear_diesel_per_cum": 0.0,
+                "gear_jcb_monthly": 0.0,
+                "gear_transport_qty": 0.0,
+                "gear_pumping_qty": 0.0,
+                "gear_manpower_qty": 0.0,
+                "gear_diesel_qty": 0.0,
+                "gear_jcb_qty": 0.0,
+            }
+            sanitized = dict(vals)
+            for flag in flag_fields:
+                sanitized.setdefault(flag, False)
+            for key, default in zero_defaults.items():
+                sanitized.setdefault(key, default)
+            return sanitized
+
+        normalized_vals = [self._normalize_design_mix_vals(_sanitize_optional(vals)) for vals in vals_list]
         orders = super().create(normalized_vals)
         orders._gear_sync_billing_category()
+        orders._gear_apply_optional_defaults()
         orders._gear_refresh_prime_rate_log()
         return orders
 
     def write(self, vals):
+        if self.env.context.get("skip_optional_defaults"):
+            vals = self._normalize_design_mix_vals(vals)
+            return super().write(vals)
         vals = self._normalize_design_mix_vals(vals)
         audit_fields = {
             "gear_optional_service_ids",
@@ -819,6 +920,49 @@ class SaleOrder(models.Model):
         if "x_inventory_mode" in vals or "x_real_warehouse_id" in vals:
             self._gear_validate_inventory_mode_change(vals.get("x_inventory_mode"))
         res = super().write(vals)
+
+        # If all optional flags are off in this write, hard-reset optional rates/qty to zero.
+        optional_flag_fields = {
+            "gear_transport_opt_in",
+            "gear_pumping_opt_in",
+            "gear_manpower_opt_in",
+            "gear_diesel_opt_in",
+            "gear_jcb_opt_in",
+        }
+        if set(vals).intersection(optional_flag_fields):
+            for order in self:
+                if not any([order.gear_transport_opt_in, order.gear_pumping_opt_in, order.gear_manpower_opt_in, order.gear_diesel_opt_in, order.gear_jcb_opt_in]):
+                    order.with_context(mail_notrack=True, skip_optional_defaults=True).write(
+                        {
+                            "gear_transport_per_cum": 0.0,
+                            "gear_pump_per_cum": 0.0,
+                            "gear_manpower_per_cum": 0.0,
+                            "gear_diesel_per_cum": 0.0,
+                            "gear_jcb_monthly": 0.0,
+                            "gear_transport_qty": 0.0,
+                            "gear_pumping_qty": 0.0,
+                            "gear_manpower_qty": 0.0,
+                            "gear_diesel_qty": 0.0,
+                            "gear_jcb_qty": 0.0,
+                        }
+                    )
+
+        # Reapply optional defaults whenever related toggles/quantities change.
+        if set(vals).intersection(
+            {
+                "mgq_monthly",
+                "x_monthly_mgq",
+                "qty_mgq",
+                "gear_transport_opt_in",
+                "gear_pumping_opt_in",
+                "gear_manpower_opt_in",
+                "gear_diesel_opt_in",
+                "gear_jcb_opt_in",
+                "gear_transport_qty",
+                "gear_diesel_per_cum",
+            }
+        ):
+            self._gear_apply_optional_defaults()
 
         if set(vals).intersection(PRIME_LOG_TRIGGER_FIELDS):
             self._gear_refresh_prime_rate_log()
@@ -970,6 +1114,16 @@ class SaleOrder(models.Model):
                 raise ValidationError(_("Please choose a real warehouse when using Inventory Mode: With Inventory."))
             # if silent_wh and order.x_real_warehouse_id and order.x_real_warehouse_id == silent_wh:
             #     raise ValidationError(_("The silent warehouse cannot be selected as the real warehouse."))
+
+    @api.constrains("gear_service_type", "mgq_monthly", "x_monthly_mgq", "qty_mgq")
+    def _check_dedicated_mgq_minimum(self):
+        """Dedicated Plant must have at least 1000 MGQ per month."""
+        for order in self:
+            if order.gear_service_type != "dedicated":
+                continue
+            mgq_value = order.mgq_monthly or order.x_monthly_mgq or order.qty_mgq or 0.0
+            if mgq_value and mgq_value < 1000.0 or not mgq_value:
+                raise ValidationError(_("Dedicated Plant requires MGQ (Monthly) of at least 1000."))
 
     def _gear_get_timezone(self):
         self.ensure_one()
@@ -1729,8 +1883,7 @@ class SaleOrder(models.Model):
                 return
             rate = service.rate or 0.0
             if code == "diesel":
-                component_total = self.env["gear.optional.service.master"].sudo().compute_diesel_surcharge_total()
-                rate = component_total or service.diesel_per_cum or rate
+                rate = service.diesel_per_cum or rate
             if service.charge_type == "per_cum":
                 result[target_key] = rate
             elif service.charge_type in ("per_month", "fixed") and mgq:

@@ -181,16 +181,22 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             ("transport", order.gear_transport_opt_in, order.gear_transport_per_cum, "per_cum"),
             ("pump", order.gear_pumping_opt_in, order.gear_pump_per_cum, "per_cum"),
             ("manpower", order.gear_manpower_opt_in, order.gear_manpower_per_cum, "per_cum"),
-            ("diesel", order.gear_diesel_opt_in, order.gear_diesel_per_cum, "per_cum"),
             ("jcb", order.gear_jcb_opt_in, order.gear_jcb_monthly, "per_month"),
+            # Keep diesel at the bottom of the optional table for readability.
+            ("diesel", order.gear_diesel_opt_in, order.gear_diesel_per_cum, "per_cum"),
         ]
 
-        OptionalService = self.env["gear.optional.service.master"].sudo()
-        diesel_master_total = OptionalService.compute_diesel_surcharge_total()
         resolved_services = {}
         enabled_definitions = []
         diesel_component_total = 0.0
         entries = []
+        quantity_map = {
+            "transport": order.gear_transport_qty,
+            "pump": order.gear_pumping_qty,
+            "manpower": order.gear_manpower_qty,
+            "diesel": order.gear_diesel_qty,
+            "jcb": order.gear_jcb_qty,
+        }
 
         for code, enabled, custom_rate, custom_charge in service_defs:
             if not enabled:
@@ -205,34 +211,22 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             service = resolved_services.get(code)
             diesel_value = (service.diesel_per_cum if service else 0.0) or 0.0
             charge_type = "per_cum" if code == "diesel" else ((service.charge_type if service else None) or custom_charge)
-            base_rate = 0.0
-            entered_amount = 0.0
+            quantity = quantity_map.get(code, 0.0) or 0.0
+            if code == "transport" and (not quantity or quantity <= 0.0) and mgq:
+                try:
+                    quantity = round(float(mgq) / 750.0, 2)
+                except Exception:
+                    quantity = 0.0
+            if quantity <= 0.0:
+                quantity = 1.0
 
             if code == "diesel":
                 service_rate = service.rate if service else 0.0
-                component_total = diesel_component_total or diesel_master_total
-                base_rate = (
-                    custom_rate
-                    or diesel_value
-                    or service_rate
-                    or component_total
-                    or 0.0
-                )
-                entered_amount = base_rate
-                quantity = 1.0
+                component_total = diesel_component_total
+                # Prefer the computed diesel surcharge derived from enabled optional services.
+                base_rate = custom_rate or component_total or diesel_value or service_rate or 0.0
             else:
-                base_rate = (service.rate if service else 0.0) or 0.0
-                entered_amount = custom_rate or 0.0
-
-                quantity = 0.0
-                if base_rate and entered_amount:
-                    quantity = entered_amount / base_rate if base_rate else 0.0
-                elif base_rate:
-                    quantity = 1.0
-                    entered_amount = base_rate
-                elif entered_amount:
-                    base_rate = entered_amount
-                    quantity = 1.0
+                base_rate = custom_rate or (service.rate if service else 0.0) or 0.0
 
             amount_per_period = base_rate * quantity
 
@@ -244,6 +238,7 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
             else:
                 per_cum = amount_per_period
 
+            # Diesel surcharge is expressed per CUM, so keep it unscaled by quantity for display.
             if code == "diesel":
                 diesel_per_cum_value = base_rate
             else:
@@ -264,6 +259,16 @@ class GearBatchingQuotationCalculator(models.AbstractModel):
 
     def calculate_optional_services(self, order):
         mgq, _production = self._get_mgq_context(order)
+        if not any(
+            [
+                order.gear_transport_opt_in,
+                order.gear_pumping_opt_in,
+                order.gear_manpower_opt_in,
+                order.gear_diesel_opt_in,
+                order.gear_jcb_opt_in,
+            ]
+        ):
+            return 0.0
         per_cum_total = 0.0
 
         for service in self._iter_optional_services(order, mgq):

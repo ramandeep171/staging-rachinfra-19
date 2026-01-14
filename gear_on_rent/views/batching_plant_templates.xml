@@ -1439,6 +1439,7 @@
                                 <div class="optional-service-card"
                                      t-att-data-rate="opt['rate_value']"
                                      t-att-data-charge-type="opt['charge_type']"
+                                     t-att-data-code="opt.get('code')"
                                      t-att-data-lock-qty="opt.get('lock_quantity') and '1' or None">
                                   <label class="optional-service-toggle">
                                     <input type="checkbox"
@@ -1681,10 +1682,24 @@
             </div>
           </section>
 
-          <a href="#contact" class="floating-quote-btn" id="floatingQuoteBtn" aria-label="Get quotation">
-            <i class="fas fa-file-signature"></i>
-            <span>Get Quotation</span>
-          </a>
+          <t t-set="company_phone" t-value="(website and website.company_id.phone) or request.env.company.phone"/>
+          <div class="floating-action-stack">
+            <a t-att-href="'https://wa.me/%s' % ((company_phone or '919289375999').replace(' ', '').replace('+', ''))"
+               class="fab-btn fab-whatsapp"
+               target="_blank"
+               rel="noopener"
+               aria-label="Chat on WhatsApp">
+              <i class="fab fa-whatsapp"></i>
+            </a>
+            <a t-att-href="'tel:%s' % (company_phone or '919289375999')"
+               class="fab-btn fab-call"
+               aria-label="Call us">
+              <i class="fas fa-phone"></i>
+            </a>
+            <a href="#contact" class="fab-btn fab-quote" id="floatingQuoteBtn" aria-label="Get quotation">
+              <i class="fas fa-calculator"></i>
+            </a>
+          </div>
 
           <!-- Back to Top Button -->
           <button class="back-to-top" id="backToTop">
