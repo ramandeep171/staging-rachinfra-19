@@ -11,6 +11,8 @@
     <template id="gear_on_rent_website_page" name="Gear On Rent Landing Page">
       <t t-call="website.layout">
         <t t-set="title">Gear On Rent - IoT-Enabled Construction Equipment | RACH INFRA</t>
+        <t t-set="company_phone" t-value="(website and website.company_id.phone) or request.env.company.phone"/>
+        <t t-set="company_phone_clean" t-value="(company_phone or '919289375999').replace(' ', '').replace('+', '')"/>
         <t t-set="head">
           <t t-raw="head"/>
           <meta name="description" content="Rent modern construction equipment with IoT tracking. Production basis or hourly/daily rates. 50+ machines, pan-India delivery, 98% on-time record."/>
@@ -20,7 +22,8 @@
              class="gear-on-rent-page oe_structure"
              t-att-data-oe-model="'website.page'"
              t-att-data-oe-id="main_object.id if main_object else False"
-             data-oe-field="arch">
+             data-oe-field="arch"
+             t-att-data-company-phone="company_phone or ''">
           <section class="hero" id="home">
             <div class="hero-overlay"></div>
             <div class="container hero-container">
@@ -1029,6 +1032,7 @@
 
               <div class="contact-container">
                 <div class="contact-form-wrapper" data-aos="fade-right" data-aos-delay="200">
+                  <t t-set="company_phone_clean" t-value="(company_phone or '919289375999').replace(' ', '').replace('+', '')"/>
                   <form class="contact-form" id="contactForm">
                     <div class="form-row">
                       <div class="form-group">
@@ -1085,10 +1089,10 @@
                           <option value="not-sure">Not Sure - Need Consultation</option>
                         </select>
                       </div>
-                      <div class="form-group">
-                        <label for="startDate"><i class="fas fa-calendar"></i> Estimated Start Date</label>
-                        <input type="date" id="startDate" class="form-control"/>
-                      </div>
+                    <div class="form-group">
+                      <label for="startDate"><i class="fas fa-calendar"></i> Estimated Start Date</label>
+                      <input type="date" id="startDate" class="form-control" inputmode="numeric" placeholder="YYYY-MM-DD"/>
+                    </div>
                     </div>
 
                     <div class="form-group">
@@ -1097,10 +1101,11 @@
                     </div>
 
                     <div class="form-actions">
+                      <t t-set="whatsapp_message">Hi%2C%20I%20need%20equipment%20rental%20information</t>
                       <button type="submit" class="btn btn-primary btn-large">
                         <i class="fas fa-paper-plane"></i> Submit Request
                       </button>
-                      <a href="https://wa.me/919289375999?text=Hi,%20I%20need%20equipment%20rental%20information" class="btn btn-whatsapp-large" target="_blank">
+                      <a t-att-href="'https://wa.me/%s?text=%s' % (company_phone_clean, whatsapp_message)" class="btn btn-whatsapp-large" target="_blank" rel="noopener">
                         <i class="fab fa-whatsapp"></i> WhatsApp Us
                       </a>
                     </div>
@@ -1117,7 +1122,7 @@
                       </div>
                       <div class="info-content">
                         <h4>Call CEO Directly</h4>
-                        <a href="tel:+919289375999">+91 92893 75999</a>
+                        <a t-att-href="'tel:%s' % (company_phone or '919289375999')"><t t-esc="company_phone or '+91 92893 75999'"/></a>
                         <p>24/7 Escalation Desk - Neetu Rani (CEO)</p>
                       </div>
                     </div>
@@ -1180,10 +1185,11 @@
           </section>
 
           <div class="floating-actions">
-            <a href="https://wa.me/919289375999?text=Hi,%20I%20need%20equipment%20rental%20information" class="floating-btn whatsapp-float" target="_blank" title="Chat on WhatsApp">
+            <t t-set="whatsapp_message_fab">Hi%2C%20I%20need%20equipment%20rental%20information</t>
+            <a t-att-href="'https://wa.me/%s?text=%s' % (company_phone_clean, whatsapp_message_fab)" class="floating-btn whatsapp-float" target="_blank" title="Chat on WhatsApp" rel="noopener">
               <i class="fab fa-whatsapp"></i>
             </a>
-            <a href="tel:+919289375999" class="floating-btn call-float" title="Call CEO">
+            <a t-att-href="'tel:%s' % (company_phone or '919289375999')" class="floating-btn call-float" title="Call CEO">
               <i class="fas fa-phone-alt"></i>
             </a>
             <a href="#calculator" class="floating-btn calculator-float" title="Cost Calculator">

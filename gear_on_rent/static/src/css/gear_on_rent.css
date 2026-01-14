@@ -2224,6 +2224,15 @@ img {
     }
 }
 
+/* Fail-safe: keep content visible if AOS/JS fails on mobile */
+@media (max-width: 768px) {
+    [data-aos] {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
 /* Mobile */
 @media (max-width: 767px) {
     html,

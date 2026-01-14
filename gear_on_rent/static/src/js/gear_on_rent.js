@@ -2,6 +2,19 @@
 // ==========================================
 
 (function () {
+    const getCompanyPhone = () => {
+        const wrap = document.getElementById('wrap');
+        const raw = wrap?.dataset?.companyPhone || '';
+        const digits = raw.replace(/\D/g, '');
+        return digits || '919289375999';
+    };
+
+    const buildWhatsappUrl = (message) => {
+        const phone = getCompanyPhone();
+        const text = message ? encodeURIComponent(message) : '';
+        return `https://wa.me/${phone}${text ? `?text=${text}` : ''}`;
+    };
+
     const initAOS = () => {
         if (window.AOS) {
             window.AOS.init({
@@ -97,6 +110,35 @@
         });
     };
 
+    const initDateFallback = () => {
+        const startDate = document.getElementById('startDate');
+        if (!startDate) {
+            return;
+        }
+
+        const isDateSupported = () => {
+            const input = document.createElement('input');
+            input.setAttribute('type', 'date');
+            return input.type === 'date';
+        };
+
+        const ensureDateType = () => {
+            startDate.type = 'date';
+        };
+
+        if (!isDateSupported()) {
+            startDate.type = 'text';
+            startDate.placeholder = startDate.placeholder || 'YYYY-MM-DD';
+            startDate.setAttribute('inputmode', 'numeric');
+            startDate.addEventListener('focus', ensureDateType, { passive: true });
+            startDate.addEventListener('blur', () => {
+                if (!startDate.value) {
+                    startDate.type = 'text';
+                }
+            }, { passive: true });
+        }
+    };
+
     const parseFloatSafe = (value) => {
         const parsed = parseFloat(value);
         return Number.isFinite(parsed) ? parsed : 0;
@@ -122,7 +164,7 @@
             .join('');
 
         const quoteURL = `/gear_on_rent/quote_request?${quoteParams.toString()}`;
-        const whatsappURL = `https://wa.me/919289375999?text=${encodeURIComponent(whatsappMessage)}`;
+        const whatsappURL = buildWhatsappUrl(whatsappMessage);
 
         resultDiv.innerHTML = `
             <div class="result-content">
@@ -463,7 +505,7 @@ Please provide a quote for the above requirements.
             `.trim();
 
             const encodedMessage = encodeURIComponent(whatsappMessage);
-            const whatsappURL = `https://wa.me/919289375999?text=${encodedMessage}`;
+            const whatsappURL = buildWhatsappUrl(encodedMessage);
 
             window.alert('Thank you for your inquiry! Redirecting to WhatsApp to complete your request.');
             window.open(whatsappURL, '_blank');
@@ -578,7 +620,7 @@ Please provide a quote for the above requirements.
         // eslint-disable-next-line no-console
         console.log('%cIoT-Enabled Construction Equipment Rental', 'font-size: 14px; color: #1E88E5;');
         // eslint-disable-next-line no-console
-        console.log('%c📞 Contact: +91 92893 75999', 'font-size: 12px; color: #666;');
+        console.log(`%c📞 Contact: +${getCompanyPhone()}`, 'font-size: 12px; color: #666;');
         // eslint-disable-next-line no-console
         console.log('%c🌐 Website: www.rachinfra.com', 'font-size: 12px; color: #666;');
     };
@@ -635,6 +677,7 @@ Please provide a quote for the above requirements.
         initScrollEffects();
         initMobileMenu();
         initSmoothScroll();
+        initDateFallback();
         setupCalculator();
         setupRateCardDownload();
         setupContactForm();

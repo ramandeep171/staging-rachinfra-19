@@ -1669,7 +1669,7 @@
                             </a>
                           </div>
                         </div>
-                        <a href="https://wa.me/919289375999" target="_blank" rel="noopener" class="whatsapp-chip">
+                        <a t-att-href="'https://wa.me/%s' % company_phone_clean" target="_blank" rel="noopener" class="whatsapp-chip">
                           <i class="fab fa-whatsapp"></i>
                           WhatsApp Support
                         </a>
@@ -1683,8 +1683,9 @@
           </section>
 
           <t t-set="company_phone" t-value="(website and website.company_id.phone) or request.env.company.phone"/>
+          <t t-set="company_phone_clean" t-value="(company_phone or '919289375999').replace(' ', '').replace('+', '')"/>
           <div class="floating-action-stack">
-            <a t-att-href="'https://wa.me/%s' % ((company_phone or '919289375999').replace(' ', '').replace('+', ''))"
+            <a t-att-href="'https://wa.me/%s' % company_phone_clean"
                class="fab-btn fab-whatsapp"
                target="_blank"
                rel="noopener"
