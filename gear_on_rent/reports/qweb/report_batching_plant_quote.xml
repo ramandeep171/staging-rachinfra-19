@@ -25,6 +25,8 @@
                 <t t-set="project_duration" t-value="pdf_data.get('project_duration')"/>
                 <t t-set="final_rate" t-value="pdf_data.get('final_rates') or {'total_rate_per_cum': pdf_data.get('final_rate')}"/>
                 <t t-set="final_rates" t-value="pdf_data.get('final_rates') or final_rate"/>
+                <t t-set="source_map" t-value="pdf_data.get('source_map') or final_rates.get('source_map') or {}"/>
+                <t t-set="running_map" t-value="source_map.get('running', {})"/>
                 <t t-set="dead_cost_per_cum" t-value="pdf_data.get('dead_cost') or final_rate.get('dead_cost') or order.gear_dead_cost_per_cum or 0.0"/>
                 <t t-set="dead_cost_context" t-value="pdf_data.get('dead_cost_context') or {
                     'per_cum': dead_cost_per_cum,
@@ -89,14 +91,21 @@
 
                            
                             <h4 class="mb-2">Service Summary</h4>
+                            <t t-set="grade_raw" t-value="quotation_context.get('grade') or (order.gear_design_mix_id.grade if order.gear_design_mix_id else False)"/>
+                            <t t-set="grade_value" t-value="grade_raw if grade_raw not in ('', '-', None, False) else False"/>
+                            <t t-set="area_raw" t-value="quotation_context.get('area_name') or (order.gear_material_area_id.name if order.gear_material_area_id else False)"/>
+                            <t t-set="area_value" t-value="area_raw if area_raw not in ('', '-', None, False) else False"/>
+                            <t t-set="plant_running_value" t-value="quotation_context.get('plant_running') or order.gear_plant_running or False"/>
+                            <t t-set="plant_running_label" t-value="{'power': 'On Power', 'diesel': 'On Diesel'}.get(plant_running_value) or plant_running_value"/>
                             <ul class="list-unstyled">
                                 <li><strong>Service Type:</strong> <t t-esc="quotation_context.get('service_type') or order.gear_service_type or '-'"/></li>
                                 <li><strong>Plant Capacity:</strong> <t t-esc="quotation_context.get('capacity') or (order.gear_capacity_id.name if order.gear_capacity_id else '-')"/></li>
                                 <li><strong>Inventory Mode:</strong> <t t-esc="quotation_context.get('inventory_mode') or order.x_inventory_mode or '-'"/></li>
-                                <li><strong>Grade:</strong> <t t-esc="quotation_context.get('grade') or (order.gear_design_mix_id.grade if order.gear_design_mix_id else '-')"/></li>
+                                <li t-if="plant_running_label"><strong>Plant Running:</strong> <t t-esc="plant_running_label"/></li>
+                                <li t-if="grade_value"><strong>Grade:</strong> <t t-esc="grade_value"/></li>
                                 <li><strong>Project Duration:</strong> <t t-esc="quotation_context.get('project_duration_months') or order.gear_project_duration_months or 0"/> months</li>
                                 <li><strong>Civil Scope:</strong> <t t-esc="quotation_context.get('civil_scope') or order.gear_civil_scope or '-'"/></li>
-                                <li><strong>Area:</strong> <t t-esc="quotation_context.get('area_name') or (order.gear_material_area_id.name if order.gear_material_area_id else '-')"/></li>
+                                <li t-if="area_value"><strong>Area:</strong> <t t-esc="area_value"/></li>
                             </ul>
 
                             <h4 class="mt-3 mb-2">MGQ Summary</h4>
@@ -164,106 +173,6 @@
                                 </tbody>
                             </table>
 
-                         <section class="mt-4">
-                            <h3>Prime Rate</h3>
-                            <t t-set="prime_log" t-value="final_rates.get('prime_rate_log') or {}"/>
-                            <t t-set="components" t-value="prime_log.get('components') or {}"/>
-                            <t t-set="running_comp" t-value="components.get('running', {})"/>
-                            <t t-set="depr_comp" t-value="components.get('depreciation', {})"/>
-                            <t t-set="interest_comp" t-value="components.get('interest', {})"/>
-                            <t t-set="dead_comp" t-value="components.get('dead_cost', {})"/>
-                            <t t-set="depr_component_total" t-value="capex_breakdown.get('total_amount') or ((depr_comp.get('monthly_total') or 0.0) * (depr_comp.get('project_months') or 0.0))"/>
-                            <t t-set="running_per_cum" t-value="running_comp.get('per_cum') or 0.0"/>
-                            <t t-set="depr_per_cum" t-value="depr_comp.get('per_cum') or 0.0"/>
-                            <t t-set="dead_per_cum" t-value="dead_comp.get('per_cum') or dead_cost_context.get('per_cum') or 0.0"/>
-                            <t t-set="interest_per_cum" t-value="interest_comp.get('per_cum') or 0.0"/>
-                            <t t-set="running_monthly" t-value="running_comp.get('monthly_total') or 0.0"/>
-                            <t t-set="depr_monthly" t-value="depr_comp.get('monthly_total') or 0.0"/>
-                            <t t-set="dead_total" t-value="dead_comp.get('total') or dead_cost_context.get('total') or 0.0"/>
-                            <t t-set="interest_monthly" t-value="interest_comp.get('monthly_total') or 0.0"/>
-                            <t t-set="prime_output_monthly" t-value="running_monthly + depr_monthly + dead_total + interest_monthly"/>
-                            <t t-set="prime_output_per_cum" t-value="(running_per_cum or 0.0) + (depr_per_cum or 0.0) + (dead_per_cum or 0.0) + (interest_per_cum or 0.0)"/>
-                            <table class="table table-sm o_main_table">
-                                <thead>
-                                    <tr>
-                                        <th>Service</th>
-                                        <th>Monthly</th>
-                                        <th>CUM</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Running</td>
-                                        <td t-esc="formatLang(running_monthly, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(running_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td>Depreciation</td>
-                                        <td t-esc="formatLang(depr_monthly, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(depr_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr t-if="dead_total or dead_per_cum">
-                                        <td>Dead Cost</td>
-                                        <td t-esc="formatLang(dead_total, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(dead_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="3" style="background:#ffffff;border:none;height:6px;"></td>
-                                    </tr>
-                                    <tr style="border-top:2px solid #8B3E0A;">
-                                        <td><strong>Prime Output (Base Rate)</strong></td>
-                    
-                                        <td t-esc="formatLang(prime_output_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </section>
-                        <section class="mt-4">
-                            <h3>Optional Services</h3>
-                            <t t-set="optional_items" t-value="optional_services or []"/>
-                            <t t-if="optional_items">
-                                <table class="table table-sm o_main_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Service</th>
-                                            <th>Rate</th>
-                                            <th>Qty</th>
-                                            <th>Per CUM</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr t-foreach="optional_items" t-as="opt">
-                                            <td t-esc="opt.get('name') or opt.get('label') or opt.get('service') or opt.get('code')"/>
-                                            <td t-esc="formatLang(opt.get('rate_value') or opt.get('rate') or 0.0, currency_obj=currency)"/>
-                                            <td t-esc="formatLang(opt.get('quantity') or 0.0, digits=2)"/>
-                                            <td t-esc="formatLang(opt.get('per_cum') or opt.get('total') or 0.0, currency_obj=currency)"/>
-                                            
-                                        </tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="4" style="text-align:right;font-weight:600;">Optional Cost Total</td>
-                                            <td style="font-weight:600;" t-esc="formatLang(final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0, currency_obj=currency)"/>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </t>
-                            <t t-if="not optional_items">
-                                <p>No optional services selected.</p>
-                            </t>
-                        </section>
-                          <section class="mt-4">
-                            <h3>Final Rate per CUM</h3>
-                            <div class="d-flex justify-content-end">
-                                <table class="table table-sm o_main_table w-50">
-                                    <tr>
-                                        <th><strong>Total Rate</strong></th>
-                                        <td t-esc="formatLang(final_rate.get('total_rate_per_cum') or final_rate.get('final_rate') or slab_rates.get('total_rate_per_cum') or 0.0, currency_obj=currency)"/>
-                                    </tr>
-                                </table>
-                            </div>
-                        </section>
-
                         <section class="mt-4" t-if="(quotation_context.get('inventory_mode') or order.x_inventory_mode) == 'with_inventory'">
                             <h3>Material Cost</h3>
                             <t t-set="material_lines" t-value="material_breakdown.get('lines') or []"/>
@@ -323,7 +232,152 @@
                             </table>
                         </section>
 
-                        
+                        <t t-set="prime_log" t-value="final_rates.get('prime_rate_log') or {}"/>
+                        <t t-set="components" t-value="prime_log.get('components') or {}"/>
+                        <t t-set="running_comp" t-value="components.get('running', {})"/>
+                        <t t-set="depr_comp" t-value="components.get('depreciation', {})"/>
+                        <t t-set="interest_comp" t-value="components.get('interest', {})"/>
+                        <t t-set="dead_comp" t-value="components.get('dead_cost', {})"/>
+                        <t t-set="depr_component_total" t-value="capex_breakdown.get('total_amount') or ((depr_comp.get('monthly_total') or 0.0) * (depr_comp.get('project_months') or 0.0))"/>
+                        <t t-set="running_per_cum" t-value="running_comp.get('per_cum') or 0.0"/>
+                        <t t-set="depr_per_cum" t-value="depr_comp.get('per_cum') or 0.0"/>
+                        <t t-set="dead_per_cum" t-value="dead_comp.get('per_cum') or dead_cost_context.get('per_cum') or 0.0"/>
+                        <t t-set="interest_per_cum" t-value="interest_comp.get('per_cum') or 0.0"/>
+                        <t t-set="running_monthly" t-value="running_comp.get('monthly_total') or 0.0"/>
+                        <t t-set="depr_monthly" t-value="depr_comp.get('monthly_total') or 0.0"/>
+                        <t t-set="dead_total" t-value="dead_comp.get('total') or dead_cost_context.get('total') or 0.0"/>
+                        <t t-set="interest_monthly" t-value="interest_comp.get('monthly_total') or 0.0"/>
+                        <t t-set="mgq_value" t-value="plant_slabs.get('mgq') or final_rates.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 0.0"/>
+                        <t t-set="margin_per_cum" t-value="components.get('margin', {}).get('per_cum') or 0.0"/>
+                        <t t-set="margin_monthly" t-value="margin_per_cum * (mgq_value or 0.0)"/>
+                        <t t-set="prime_base_monthly" t-value="running_monthly + depr_monthly + dead_total"/>
+                        <t t-set="prime_base_per_cum" t-value="(running_per_cum or 0.0) + (depr_per_cum or 0.0) + (dead_per_cum or 0.0)"/>
+                        <t t-set="prime_output_monthly" t-value="prime_base_monthly + margin_monthly"/>
+                        <t t-set="prime_output_per_cum" t-value="prime_base_per_cum + margin_per_cum"/>
+                        <t t-set="optional_cost_per_cum" t-value="final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0"/>
+                        <t t-set="running_divisor" t-value="mgq_value or 1.0"/>
+                        <t t-set="show_cost_breakdown" t-value="quotation_context.get('show_cost_breakdown') if 'show_cost_breakdown' in quotation_context else order.gear_show_cost_breakdown"/>
+                        <t t-set="running_power_monthly" t-value="running_map.get('power') or 0.0"/>
+                        <t t-set="running_power_per_cum" t-value="running_power_monthly / running_divisor if running_power_monthly else 0.0"/>
+                        <t t-set="running_dg_monthly" t-value="running_map.get('dg') or 0.0"/>
+                        <t t-set="running_dg_per_cum" t-value="running_dg_monthly / running_divisor if running_dg_monthly else 0.0"/>
+                        <t t-set="running_diesel_monthly" t-value="running_map.get('diesel') or 0.0"/>
+                        <t t-set="running_diesel_per_cum" t-value="running_diesel_monthly / running_divisor if running_diesel_monthly else 0.0"/>
+                        <t t-set="running_admin_monthly" t-value="running_map.get('admin') or 0.0"/>
+                        <t t-set="running_admin_per_cum" t-value="running_admin_monthly / running_divisor if running_admin_monthly else 0.0"/>
+                        <t t-set="running_interest_monthly" t-value="running_map.get('interest') or 0.0"/>
+                        <t t-set="running_interest_per_cum" t-value="running_interest_monthly / running_divisor if running_interest_monthly else 0.0"/>
+                        <t t-set="running_land_monthly" t-value="running_map.get('land_investment') or 0.0"/>
+                        <t t-set="running_land_per_cum" t-value="running_land_monthly / running_divisor if running_land_monthly else 0.0"/>
+
+                        <section class="mt-4">
+                            <h3>Prime Rate</h3>
+                            <table class="table table-sm o_main_table">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Monthly</th>
+                                        <th>CUM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Running</td>
+                                        <td t-esc="formatLang(running_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Depreciation</td>
+                                        <td t-esc="formatLang(depr_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(depr_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr t-if="dead_total or dead_per_cum">
+                                        <td><strong>Dead Cost</strong></td>
+                                        <td t-esc="formatLang(dead_total, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(dead_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Margin</td>
+                                        <td t-esc="formatLang(margin_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(margin_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td style="font-weight:600;">Prime Output (Base Rate)</td>
+                                        <td style="font-weight:600;" t-esc="formatLang(prime_output_monthly, currency_obj=currency)"/>
+                                        <td style="font-weight:600;" t-esc="formatLang(prime_output_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </section>
+
+                        <section class="mt-4">
+                            <h3>Optional Services</h3>
+                            <t t-set="optional_items" t-value="[opt for opt in (optional_services or []) if (opt.get('per_cum') or opt.get('rate_value') or opt.get('rate') or opt.get('diesel_per_cum') or opt.get('total_amount') or 0.0) != 0]"/>
+                            <t t-if="optional_items">
+                                <table class="table table-sm o_main_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Service</th>
+                                            <th>Rate</th>
+                                            <th>Qty</th>
+                                            <th>Per CUM</th>
+                                            <th>Diesel Per CUM</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="optional_items" t-as="opt">
+                                        <td t-esc="opt.get('name') or opt.get('label') or opt.get('service') or opt.get('code')"/>
+                                        <td t-esc="formatLang(opt.get('rate_value') or opt.get('rate') or 0.0, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(opt.get('quantity') or 0.0, digits=2)"/>
+                                        <td t-esc="formatLang(opt.get('per_cum') or opt.get('total') or 0.0, currency_obj=currency)"/>
+                                        <t t-set="opt_diesel_pc" t-value="opt.get('diesel_per_cum') if opt.get('code') != 'diesel' else 0.0"/>
+                                        <td t-esc="formatLang(opt_diesel_pc or 0.0, currency_obj=currency)"/>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="4" style="text-align:right;font-weight:600;">Optional Cost Total</td>
+                                            <td style="font-weight:600;" t-esc="formatLang(final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0, currency_obj=currency)"/>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </t>
+                            <t t-if="not optional_items">
+                                <p>No optional services selected.</p>
+                            </t>
+                        </section>
+
+                        <section class="mt-3" t-if="optional_items">
+                            <t t-set="diesel_breakdown" t-value="[opt for opt in optional_items if opt.get('code') != 'diesel' and (opt.get('diesel_per_cum') or 0.0)]"/>
+                            <t t-if="diesel_breakdown">
+                                <h4>Diesel Surcharge per CUM</h4>
+                                <p class="text-muted small mb-2">Shows which optional rates were used to build the diesel surcharge.</p>
+                                <table class="table table-sm o_main_table">
+                                    <thead>
+                                        <tr>
+                                            <th>Service</th>
+                                            <th>Qty</th>
+                                            <th>Diesel per CUM</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="diesel_breakdown" t-as="opt">
+                                            <td t-esc="opt.get('name') or opt.get('label') or opt.get('service') or opt.get('code')"/>
+                                            <td t-esc="formatLang(opt.get('quantity') or 0.0, digits=2)"/>
+                                            <td t-esc="formatLang(opt.get('diesel_per_cum') or 0.0, currency_obj=currency)"/>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2" style="text-align:right;font-weight:600;">Diesel Surcharge Total</td>
+                                            <td style="font-weight:600;" t-esc="formatLang(sum([opt.get('diesel_per_cum') or 0.0 for opt in diesel_breakdown]), currency_obj=currency)"/>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </t>
+                        </section>
 
                         <section class="mt-4" t-if="(quotation_context.get('civil_scope') or order.gear_civil_scope) == 'vendor'">
                             <h3>Dead Cost / CAPEX</h3>
@@ -371,11 +425,148 @@
                             </p>
                         </section>
 
-                      
+                        <section class="mt-4">
+                            <h3>Final Rate per CUM</h3>
+                            <t t-set="mgq_value" t-value="plant_slabs.get('mgq') or final_rates.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 1.0"/>
+                            <t t-set="optional_breakdown" t-value="components.get('optional', {}).get('services') or []"/>
+                            <t t-set="diesel_optional_per_cum" t-value="sum([(entry.get('per_cum_excluded') or entry.get('per_cum') or 0.0) for entry in optional_breakdown if entry.get('code') == 'diesel'])"/>
+                            <t t-set="diesel_running_per_cum" t-value="(running_map.get('diesel') or 0.0) / (mgq_value or 1.0)"/>
+                            <t t-set="diesel_per_cum_total" t-value="diesel_optional_per_cum + diesel_running_per_cum"/>
+                            <t t-set="margin_per_cum" t-value="components.get('margin', {}).get('per_cum') or 0.0"/>
+                            <t t-set="final_prime_rate_value" t-value="final_rates.get('final_prime_rate') or final_rates.get('total_rate_per_cum') or final_rates.get('prime_rate') or slab_rates.get('prime_rate') or 0.0"/>
+                            <t t-set="optimize_rate_value" t-value="final_rates.get('final_optimize_rate') or final_rates.get('optimize_rate') or slab_rates.get('optimize_rate') or plant_slabs.get('optimize_rate') or 0.0"/>
+                            <t t-set="after_mgq_rate_value" t-value="final_rates.get('final_after_mgq_rate') or final_rates.get('after_mgq_rate') or slab_rates.get('after_mgq_rate') or plant_slabs.get('after_mgq_rate') or 0.0"/>
+                            <table class="table table-sm o_main_table w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Per CUM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Prime Output (Base Rate)</td>
+                                        <td t-esc="formatLang(prime_output_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Optional Cost Total</td>
+                                        <td t-esc="formatLang(optional_cost_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:700;">Total Rate</td>
+                                        <td style="font-weight:700;" t-esc="formatLang(final_rate.get('total_rate_per_cum') or final_rate.get('final_rate') or slab_rates.get('total_rate_per_cum') or 0.0, currency_obj=currency)"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                        <section class="mt-3">
+                            <h3>Optimize Rate</h3>
+                            <table class="table table-sm o_main_table w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Per CUM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Diesel (Optional + Running)</td>
+                                        <td t-esc="formatLang(diesel_per_cum_total, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Final Rate</td>
+                                        <td t-esc="formatLang(final_prime_rate_value, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Optimize Rate</strong></td>
+                                        <td t-esc="formatLang(optimize_rate_value, currency_obj=currency)"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="text-muted small mb-0">Optimize Rate = Final Rate - Diesel (per CUM)</p>
+                        </section>
+                        <section class="mt-3">
+                            <h3>After MGQ Rate</h3>
+                            <table class="table table-sm o_main_table w-100">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Per CUM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Diesel (Optional + Running)</td>
+                                        <td t-esc="formatLang(diesel_per_cum_total, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td>Margin / CUM</td>
+                                        <td t-esc="formatLang(margin_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total After MGQ</strong></td>
+                                        <td t-esc="formatLang(after_mgq_rate_value, currency_obj=currency)"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="text-muted small mb-0">After MGQ = Diesel + Margin (per CUM)</p>
+                        </section>
+
+                        <section class="mt-4" t-if="show_cost_breakdown">
+                            <h3>Running Cost Breakdown</h3>
+                            <table class="table table-sm o_main_table">
+                                <thead>
+                                    <tr>
+                                        <th>Component</th>
+                                        <th>Monthly</th>
+                                        <th>Per CUM</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-if="running_power_monthly or running_power_per_cum">
+                                        <td>Power</td>
+                                        <td t-esc="formatLang(running_power_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_power_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr t-if="running_dg_monthly or running_dg_per_cum">
+                                        <td>DG</td>
+                                        <td t-esc="formatLang(running_dg_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_dg_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr t-if="running_diesel_monthly or running_diesel_per_cum">
+                                        <td>Diesel</td>
+                                        <td t-esc="formatLang(running_diesel_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_diesel_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr t-if="running_admin_monthly or running_admin_per_cum">
+                                        <td>Admin</td>
+                                        <td t-esc="formatLang(running_admin_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_admin_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr t-if="running_interest_monthly or running_interest_per_cum">
+                                        <td>Interest</td>
+                                        <td t-esc="formatLang(running_interest_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_interest_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr t-if="running_land_monthly or running_land_per_cum">
+                                        <td>Land / Site Development</td>
+                                        <td t-esc="formatLang(running_land_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_land_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total Running</strong></td>
+                                        <td t-esc="formatLang(running_monthly, currency_obj=currency)"/>
+                                        <td t-esc="formatLang(running_per_cum, currency_obj=currency)"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <p class="text-muted small mb-0">
+                                Source: <t t-esc="running_comp.get('source') or 'N/A'"/>
+                            </p>
+                        </section>
                     </div>
 
                     <div class="page">
-                        
                         <section class="mt-4" t-if="slab_rates.get('scenarios')">
                             <h3>MGQ Scenario Comparison</h3>
                             <table class="table table-sm o_main_table">
@@ -400,15 +591,14 @@
                             </table>
                         </section>
 
-                        <t t-set="show_cost_breakdown" t-value="quotation_context.get('show_cost_breakdown') if 'show_cost_breakdown' in quotation_context else order.gear_show_cost_breakdown"/>
                         <section class="mt-4" t-if="show_cost_breakdown">
                             <h3>Charts</h3>
                             <t t-set="cost_pie_img" t-value="pdf_data.get('cost_pie_chart') or chart_urls.get('cost_pie')"/>
                             <t t-set="mgq_billing_img" t-value="pdf_data.get('mgq_billing_chart') or chart_urls.get('mgq_bars')"/>
                             <t t-set="diesel_img" t-value="pdf_data.get('diesel_chart') or chart_urls.get('diesel_line')"/>
                             <t t-set="grade_img" t-value="pdf_data.get('grade_chart') or chart_urls.get('grade_comparison')"/>
-                            <t t-set="source_map" t-value="pdf_data.get('source_map') or final_rates.get('source_map') or {}"/>
-                            <t t-set="running_map" t-value="source_map.get('running', {})"/>
+                            <t t-set="source_map" t-value="pdf_data.get('source_map') or final_rates.get('source_map') or source_map"/>
+                            <t t-set="running_map" t-value="source_map.get('running', {}) or running_map"/>
                             <t t-set="capex_map" t-value="source_map.get('capex', {})"/>
                             <t t-set="dead_map" t-value="source_map.get('dead_cost', {})"/>
                             <t t-set="intermediate_map" t-value="source_map.get('intermediate_values', {})"/>

@@ -2628,10 +2628,10 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 768px) {
     .floating-action-stack {
         bottom: 20px;
-        left: 50%;
-        right: auto;
-        transform: translateX(-50%);
-        align-items: center;
+        right: 16px;
+        left: auto;
+        transform: none;
+        align-items: flex-end;
     }
 
     .fab-btn {
