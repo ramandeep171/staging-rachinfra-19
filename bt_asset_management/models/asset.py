@@ -56,6 +56,11 @@ class BtAsset(models.Model):
         return location
 
     name = fields.Char(string='Name', required=True)
+    product_id = fields.Many2one(
+        'product.product',
+        string='Product',
+        check_company=True,
+    )
     asset_type = fields.Selection(
         [
             ('main', 'Main'),
@@ -261,6 +266,12 @@ class BtAsset(models.Model):
             if asset.current_loc_id and asset.current_loc_id.usage != 'internal':
                 raise ValidationError(_("Current location must be an internal stock location."))
 
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        for asset in self:
+            if asset.product_id:
+                asset.name = asset.product_id.display_name
+
     def _get_default_category(self, company_id=None):
         company = company_id or self.env.company.id
         category = self.env['bt.asset.category'].with_company(company).search(
@@ -277,6 +288,10 @@ class BtAsset(models.Model):
         prepared_vals_list = []
         for vals in vals_list:
             vals = dict(vals)
+            product_id = vals.get('product_id')
+            if product_id:
+                product = self.env['product.product'].browse(product_id)
+                vals['name'] = product.display_name or product.name
             if vals.get('asset_type') == 'component' and not vals.get('parent_id'):
                 raise UserError(_("Component assets must have a parent asset."))
             if vals.get('asset_type') == 'component' and vals.get('parent_id') and not vals.get('category_id'):
@@ -369,6 +384,9 @@ class BtAsset(models.Model):
         return code
 
     def write(self, vals):
+        if vals.get('product_id'):
+            product = self.env['product.product'].browse(vals['product_id'])
+            vals.setdefault('name', product.display_name or product.name)
         if 'asset_code' in vals:
             for asset in self:
                 if asset.is_created and vals.get('asset_code') != asset.asset_code:

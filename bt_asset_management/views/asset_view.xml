@@ -174,7 +174,8 @@
                                 <page string="Components">
                                     <field name="child_ids" context="{'default_asset_type': 'component', 'default_parent_id': id}" mode="list,form">
                                         <list editable="bottom">
-                                            <field name="name"/>
+                                            <field name="product_id" domain="[('company_id', 'in', [company_id, False])]" context="{'company_id': company_id}" required="1"/>
+                                            <field name="name" invisible="1"/>
                                             <field name="component_type"/>
                                             <field name="asset_code" readonly="1"/>
                                             <field name="operational_status"/>
@@ -187,7 +188,8 @@
                                                 <field name="parent_id" invisible="1"/>
                                                 <field name="account_asset_id" invisible="1"/>
                                                 <group>
-                                                    <field name="name"/>
+                                                    <field name="product_id" domain="[('company_id', 'in', [company_id, False])]" context="{'company_id': company_id}" required="1"/>
+                                                    <field name="name" invisible="1"/>
                                                     <field name="component_type"/>
                                                     <field name="asset_code" readonly="1"/>
                                                     <field name="operational_status"/>
