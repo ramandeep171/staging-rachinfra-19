@@ -62,7 +62,7 @@
                                         </td>
                                     </t>
                                     <t t-else="">
-                                        <td><span t-esc="line.sequence"/></td>
+                                        <td><span t-esc="line.sequence_display"/></td>
                                         <td><span t-esc="line.description"/></td>
                                         <td><span t-esc="line.kpi_hint"/></td>
                                     </t>

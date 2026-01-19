@@ -31,8 +31,9 @@
                     <notebook>
                         <page string="Responsibilities">
                             <field name="line_ids">
-                                <list editable="bottom">
-                                    <field name="sequence"/>
+                                <list editable="bottom" default_order="sequence">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="sequence_display" readonly="1" string="Sr No." class="text-center"/>
                                     <field name="description"/>
                                     <field name="emphasize"/>
                                     <field name="kpi_hint"/>

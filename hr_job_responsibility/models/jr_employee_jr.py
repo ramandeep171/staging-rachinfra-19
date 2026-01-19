@@ -258,10 +258,36 @@ class JrEmployeeJrLine(models.Model):
     jr_id = fields.Many2one(
         'jr.employee.jr', string='Job Responsibility', required=True, ondelete='cascade'
     )
-    sequence = fields.Integer(default=1)
+    sequence = fields.Integer(default=0)
+    sequence_display = fields.Integer(
+        string='Sr No.',
+        compute='_compute_sequence_display',
+        store=False,
+    )
     description = fields.Text(required=True)
     kpi_hint = fields.Char(string='KPI Hint')
     emphasize = fields.Boolean(string='Emphasize/Bold')
+
+    @api.depends('sequence', 'jr_id', 'emphasize')
+    def _compute_sequence_display(self):
+        jrs = self.mapped('jr_id')
+        for jr in jrs:
+            ordered = jr.line_ids.sorted(key=lambda l: (l.sequence, l.id))
+            counter = 0
+            for line in ordered:
+                if line.emphasize:
+                    line.sequence_display = 0
+                    counter = 0
+                else:
+                    counter += 1
+                    line.sequence_display = counter
+
+        # For lines not linked to a JR yet (edge cases), keep simple numbering.
+        for line in self.filtered(lambda l: not l.jr_id):
+            if line.emphasize:
+                line.sequence_display = 0
+            else:
+                line.sequence_display = (line.sequence or 0) if line.sequence else 0
 
     @api.model_create_multi
     def create(self, vals_list):
