@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <menuitem id="menu_jr_root" name="Job Responsibilities" parent="hr.menu_hr_root" sequence="30"/>
+
+    <menuitem
+        id="menu_jr_employee_jr"
+        name="Employee JRs"
+        parent="menu_jr_root"
+        action="action_jr_employee_jr"
+        sequence="10"
+        groups="hr.group_hr_user,hr.group_hr_manager"
+    />
+
+    <menuitem
+        id="menu_jr_templates"
+        name="JR Templates"
+        parent="menu_jr_root"
+        action="action_jr_job_template"
+        sequence="20"
+        groups="hr.group_hr_user,hr.group_hr_manager"
+    />
+</odoo>

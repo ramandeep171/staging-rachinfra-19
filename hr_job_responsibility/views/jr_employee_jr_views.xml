@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_jr_employee_jr_tree" model="ir.ui.view">
+        <field name="name">jr.employee.jr.tree</field>
+        <field name="model">jr.employee.jr</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="job_id"/>
+                <field name="state"/>
+                <field name="issue_date"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_jr_employee_jr_form" model="ir.ui.view">
+        <field name="name">jr.employee.jr.form</field>
+        <field name="model">jr.employee.jr</field>
+        <field name="arch" type="xml">
+            <form string="Employee Job Responsibility">
+                <sheet>
+                    <header>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,issued,acknowledged"/>
+                        <button name="action_issue_to_employee" type="object" string="Issue to Employee" invisible="state != 'draft'" class="btn-primary"/>
+                        <button name="action_acknowledge" type="object" string="Mark as Acknowledged" invisible="state != 'issued'" class="btn-success"/>
+                        <button name="action_print_jr" type="object" string="Print JR" class="btn-secondary"/>
+                    </header>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="job_id"/>
+                            <field name="template_id" string="Template?" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="issue_date"/>
+                            <button name="action_apply_template" type="object" string="Apply Template" class="btn-secondary"
+                                    invisible="not template_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="summary" placeholder="Summary of responsibilities"/>
+                    </group>
+                    <notebook>
+                        <page string="Responsibilities">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence"/>
+                                    <field name="description"/>
+                                    <field name="emphasize"/>
+                                    <field name="kpi_hint"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes">
+                            <field name="notes" nolabel="1" placeholder="Internal notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_jr_employee_jr_line_tree" model="ir.ui.view">
+        <field name="name">jr.employee.jr.line.tree</field>
+        <field name="model">jr.employee.jr.line</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence"/>
+                <field name="description"/>
+                <field name="kpi_hint"/>
+                <field name="jr_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_jr_employee_jr" model="ir.actions.act_window">
+        <field name="name">Employee Job Responsibilities</field>
+        <field name="res_model">jr.employee.jr</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'default_state': 'draft'}</field>
+    </record>
+
+    <record id="view_employee_form_inherit_jr" model="ir.ui.view">
+        <field name="name">hr.employee.form.jr.inherit</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_job_responsibilities" type="object" class="oe_stat_button" icon="fa-tasks">
+                    <field name="jr_count" widget="statinfo" string="JR"/>
+                </button>
+                <button
+                    name="action_view_job_responsibilities"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-external-link"
+                    string="Open Current JR"
+                    invisible="not jr_count"
+                />
+                <button name="action_generate_job_responsibility" type="object" class="oe_stat_button" icon="fa-magic" string="Generate JR" invisible="not job_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

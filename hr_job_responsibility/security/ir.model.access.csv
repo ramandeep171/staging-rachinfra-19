@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_jr_job_template_manager,jr.job.template.manager,model_jr_job_template,hr.group_hr_manager,1,1,1,1
+access_jr_job_template_user,jr.job.template.user,model_jr_job_template,hr.group_hr_user,1,0,0,0
+access_jr_job_template_line_manager,jr.job.template.line.manager,model_jr_job_template_line,hr.group_hr_manager,1,1,1,1
+access_jr_job_template_line_user,jr.job.template.line.user,model_jr_job_template_line,hr.group_hr_user,1,0,0,0
+access_jr_employee_jr_manager,jr.employee.jr.manager,model_jr_employee_jr,hr.group_hr_manager,1,1,1,1
+access_jr_employee_jr_user,jr.employee.jr.user,model_jr_employee_jr,hr.group_hr_user,1,1,1,0
+access_jr_employee_jr_line_manager,jr.employee.jr.line.manager,model_jr_employee_jr_line,hr.group_hr_manager,1,1,1,1
+access_jr_employee_jr_line_user,jr.employee.jr.line.user,model_jr_employee_jr_line,hr.group_hr_user,1,1,1,0
+access_jr_employee_jr_portal,jr.employee.jr.portal,model_jr_employee_jr,base.group_portal,1,0,0,0
+access_jr_employee_jr_line_portal,jr.employee.jr.line.portal,model_jr_employee_jr_line,base.group_portal,1,0,0,0

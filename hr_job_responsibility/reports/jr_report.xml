@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record id="action_report_employee_jr" model="ir.actions.report">
+            <field name="name">Job Responsibility</field>
+            <field name="model">jr.employee.jr</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">hr_job_responsibility.report_employee_jr_document</field>
+            <field name="report_file">hr_job_responsibility.report_employee_jr_document</field>
+            <field name="print_report_name">'JR - %s' % (object.display_name)</field>
+            <field name="binding_model_id" ref="model_jr_employee_jr"/>
+            <field name="binding_type">report</field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="sp_nextgen_branding_enabled" model="ir.config_parameter">
+        <field name="key">sp_nextgen.branding_enabled</field>
+        <field name="value">True</field>
+    </record>
+</odoo>

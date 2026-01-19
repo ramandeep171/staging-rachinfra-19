@@ -1,0 +1,28 @@
+{
+    'name': 'HR Job Responsibility Management',
+    'version': '19.0.1.0.0',
+    'summary': 'Manage job responsibility templates and employee acknowledgements with chatter, email, and PDF reports.',
+    'category': 'Human Resources',
+    'author': 'SP Nextgen Automation',
+    'website': 'https://www.samarterpeak.com',
+    'depends': [
+        'hr',
+        'mail',
+        'portal',
+    ],
+    'data': [
+        'security/jr_security.xml',
+        'security/ir.model.access.csv',
+        'reports/jr_report_template.xml',
+        'reports/jr_report.xml',
+        'data/branding_param.xml',
+        'data/mail_template.xml',
+        'views/jr_job_template_views.xml',
+        'views/jr_employee_jr_views.xml',
+        'views/jr_portal_templates.xml',
+        'views/jr_menus.xml',
+    ],
+    'installable': True,
+    'application': True,
+    'license': 'LGPL-3',
+}

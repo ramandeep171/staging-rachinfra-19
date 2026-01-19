@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="report_employee_jr_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="o" t-value="doc"/>
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-set="layout_document_title" t-value="doc.name or 'Job Responsibilities'"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div
+                            class="jr-inline-header text-center"
+                            style="margin: 0 auto 24px auto; padding: 12px 0 8px; border-bottom: 2px solid #b85b26;"
+                        >
+                            <div style="font-size: 20px; font-weight: 700; color: #b85b26;" t-esc="doc.name or 'Job Responsibilities'"/>
+                            <div t-if="doc.company_id" style="font-size: 12px; color: #555;">
+                                <span t-field="doc.company_id.partner_id" t-options="{'widget': 'contact', 'fields': ['address', 'phone', 'email'], 'no_marker': True, 'phone_icons': True}"/>
+                            </div>
+                        </div>
+                        <h2>Job Responsibilities</h2>
+                        <table class="table table-sm o_main_table">
+                            <tr>
+                                <th>Employee</th>
+                                <td><span t-esc="doc.employee_id.name"/></td>
+                                <th>Job Position</th>
+                                <td><span t-esc="doc.job_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <th>Company</th>
+                                <td><span t-esc="doc.company_id.name"/></td>
+                                <th>Issue Date</th>
+                                <td><span t-esc="doc.issue_date"/></td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    <span t-esc="dict(doc._fields['state'].selection).get(doc.state)"/>
+                                </td>
+                                <th></th>
+                                <td></td>
+                            </tr>
+                        </table>
+
+                        <h3>Summary</h3>
+                        <p t-if="doc.summary" t-esc="doc.summary"/>
+                        <p t-if="not doc.summary">No summary provided.</p>
+
+                        <h3>Responsibilities</h3>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th style="background:#b85b26; color:#fff;">Sequence</th>
+                                    <th style="background:#b85b26; color:#fff;">Description</th>
+                                    <th style="background:#b85b26; color:#fff;">KPI Hint</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <t t-if="line.emphasize">
+                                        <td colspan="3" style="font-weight:700; text-align:center;">
+                                            <span t-esc="line.description"/>
+                                        </td>
+                                    </t>
+                                    <t t-else="">
+                                        <td><span t-esc="line.sequence"/></td>
+                                        <td><span t-esc="line.description"/></td>
+                                        <td><span t-esc="line.kpi_hint"/></td>
+                                    </t>
+                                </tr>
+                                <tr t-if="not doc.line_ids">
+                                    <td colspan="3">No responsibilities defined.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h3>Notes</h3>
+                        <p t-if="doc.notes" t-esc="doc.notes"/>
+                        <p t-if="not doc.notes">No additional notes.</p>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

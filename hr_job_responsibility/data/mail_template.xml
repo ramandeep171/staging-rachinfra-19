@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="mail_template_jr_issue" model="mail.template">
+        <field name="name">JR Issue Notification</field>
+        <field name="model_id" ref="model_jr_employee_jr"/>
+        <field name="subject">Job Responsibilities Issued - {{ object.employee_id.name }}</field>
+        <field name="email_from">{{ user.email_formatted or '' }}</field>
+        <field name="email_to">{{ object.employee_id.work_email }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="report_template_ids" eval="[(4, ref('hr_job_responsibility.action_report_employee_jr'))]"/>
+        <field name="body_html" type="html">
+            <div>
+                <p>Hello <t t-out="object.employee_id.name or ''"/></p>
+                <p>Your Job Responsibilities for the position <strong><t t-out="object.job_id.name or ''"/></strong> have been issued.</p>
+                <p>Please review the attached PDF and acknowledge receipt in Odoo.</p>
+                <p>Thank you.</p>
+                <t t-if="object._is_branding_enabled() and object.company_id">
+                    <p style="color: #6c757d; font-size: 12px; margin-top: 16px;">
+                        <span t-field="object.company_id.partner_id" t-options="{'widget': 'contact', 'fields': ['name', 'address', 'phone', 'email'], 'no_marker': True, 'phone_icons': True}"/>
+                    </p>
+                </t>
+            </div>
+        </field>
+    </record>
+</odoo>
