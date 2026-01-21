@@ -13,8 +13,7 @@
     <button name="action_create_spare_picking"
       type="object"
       class="oe_highlight"
-      string="Create Inventory Request"
-      invisible="spare_picking_id"/>
+      string="Create Inventory Request"/>
     <!-- Smart button: show when picking exists (calls server action to open) -->
     <button name="action_view_spare_picking" type="object" class="oe_stat_button" icon="fa-truck"
       invisible="not spare_picking_id">
@@ -41,14 +40,16 @@
     </record>
 
     <!-- Dedicated tree view for maintenance.request.spare so the list columns are defined on the comodel. -->
-    <record id="view_request_spare_tree" model="ir.ui.view">
+  <record id="view_request_spare_tree" model="ir.ui.view">
       <field name="name">maintenance.request.spare.tree</field>
       <field name="model">maintenance.request.spare</field>
       <field name="arch" type="xml">
   <list string="Spare Lines" editable="bottom">
           <field name="product_id"/>
+          <field name="description"/>
           <field name="qty"/>
           <field name="uom_id"/>
+          <field name="picking_id" readonly="1" invisible="1"/>
   </list>
       </field>
     </record>

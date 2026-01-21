@@ -44,9 +44,10 @@ class SpxChecklistTemplate(models.Model):
 
     vehicle_id = fields.Many2one('fleet.vehicle', string="Vehicle (for km)")
 
-    _sql_constraints = [
-        ('name_uniq', 'unique(name)', 'Template name must be unique.')
-    ]
+    _name_uniq = models.Constraint(
+        'unique(name)',
+        'Template name must be unique.',
+    )
 
     # usage scheduling is computed on the template model
     @api.depends('usage_interval', 'usage_start_at', 'usage_last_done', 'trigger_type')

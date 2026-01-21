@@ -46,17 +46,17 @@
             </group>
             <group string="Trigger">
               <field name="trigger_type"/>
-              <group modifiers='{"invisible": [["trigger_type", "!=", "time"]] }'>
+              <group invisible="trigger_type != 'time'">
                 <field name="periodicity"/>
               </group>
-              <group modifiers='{"invisible": [["trigger_type", "!=", "usage"]] }'>
+              <group invisible="trigger_type != 'usage'">
                 <field name="usage_metric"/>
                 <field name="usage_interval"/>
                 <field name="usage_start_at"/>
                 <field name="usage_last_done" readonly="1"/>
                 <field name="usage_next_due" readonly="1"/>
-                <field name="vehicle_id" modifiers='{"invisible": [["usage_metric", "!=", "km"]] }'/>
-                <field name="equipment_id" modifiers='{"invisible": [["usage_metric", "!=", "hours"]] }'/>
+                <field name="vehicle_id" invisible="usage_metric != 'km'"/>
+                <field name="equipment_id" invisible="usage_metric != 'hours'"/>
               </group>
             </group>
             <notebook>

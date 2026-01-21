@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 
 class MaintenanceRequest(models.Model):
     _inherit = "maintenance.request"
@@ -18,10 +18,13 @@ class MaintenanceRequest(models.Model):
     spare_picking_id = fields.Many2one('stock.picking', string='Spare Picking', readonly=True)
     spare_picking_count = fields.Integer('Picking Count', compute='_compute_spare_picking_count')
     
-    @api.depends('spare_picking_id')
+    @api.depends('spare_picking_id', 'spare_line_ids.picking_id')
     def _compute_spare_picking_count(self):
         for rec in self:
-            rec.spare_picking_count = 1 if rec.spare_picking_id else 0
+            picking_ids = set(rec.spare_line_ids.mapped('picking_id').ids)
+            if rec.spare_picking_id:
+                picking_ids.add(rec.spare_picking_id.id)
+            rec.spare_picking_count = len(picking_ids)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -116,7 +119,6 @@ class MaintenanceRequest(models.Model):
                         # if write fails due to access rights, ignore and proceed
                         pass
 
-            # create picking
             # determine partner for the picking: prefer vendor on request if available,
             # otherwise fall back to equipment's preferred vendor
             partner_id = False
@@ -126,22 +128,33 @@ class MaintenanceRequest(models.Model):
                 eq = rec.equipment_id
                 if eq and ('x_preferred_vendor_id' in eq._fields) and eq.x_preferred_vendor_id:
                     partner_id = eq.x_preferred_vendor_id.id
-
-            picking_vals = {
-                'picking_type_id': ptype.id,
-                'location_id': ptype.default_location_src_id.id if ptype.default_location_src_id else (src.id if src else False),
-                'location_dest_id': ptype.default_location_dest_id.id if ptype.default_location_dest_id else (dst.id if dst else False),
-                'origin': _('Maintenance Request %s') % (rec.name or rec.id),
-                'partner_id': partner_id,
-                'company_id': company.id,
-            }
-            picking = Picking.create(picking_vals)
+            # reuse existing draft picking, otherwise create a fresh one (so closed pickings stay untouched)
+            picking = rec.spare_picking_id
+            reused = False
+            if picking and picking.state == 'draft':
+                reused = True
+                # keep locations/picking type as-is to avoid unexpected changes; just refresh lines
+                picking.move_ids.unlink()
+                pending_lines = rec.spare_line_ids.filtered(lambda l: (not l.picking_id or l.picking_id.id == picking.id) and l.qty > 0)
+                if not pending_lines:
+                    raise UserError(_('No pending spare lines to issue. Add a new spare line first.'))
+            else:
+                pending_lines = rec.spare_line_ids.filtered(lambda l: not l.picking_id and l.qty > 0)
+                if not pending_lines:
+                    raise UserError(_('No pending spare lines to issue. Add a new spare line first.'))
+                picking_vals = {
+                    'picking_type_id': ptype.id,
+                    'location_id': ptype.default_location_src_id.id if ptype.default_location_src_id else (src.id if src else False),
+                    'location_dest_id': ptype.default_location_dest_id.id if ptype.default_location_dest_id else (dst.id if dst else False),
+                    'origin': _('Maintenance Request %s') % (rec.name or rec.id),
+                    'partner_id': partner_id,
+                    'company_id': company.id,
+                }
+                picking = Picking.create(picking_vals)
 
             # Create moves from spare lines
-            if rec.spare_line_ids:
-                for line in rec.spare_line_ids:
-                    if not line.product_id or line.qty <= 0:
-                        continue
+            if pending_lines:
+                for line in pending_lines:
                     Move.create({
                         'description_picking_manual': line.description or line.product_id.display_name,
                         'product_id': line.product_id.id,
@@ -152,23 +165,39 @@ class MaintenanceRequest(models.Model):
                         'location_dest_id': picking.location_dest_id.id,
                         'company_id': picking.company_id.id,
                     })
+                pending_lines.write({'picking_id': picking.id})
 
             # link and post a message
             rec.spare_picking_id = picking.id
-            rec.message_post(body=_('Spare issue picking %s created.') % (picking.name or picking.id,))
+            if reused:
+                rec.message_post(body=_('Spare issue picking %s updated from spare lines.') % (picking.display_name,))
+            else:
+                rec.message_post(body=_('Spare issue picking %s created.') % (picking.display_name,))
 
         return True
     
     def action_view_spare_picking(self):
         self.ensure_one()
-        if not self.spare_picking_id:
+        picking_ids = set(self.spare_line_ids.mapped('picking_id').ids)
+        if self.spare_picking_id:
+            picking_ids.add(self.spare_picking_id.id)
+        if not picking_ids:
             return
+        if len(picking_ids) == 1:
+            return {
+                'name': _('Spare Picking'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'stock.picking',
+                'view_mode': 'form',
+                'res_id': list(picking_ids)[0],
+                'target': 'current',
+            }
         return {
-            'name': _('Spare Picking'),
+            'name': _('Spare Pickings'),
             'type': 'ir.actions.act_window',
             'res_model': 'stock.picking',
-            'view_mode': 'form',
-            'res_id': self.spare_picking_id.id,
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', list(picking_ids))],
             'target': 'current',
         }
 
@@ -218,6 +247,17 @@ class MaintenanceJobCard(models.Model):
     )
     loto_applied = fields.Boolean("LOTO Applied")
     loto_supervisor_id = fields.Many2one("res.users", string="LOTO Supervisor")
+    loto_responsibility = fields.Selection(
+        [
+            ('contractor', 'Contractor Fault'),
+            ('client', 'Client Responsibility'),
+            ('third_party', 'Third Party'),
+            ('govt', 'Government/NGT'),
+        ],
+        string="LOTO Responsibility",
+        default='contractor',
+        tracking=True,
+    )
     note = fields.Text("Notes")
 
     # SLA
@@ -261,6 +301,12 @@ class MaintenanceJobCard(models.Model):
             if (not rec.capacity_cum_per_hr and equipment and
                     'x_capacity_cum_per_hr' in equipment._fields and equipment.x_capacity_cum_per_hr):
                 rec.capacity_cum_per_hr = equipment.x_capacity_cum_per_hr
+
+    @api.constrains('loto_applied', 'loto_responsibility')
+    def _check_loto_responsibility(self):
+        for rec in self:
+            if rec.loto_applied and not rec.loto_responsibility:
+                raise ValidationError(_("Specify LOTO responsibility when LOTO is applied."))
 
     @api.depends('equipment_id')
     def _compute_vehicle(self):

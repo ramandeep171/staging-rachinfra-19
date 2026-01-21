@@ -91,6 +91,9 @@
             <group string="LOTO">
               <field name="loto_applied"/>
               <field name="loto_supervisor_id"/>
+              <field name="loto_responsibility"
+                     modifiers="{'required': [['loto_applied', '=', True]],
+                                 'invisible': [['loto_applied', '=', False]]}"/>
             </group>
             <notebook>
               <page string="Cost Lines">
@@ -103,8 +106,8 @@
                     <field name="qty" invisible="line_type == 'labour'"/>
                     <field name="uom_id" invisible="line_type == 'labour'"/>
                     <field name="unit_cost"/>
-                    <field name="timesheet_hours" attrs="{'invisible': [('line_type','!=','labour')]}"/>
-                    <field name="employee_id" attrs="{'invisible': [('line_type','!=','labour')]}"/>
+                    <field name="timesheet_hours" modifiers="{'invisible': [('line_type','!=','labour')]}"/>
+                    <field name="employee_id" modifiers="{'invisible': [('line_type','!=','labour')]}"/>
                     <field name="amount_total" readonly="1"/>
                   </list>
                 </field>
