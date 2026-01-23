@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <!--    Dashboard template-->
+    <t t-name="ActivityDashboard">
+        <div class="activity-dashboard-shell">
+            <div class="dashboard-header">
+                <div>
+                    <p class="eyebrow">Activity Management</p>
+                    <h1 class="headline">Executive Activity Analytics</h1>
+                    <p class="text-muted">
+                        Powered by SP Nextgen Automation (www.samarterpeak.com)
+                    </p>
+                </div>
+                <div class="header-actions">
+                    <button class="ghost-btn" t-on-click="show_all_activities">
+                        <i class="fa fa-list"/> View All
+                    </button>
+                </div>
+            </div>
+            <div class="table_view">
+                <t t-call="ManageActivity"/>
+            </div>
+        </div>
+    </t>
+    <t t-name="ManageActivity">
+        <section class="dashboard_main_section">
+            <div class="kpi-grid">
+                <div class="kpi-card neutral" t-on-click="show_all_activities">
+                    <div class="kpi-label">Total Activities</div>
+                    <div class="kpi-value">
+                        <t t-esc="metrics.total"/>
+                    </div>
+                </div>
+                <div class="kpi-card critical" t-on-click="show_overdue_activities">
+                    <div class="kpi-label">Overdue Activities</div>
+                    <div class="kpi-value">
+                        <t t-esc="metrics.overdue"/>
+                    </div>
+                </div>
+                <div class="kpi-card amber" t-on-click="show_today_activities">
+                    <div class="kpi-label">Today's Activities</div>
+                    <div class="kpi-value">
+                        <t t-esc="metrics.today"/>
+                    </div>
+                </div>
+                <div class="kpi-card info" t-on-click="show_planned_activities">
+                    <div class="kpi-label">Planned Activities</div>
+                    <div class="kpi-value">
+                        <t t-esc="metrics.planned"/>
+                    </div>
+                </div>
+                <div class="kpi-card muted" t-on-click="show_completed_activities">
+                    <div class="kpi-label">Completed Activities</div>
+                    <div class="kpi-value">
+                        <t t-esc="metrics.done"/>
+                    </div>
+                </div>
+                <div class="kpi-card subtle" t-on-click="show_activity_types">
+                    <div class="kpi-label">Activity Types</div>
+                    <div class="kpi-value">
+                        <t t-esc="metrics.activityTypes"/>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-card__header">
+                        <span>Activities by User</span>
+                    </div>
+                    <t t-if="chartData.byUser.length">
+                        <div class="bar-chart">
+                            <div class="bar" t-foreach="chartData.byUser" t-as="bar" t-key="bar.label">
+                                <div class="bar__shape"
+                                     t-att-style="'height:' + (chartData.byUserMax ? Math.max(8, Math.round((bar.value/chartData.byUserMax)*100)) : 8) + '%;'"/>
+                                <span class="bar__value">
+                                    <t t-esc="bar.value"/>
+                                </span>
+                                <span class="bar__label" t-att-title="bar.label">
+                                    <t t-esc="bar.label"/>
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-if="!chartData.byUser.length">
+                        <div class="chart-empty">No user data yet.</div>
+                    </t>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-card__header">
+                        <span>Activities Over Time</span>
+                    </div>
+                    <t t-if="chartData.overTime.length">
+                        <svg class="line-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <polyline t-att-points="chartData.linePath"/>
+                        </svg>
+                        <div class="line-chart__labels">
+                            <span t-foreach="chartData.overTime" t-as="pt" t-key="pt.label">
+                                <t t-esc="pt.label"/>
+                            </span>
+                        </div>
+                    </t>
+                    <t t-if="!chartData.overTime.length">
+                        <div class="chart-empty">No timeline data yet.</div>
+                    </t>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-card__header">
+                        <span>Activities by Type</span>
+                    </div>
+                    <t t-if="chartData.byType.length">
+                        <div class="donut-chart">
+                            <svg viewBox="0 0 42 42" class="donut">
+                                <circle class="donut-ring" cx="21" cy="21" r="15.91549430918954" fill="transparent"/>
+                                <t t-foreach="chartData.byType" t-as="seg" t-key="seg.label">
+                                    <circle class="donut-segment"
+                                            cx="21" cy="21" r="15.91549430918954" fill="transparent"
+                                            t-att-style="'stroke:' + seg.color + ';stroke-dasharray:' + seg.pct + ' ' + (100 - seg.pct) + ';stroke-dashoffset:' + seg.offset"/>
+                                </t>
+                            </svg>
+                            <div class="donut-center">
+                                <span>Types</span>
+                                <strong><t t-esc="chartData.byType.length"/></strong>
+                            </div>
+                        </div>
+                        <ul class="legend">
+                            <li t-foreach="chartData.byType" t-as="seg" t-key="seg.label">
+                                <span class="legend-dot" t-att-style="'background:' + seg.color"/>
+                                <span class="legend-label">
+                                    <t t-esc="seg.label"/>
+                                </span>
+                                <span class="legend-value">
+                                    <t t-esc="seg.value"/>
+                                </span>
+                            </li>
+                        </ul>
+                    </t>
+                    <t t-if="!chartData.byType.length">
+                        <div class="chart-empty">No type mix yet.</div>
+                    </t>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-card__header">
+                        <span>Activity Status Mix</span>
+                    </div>
+                    <div class="polar-grid">
+                        <t t-foreach="chartData.statusMix" t-as="item" t-key="item.key">
+                            <div class="polar-segment">
+                                <div class="polar-meter"
+                                     t-att-style="'background: conic-gradient(' + _statusColor(item.key) + ' ' + Math.round((item.value / chartData.statusMax) * 100) + '%, #f3f4f6 0);'">
+                                    <span class="polar-value">
+                                        <t t-esc="item.value"/>
+                                    </span>
+                                </div>
+                                <span class="polar-label">
+                                    <t t-esc="item.label"/>
+                                </span>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+            <div class="priority-lists">
+                <div class="list-card critical">
+                    <div class="list-card__header">
+                        <div>
+                            <p class="eyebrow">Top Priority</p>
+                            <h3>Overdue Activities</h3>
+                        </div>
+                    </div>
+                    <t t-if="overdue_activity.length">
+                        <table class="compact-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Activity Type</th>
+                                    <th>Assigned to</th>
+                                    <th>Due Date</th>
+                                    <th>Origin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="overdue_activity" t-as="line" t-key="line.id">
+                                    <td><t t-esc="line['display_name']"/></td>
+                                    <td><t t-esc="line['activity_type_id'] ? line['activity_type_id'][1] : '(No Type)'"/></td>
+                                    <td><t t-esc="line['user_id'] ? line['user_id'][1] : '(Unassigned)'"/></td>
+                                    <td><t t-esc="line['date_deadline'] or '—'"/></td>
+                                    <td class="actions">
+                                        <button t-att-value="line['id']" class="ghost-btn" t-on-click="click_origin" title="Open origin">
+                                            <i class="fa fa-external-link"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-if="!overdue_activity.length">
+                        <div class="empty-block">No overdue items.</div>
+                    </t>
+                </div>
+                <div class="list-card amber">
+                    <div class="list-card__header">
+                        <div>
+                            <p class="eyebrow">Today</p>
+                            <h3>Today's Activities</h3>
+                        </div>
+                    </div>
+                    <t t-if="today_activity.length">
+                        <table class="compact-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Activity Type</th>
+                                    <th>Assigned to</th>
+                                    <th>Due Date</th>
+                                    <th>Origin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="today_activity" t-as="line" t-key="line.id">
+                                    <td><t t-esc="line['display_name']"/></td>
+                                    <td><t t-esc="line['activity_type_id'] ? line['activity_type_id'][1] : '(No Type)'"/></td>
+                                    <td><t t-esc="line['user_id'] ? line['user_id'][1] : '(Unassigned)'"/></td>
+                                    <td><t t-esc="line['date_deadline'] or '—'"/></td>
+                                    <td class="actions">
+                                        <button t-att-value="line['id']" class="ghost-btn" t-on-click="click_origin" title="Open origin">
+                                            <i class="fa fa-external-link"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-if="!today_activity.length">
+                        <div class="empty-block">No activities scheduled for today.</div>
+                    </t>
+                </div>
+                <details class="list-card info" open="open">
+                    <summary>
+                        <div class="list-card__header">
+                            <div>
+                                <p class="eyebrow">Next</p>
+                                <h3>Planned Activities</h3>
+                            </div>
+                        </div>
+                    </summary>
+                    <t t-if="planned_activity.length">
+                        <table class="compact-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Activity Type</th>
+                                    <th>Assigned to</th>
+                                    <th>Due Date</th>
+                                    <th>Origin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="planned_activity" t-as="line" t-key="line.id">
+                                    <td><t t-esc="line['display_name']"/></td>
+                                    <td><t t-esc="line['activity_type_id'] ? line['activity_type_id'][1] : '(No Type)'"/></td>
+                                    <td><t t-esc="line['user_id'] ? line['user_id'][1] : '(Unassigned)'"/></td>
+                                    <td><t t-esc="line['date_deadline'] or '—'"/></td>
+                                    <td class="actions">
+                                        <button t-att-value="line['id']" class="ghost-btn" t-on-click="click_origin" title="Open origin">
+                                            <i class="fa fa-external-link"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-if="!planned_activity.length">
+                        <div class="empty-block">No upcoming activities.</div>
+                    </t>
+                </details>
+                <details class="list-card muted">
+                    <summary>
+                        <div class="list-card__header">
+                            <div>
+                                <p class="eyebrow">History</p>
+                                <h3>Completed Activities</h3>
+                            </div>
+                        </div>
+                    </summary>
+                    <t t-if="done_activity.length">
+                        <table class="compact-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Activity Type</th>
+                                    <th>Assigned to</th>
+                                    <th>Due Date</th>
+                                    <th>Origin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="done_activity" t-as="line" t-key="line.id">
+                                    <td><t t-esc="line['display_name']"/></td>
+                                    <td><t t-esc="line['activity_type_id'] ? line['activity_type_id'][1] : '(No Type)'"/></td>
+                                    <td><t t-esc="line['user_id'] ? line['user_id'][1] : '(Unassigned)'"/></td>
+                                    <td><t t-esc="line['date_deadline'] or '—'"/></td>
+                                    <td class="actions">
+                                        <button t-att-value="line['id']" class="ghost-btn" t-on-click="click_origin" title="Open origin">
+                                            <i class="fa fa-external-link"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-if="!done_activity.length">
+                        <div class="empty-block">No completed activities.</div>
+                    </t>
+                </details>
+            </div>
+        </section>
+    </t>
+</templates>
