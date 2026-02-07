@@ -1579,15 +1579,11 @@ class SaleOrder(models.Model):
 
     def _gear_get_productions_between(self, start_dt, end_dt):
         Production = self.env["mrp.production"]
+        # Include all productions for the contract that start on/before the window end.
+        # (We later filter by actual overlap, so allowing finished MOs in keeps partial-day NGT windows.)
         range_domain = AND(
             [
                 [("x_sale_order_id", "in", self.ids)],
-                OR(
-                    [
-                        [("date_finished", "=", False)],
-                        [("date_finished", ">=", start_dt)],
-                    ]
-                ),
                 OR(
                     [
                         [("date_start", "=", False)],
@@ -1646,13 +1642,10 @@ class SaleOrder(models.Model):
             day_start_utc = to_utc(day_start)
             day_end_utc = to_utc(day_end)
             if production.x_monthly_order_id:
-                # Daily MOs should be constrained to the inferred day.
-                if not start:
-                    start = day_start_utc
-                if not end:
-                    end = day_end_utc
-                start = max(start, day_start_utc)
-                end = min(end, day_end_utc)
+                # Daily MOs should be constrained to the inferred day. If the MO finished early,
+                # keep at least the full calendar day window so NGT relief can land on that date.
+                start = day_start_utc if not start else max(start, day_start_utc)
+                end = day_end_utc if not end else max(end, day_end_utc)
             else:
                 if not start:
                     start = day_start_utc

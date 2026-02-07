@@ -360,7 +360,7 @@ class GearRmcMonthlyOrder(models.Model):
         string="NGT Hours",
         digits=(16, 2),
         compute="_compute_relief_breakdown",
-        store=True,
+        store=False,
     )
     loto_hours = fields.Float(
         string="LOTO Hours",
@@ -396,7 +396,7 @@ class GearRmcMonthlyOrder(models.Model):
         string="No-Generation Time (m³)",
         digits=(16, 2),
         compute="_compute_downtime_relief_qty",
-        store=True,
+        store=False,
     )
     runtime_minutes = fields.Float(
         string="Runtime (min)",
@@ -601,6 +601,17 @@ class GearRmcMonthlyOrder(models.Model):
 
                 ngt_ledgers = NgTLedger.search(ngt_domain)
                 ngt_total = sum(ngt_ledgers.mapped("hours_relief")) if ngt_ledgers else 0.0
+
+                # Fallback: if ledger is missing but requests exist, sum approved NGT requests for the month.
+                if not ngt_total:
+                    req_domain = [
+                        ("so_id", "=", order.so_id.id),
+                        ("state", "=", "approved"),
+                    ]
+                    if month_key:
+                        req_domain.append(("month", "=", month_key))
+                    ngt_requests = order.env["gear.ngt.request"].search(req_domain)
+                    ngt_total = sum(ngt_requests.mapped("hours_total")) if ngt_requests else 0.0
 
                 loto_ledgers = LotoLedger.search(loto_domain)
                 loto_total = sum(loto_ledgers.mapped("hours_total")) if loto_ledgers else 0.0

@@ -197,8 +197,8 @@ class GearNgTRequest(models.Model):
     @api.depends("date_start")
     def _compute_month(self):
         for request in self:
-            date_ref = request.date_start or fields.Datetime.now()
-            request.month = fields.Date.to_date(date_ref).replace(day=1)
+            date_ref = request._gear_local_date(request.date_start)
+            request.month = date_ref.replace(day=1)
 
     @api.depends(
         "hours_total",
@@ -217,7 +217,7 @@ class GearNgTRequest(models.Model):
     def _compute_ngt_hourly_rate(self):
         for request in self:
             mgq = request.mgq_monthly or 0.0
-            date_ref = fields.Datetime.to_datetime(request.date_start) if request.date_start else fields.Datetime.now()
+            date_ref = request._gear_local_date(request.date_start)
             days = calendar.monthrange(date_ref.year, date_ref.month)[1]
             per_hour = 0.0
             if mgq > 0 and days > 0:
@@ -263,13 +263,15 @@ class GearNgTRequest(models.Model):
         """Pull expense inputs from the monthly work order master (if any) and lock edits."""
         if not self.so_id or not self.month:
             return
+        start_date = self._gear_local_date(self.date_start) if self.date_start else self.month
+        end_date = self._gear_local_date(self.date_end) if self.date_end else self.month
         monthly = (
             self.env["gear.rmc.monthly.order"]
             .search(
                 [
                     ("so_id", "=", self.so_id.id),
-                    ("date_start", "<=", self.date_end.date() if self.date_end else self.month),
-                    ("date_end", ">=", self.date_start.date() if self.date_start else self.month),
+                    ("date_start", "<=", end_date),
+                    ("date_end", ">=", start_date),
                 ],
                 limit=1,
             )
@@ -309,7 +311,7 @@ class GearNgTRequest(models.Model):
                         if qty_relief:
                             production.sudo().x_relief_qty = max((production.x_relief_qty or 0.0) - qty_relief, 0.0)
                     # Recompute monthly order relief KPIs to reflect the rollback.
-                    month_date = fields.Date.to_date(request.date_start)
+                    month_date = request._gear_local_date(request.date_start)
                     monthly_orders = self.env["gear.rmc.monthly.order"].search(
                         [
                             ("so_id", "=", request.so_id.id),
@@ -346,13 +348,29 @@ class GearNgTRequest(models.Model):
                 raise UserError(_("Only submitted requests can be approved."))
             if not request.hours_total:
                 raise UserError(_("Cannot approve an NGT request without duration."))
+            start_date = request._gear_local_date(request.date_start)
+            end_date = request._gear_local_date(request.date_end)
             request.so_id.gear_generate_monthly_orders(
-                date_start=fields.Date.to_date(request.date_start),
-                date_end=fields.Date.to_date(request.date_end),
+                date_start=start_date,
+                date_end=end_date,
             )
             request.so_id.gear_register_ngt(request)
             month = request.month
             request._create_ledger_entry(month)
+            # Force monthly orders to recompute relief KPIs so UI reflects the new request immediately.
+            month_date = start_date
+            monthly_orders = self.env["gear.rmc.monthly.order"].search(
+                [
+                    ("so_id", "=", request.so_id.id),
+                    ("date_start", "<=", month_date),
+                    ("date_end", ">=", month_date),
+                ]
+            )
+            if monthly_orders:
+                monthly_orders._compute_relief_breakdown()
+                monthly_orders._compute_downtime_relief_qty()
+                monthly_orders._compute_optimized_standby()
+                monthly_orders.flush_recordset()
             request.write(
                 {
                     "state": "approved",
@@ -396,6 +414,12 @@ class GearNgTRequest(models.Model):
     def _ensure_can_approve(self):
         if not self.env.user.has_group("gear_on_rent.group_gear_on_rent_manager"):
             raise UserError(_("Only Gear On Rent managers can approve requests."))
+
+    def _gear_local_date(self, dt):
+        """Return the date component in the user's timezone (defaults to UTC)."""
+        dt = dt or fields.Datetime.now()
+        localized = fields.Datetime.context_timestamp(self, dt)
+        return localized.date()
 
     @api.model_create_multi
     def create(self, vals_list):

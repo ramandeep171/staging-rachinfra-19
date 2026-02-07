@@ -168,7 +168,8 @@ class PrepareInvoiceFromMrp(models.TransientModel):
                 taxes = getattr(order.company_id, "account_sale_tax_id", False) or self.env["account.tax"]
             fiscal_position = order.fiscal_position_id or order.partner_id.property_account_position_id
             if fiscal_position:
-                taxes = fiscal_position.map_tax(taxes, product=product, partner=order.partner_id)
+                # On v19 the fiscal position mapper no longer accepts product/partner kwargs.
+                taxes = fiscal_position.map_tax(taxes)
             return taxes
 
         def _extract_analytic(line):
