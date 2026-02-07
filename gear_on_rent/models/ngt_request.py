@@ -298,9 +298,26 @@ class GearNgTRequest(models.Model):
 
     def action_reset_to_draft(self):
         for request in self:
-            if request.state not in ("rejected", "submitted"):
-                raise UserError(_("Only submitted or rejected requests can be reset."))
-            request.state = "draft"
+            if request.state == "approved":
+                # Remove ledger entries and rollback allocated relief hours.
+                self.env["gear.ngt.ledger"].sudo().search([("request_id", "=", request.id)]).unlink()
+                if request.so_id and request.date_start and request.date_end:
+                    productions = request.so_id._gear_get_productions_between(request.date_start, request.date_end)
+                    for production in productions:
+                        hours = request.so_id._gear_overlap_hours(production, request.date_start, request.date_end)
+                        if not hours:
+                            continue
+                        qty_relief = production._gear_hours_to_qty(hours)
+                        production.sudo().x_ngt_hours = max((production.x_ngt_hours or 0.0) - hours, 0.0)
+                        if qty_relief:
+                            production.sudo().x_relief_qty = max((production.x_relief_qty or 0.0) - qty_relief, 0.0)
+            request.write(
+                {
+                    "state": "draft",
+                    "approved_by": False,
+                    "approved_on": False,
+                }
+            )
         return True
 
     def action_reject(self):
