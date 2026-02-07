@@ -74,3 +74,5 @@ access_gear_rmc_manual_operation_manager,Gear RMC Manual Operation Manager,gear_
 access_gear_rmc_manual_operation_line_user,Gear RMC Manual Operation Line User,gear_on_rent.model_gear_rmc_manual_operation_line,gear_on_rent.group_gear_on_rent_user,1,1,1,0
 access_gear_rmc_manual_operation_line_manager,Gear RMC Manual Operation Line Manager,gear_on_rent.model_gear_rmc_manual_operation_line,gear_on_rent.group_gear_on_rent_manager,1,1,1,1
 access_gear_scrap_recipe_line_user,Gear Scrap Recipe Line User,gear_on_rent.model_gear_scrap_recipe_line,base.group_user,1,1,1,1
+access_gear_ngt_meter_log_user,Gear NGT Meter Log User,gear_on_rent.model_gear_ngt_meter_log,gear_on_rent.group_gear_on_rent_user,1,1,1,0
+access_gear_ngt_meter_log_manager,Gear NGT Meter Log Manager,gear_on_rent.model_gear_ngt_meter_log,gear_on_rent.group_gear_on_rent_manager,1,1,1,1

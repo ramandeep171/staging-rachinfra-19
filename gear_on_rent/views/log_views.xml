@@ -145,6 +145,58 @@
         <field name="context">{'default_state': 'draft'}</field>
     </record>
 
+    <!-- NGT Meter Log Views -->
+    <record id="view_gear_ngt_meter_log_list" model="ir.ui.view">
+        <field name="name">gear.ngt.meter.log.list</field>
+        <field name="model">gear.ngt.meter.log</field>
+        <field name="arch" type="xml">
+            <list string="NGT Meter Logs">
+                <field name="name"/>
+                <field name="so_id"/>
+                <field name="month"/>
+                <field name="start_meter"/>
+                <field name="end_meter"/>
+                <field name="meter_units"/>
+                <field name="electricity_unit_rate"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_ngt_meter_log_form" model="ir.ui.view">
+        <field name="name">gear.ngt.meter.log.form</field>
+        <field name="model">gear.ngt.meter.log</field>
+        <field name="arch" type="xml">
+            <form string="NGT Meter Log">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="so_id" required="1"/>
+                            <field name="month" required="1"/>
+                            <field name="start_meter"/>
+                            <field name="end_meter"/>
+                            <field name="meter_units" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="electricity_unit_rate"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="currency_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_ngt_meter_log" model="ir.actions.act_window">
+        <field name="name">NGT Meter Logs</field>
+        <field name="res_model">gear.ngt.meter.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
     <!-- RMC Docket Views -->
     <record id="view_gear_rmc_production_log_list" model="ir.ui.view">
         <field name="name">gear.rmc.docket.list</field>

@@ -4,7 +4,7 @@
         <record id="action_report_invoice_rental" model="ir.actions.report">
             <field name="name">Rental Invoice</field>
             <field name="model">account.move</field>
-            <field name="report_name">account.report_invoice_document</field>
+            <field name="report_name">account.report_invoice_with_payments</field>
             <field name="report_type">qweb-pdf</field>
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="is_invoice_report">True</field>
@@ -14,12 +14,60 @@
         <record id="action_report_invoice_rmc" model="ir.actions.report">
             <field name="name">RMC Invoice</field>
             <field name="model">account.move</field>
-            <field name="report_name">account.report_invoice_document</field>
+            <field name="report_name">account.report_invoice_with_payments</field>
             <field name="report_type">qweb-pdf</field>
             <field name="binding_model_id" ref="account.model_account_move"/>
             <field name="is_invoice_report">True</field>
             <field name="domain">[('move_type', 'in', ['out_invoice', 'out_receipt', 'out_refund']), ('x_billing_category', '=', 'rmc')]</field>
         </record>
+
+        <!-- Append a concise NGT annexure to RMC invoices -->
+        <template id="report_invoice_document_inherit_ngt" inherit_id="account.report_invoice_document">
+            <xpath expr="//div[@class='page mb-4']" position="after">
+                <t t-if="o.x_billing_category == 'rmc'">
+                    <t t-set="payload" t-value="o._gear_get_month_end_payload()"/>
+                    <div class="page" style="page-break-before:always;">
+                        <h3>Normal Windows</h3>
+                        <table class="table table-sm o_main_table" style="width:100%;font-size:12px;margin-top:8px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:6%;">Sr. No.</th>
+                                    <th style="width:44%;">Variables</th>
+                                    <th style="width:30%;">Value</th>
+                                    <th style="width:20%;">Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td class="text-start">Monthly MGQ</td>
+                                    <td class="text-end"><t t-esc="payload.get('normal_totals', {}).get('target_qty', 0.0)"/></td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td class="text-start">Prime Output (m³)</td>
+                                    <td class="text-end"><t t-esc="payload.get('prime_output_qty', 0.0)"/></td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td class="text-start">Standby (m³)</td>
+                                    <td class="text-end"><t t-esc="payload.get('normal_totals', {}).get('standby_qty', 0.0)"/></td>
+                                    <td>-</td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td class="text-start">NGT from Approvals (m³)</td>
+                                    <td class="text-end"><t t-esc="payload.get('normal_totals', {}).get('ngt_m3', 0.0)"/></td>
+                                    <td>-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </xpath>
+        </template>
 
     </data>
 </odoo>

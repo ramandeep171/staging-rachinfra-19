@@ -36,5 +36,12 @@
       <field name="padding">4</field>
     </record>
 
+    <record id="seq_gear_ngt_meter_log" model="ir.sequence">
+      <field name="name">Gear NGT Meter Log</field>
+      <field name="code">gear.ngt.meter.log</field>
+      <field name="prefix">NGTM/%(year)s/</field>
+      <field name="padding">4</field>
+    </record>
+
   </data>
 </odoo>

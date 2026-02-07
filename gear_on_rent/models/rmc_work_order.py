@@ -506,10 +506,12 @@ class GearRmcMonthlyOrder(models.Model):
             "location_dest": location_dest,
         }
 
-    @api.depends("production_ids.x_adjusted_target_qty")
+    @api.depends("monthly_target_qty", "downtime_relief_qty")
     def _compute_adjusted_target(self):
         for order in self:
-            order.adjusted_target_qty = sum(order.production_ids.mapped("x_adjusted_target_qty"))
+            target_snapshot = order.monthly_target_qty or order.x_monthly_mgq_snapshot or 0.0
+            relief = order.downtime_relief_qty or 0.0
+            order.adjusted_target_qty = max(target_snapshot - relief, 0.0)
 
     @api.depends("production_ids.x_prime_output_qty")
     def _compute_prime_output(self):
@@ -553,13 +555,16 @@ class GearRmcMonthlyOrder(models.Model):
             order.mwo_over_wastage_qty = over_total
             order.mwo_deduction_qty = over_total
 
-    @api.depends("adjusted_target_qty", "prime_output_qty", "x_is_cooling_period")
+    @api.depends("monthly_target_qty", "downtime_relief_qty", "prime_output_qty", "x_is_cooling_period")
     def _compute_optimized_standby(self):
         for order in self:
             if order.x_is_cooling_period:
                 order.optimized_standby_qty = 0.0
             else:
-                order.optimized_standby_qty = max((order.adjusted_target_qty or 0.0) - (order.prime_output_qty or 0.0), 0.0)
+                target_snapshot = order.monthly_target_qty or order.x_monthly_mgq_snapshot or 0.0
+                relief = order.downtime_relief_qty or 0.0
+                prime = order.prime_output_qty or 0.0
+                order.optimized_standby_qty = max(target_snapshot - relief - prime, 0.0)
 
     @api.depends(
         "production_ids.x_ngt_hours",
@@ -688,33 +693,56 @@ class GearRmcMonthlyOrder(models.Model):
             employee_val = order.ngt_employee_expense or 0.0
             land_val = order.ngt_land_rent or 0.0
             unit_rate = order.ngt_electricity_unit_rate or 0.0
+            start_meter = None
+            end_meter = None
             electricity_expense = 0.0
             total_expense = 0.0
             if order.so_id and order.date_start:
                 month_key = order.date_start.replace(day=1)
-                ngt_request = (
-                    order.env["gear.ngt.request"]
-                    .search(
+                meter_logs = order.env["gear.ngt.meter.log"].search(
+                    [("so_id", "=", order.so_id.id), ("month", "=", month_key)],
+                    order="month desc, id desc",
+                )
+                if meter_logs:
+                    start_candidates = [log.start_meter for log in meter_logs if log.start_meter]
+                    end_candidates = [log.end_meter for log in meter_logs if log.end_meter]
+                    if start_candidates:
+                        start_meter = min(start_candidates)
+                    if end_candidates:
+                        end_meter = max(end_candidates)
+                    if start_meter is not None and end_meter is not None:
+                        meter_units = max(end_meter - start_meter, 0.0)
+                    else:
+                        meter_units = sum(meter_logs.mapped("meter_units"))
+                    if not unit_rate:
+                        unit_rate = meter_logs[-1].electricity_unit_rate or 0.0
+                else:
+                    ngt_requests = order.env["gear.ngt.request"].search(
                         [
                             ("so_id", "=", order.so_id.id),
                             ("month", "=", month_key),
                             ("state", "!=", "rejected"),
                         ],
-                        order="approved_on desc, create_date desc, id desc",
-                        limit=1,
+                        order="date_start asc",
                     )
-                )
-                if ngt_request:
-                    meter_units = ngt_request.electricity_units or 0.0
-                    if not employee_val:
-                        employee_val = ngt_request.employee_expense or 0.0
-                    if not land_val:
-                        land_val = ngt_request.land_rent or 0.0
-                    if not unit_rate:
-                        unit_rate = ngt_request.electricity_unit_rate or 0.0
+                    if ngt_requests:
+                        starts = [req.meter_reading_start for req in ngt_requests if req.meter_reading_start]
+                        ends = [req.meter_reading_end for req in ngt_requests if req.meter_reading_end]
+                        if starts and ends:
+                            start_meter = min(starts)
+                            end_meter = max(ends)
+                            meter_units = max(end_meter - start_meter, 0.0)
+                        else:
+                            meter_units = sum(ngt_requests.mapped("electricity_units"))
+                        if not employee_val:
+                            employee_val = ngt_requests[-1].employee_expense or 0.0
+                        if not land_val:
+                            land_val = ngt_requests[-1].land_rent or 0.0
+                        if not unit_rate:
+                            unit_rate = ngt_requests[-1].electricity_unit_rate or 0.0
 
             # Electricity expense = (metered units × 10) × unit rate (as requested)
-            electricity_expense = meter_units * 10.0 * unit_rate
+            electricity_expense = (meter_units * 10.0) * unit_rate
             total_expense = employee_val + land_val + electricity_expense
 
             order.ngt_meter_units = meter_units

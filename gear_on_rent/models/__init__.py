@@ -23,3 +23,4 @@ from . import cost_masters
 from . import scrap_log
 from . import stock_scrap_ext
 from . import ir_actions_report
+from . import ngt_meter_log

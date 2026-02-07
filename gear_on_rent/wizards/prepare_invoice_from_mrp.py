@@ -208,16 +208,16 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             raise UserError(_("No production or dockets found in the selected period."))
 
         prime_output = sum(productions.mapped(lambda p: p.x_prime_output_qty or p.qty_produced or 0.0))
-        standby_qty = sum(
-            productions.mapped(
-                lambda p: 0.0
-                if p.x_is_cooling_period or (monthly and monthly.x_is_cooling_period)
-                else (p.x_optimized_standby_qty or 0.0)
-            )
+        # Use monthly snapshot as the base MGQ for all calculations to avoid overcounting summed daily targets.
+        target_qty = (
+            monthly.monthly_target_qty
+            or monthly.x_monthly_mgq_snapshot
+            or monthly.so_id.x_monthly_mgq
+            or sum(productions.mapped(lambda p: p.x_daily_target_qty or p.product_qty or 0.0))
         )
-        target_qty = sum(productions.mapped(lambda p: p.x_daily_target_qty or p.product_qty or 0.0))
-        adjusted_target_qty = sum(
-            productions.mapped(lambda p: p.x_adjusted_target_qty or p.x_daily_target_qty or p.product_qty or 0.0)
+        adjusted_target_qty = (
+            monthly.adjusted_target_qty
+            or max(target_qty - sum(productions.mapped(lambda p: p.x_relief_qty or 0.0)), 0.0)
         )
         manual_ops = self.env["gear.rmc.manual.operation"].search(
             [
@@ -249,8 +249,6 @@ class PrepareInvoiceFromMrp(models.TransientModel):
         # Fallback to monthly rollups when period-filtered aggregates are zero so invoicing isn't blocked.
         if prime_output <= 0 and monthly.prime_output_qty:
             prime_output = monthly.prime_output_qty
-        if standby_qty <= 0 and monthly.optimized_standby_qty:
-            standby_qty = monthly.optimized_standby_qty
         if downtime_qty <= 0 and monthly.downtime_relief_qty:
             downtime_qty = monthly.downtime_relief_qty
         if ngt_hours <= 0 and monthly.ngt_hours:
@@ -264,6 +262,11 @@ class PrepareInvoiceFromMrp(models.TransientModel):
         if adjusted_target_qty <= 0 and monthly.adjusted_target_qty:
             adjusted_target_qty = monthly.adjusted_target_qty
 
+        # Optimized Standby = Monthly MGQ Snapshot - (Prime Output + NGT/Downtime Relief), floored at zero.
+        if monthly and monthly.x_is_cooling_period:
+            standby_qty = 0.0
+        else:
+            standby_qty = max((target_qty or 0.0) - (prime_output + downtime_qty), 0.0)
 
         # Prevent overlap with previous invoice end date
         if existing_invoice and existing_invoice.gear_period_end and period_start <= existing_invoice.gear_period_end:
@@ -428,7 +431,16 @@ class PrepareInvoiceFromMrp(models.TransientModel):
             ngt_product = (ngt_line or main_line).product_id
             ngt_sale_line_ids = (ngt_line or main_line).ids
             # If NGT total expense is tracked, derive a per-unit rate from MGQ; otherwise fall back to SO line price.
-            mgq_base = monthly.monthly_target_qty or monthly.adjusted_target_qty or 0.0
+            # Refresh NGT expense snapshot so we pick up the latest meter log and unit rate.
+            monthly._compute_ngt_expense_totals()
+            monthly._compute_ngt_effective_rate()
+            mgq_base = (
+                monthly.monthly_target_qty
+                or monthly.adjusted_target_qty
+                or monthly.mgq_monthly
+                or monthly.x_monthly_mgq_snapshot
+                or 0.0
+            )
             ngt_price_unit = 0.0
             if monthly.ngt_total_expense and mgq_base:
                 ngt_price_unit = monthly.ngt_total_expense / mgq_base

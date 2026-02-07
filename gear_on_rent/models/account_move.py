@@ -87,12 +87,14 @@ class AccountMove(models.Model):
 
     def _gear_get_month_end_payload(self):
         self.ensure_one()
-        month_date = self.invoice_date or fields.Date.context_today(self)
-        month_date = fields.Date.to_date(month_date)
+        billing_reference = self.gear_period_start or self.invoice_date or fields.Date.context_today(self)
+        month_date = fields.Date.to_date(billing_reference)
         month_start = month_date.replace(day=1)
         last_day = monthrange(month_start.year, month_start.month)[1]
         month_end = month_start.replace(day=last_day)
         month_key = month_start
+        billing_start = self.gear_period_start or month_start
+        billing_end = self.gear_period_end or month_end
 
         orders = self._gear_get_related_sale_orders()
         contract = orders[:1]
@@ -102,15 +104,17 @@ class AccountMove(models.Model):
             ngt_requests = self.env["gear.ngt.request"].search(
                 [
                     ("so_id", "=", contract.id),
-                    ("month", "=", month_key),
+                    ("date_start", ">=", billing_start),
+                    ("date_start", "<=", billing_end),
                     ("state", "=", "approved"),
                 ],
-                order="date_start asc",
+                order="date_start asc, approved_on desc, id desc",
             )
             loto_requests = self.env["gear.loto.request"].search(
                 [
                     ("so_id", "=", contract.id),
-                    ("month", "=", month_key),
+                    ("date_start", ">=", billing_start),
+                    ("date_start", "<=", billing_end),
                     ("state", "=", "approved"),
                 ],
                 order="date_start asc",
@@ -180,10 +184,8 @@ class AccountMove(models.Model):
                     "daily_mgq": production.x_daily_target_qty or 0.0,
                     "adjusted_mgq": production.x_adjusted_target_qty or 0.0,
                     "prime_output": production.x_prime_output_qty or 0.0,
-                    "allowed_wastage": production.wastage_allowed_qty,
-                    "actual_scrap": production.actual_scrap_qty,
-                    "over_wastage": production.over_wastage_qty,
-                    "deduction": production.deduction_qty,
+                    "on_production": getattr(production, "x_manual_on_qty", 0.0) or 0.0,
+                    "after_production": getattr(production, "x_manual_after_qty", 0.0) or 0.0,
                     "optimized_standby": production.x_optimized_standby_qty or 0.0,
                     "ngt_hours": production.x_ngt_hours or 0.0,
                     "loto_hours": production.x_loto_hours or 0.0,
@@ -240,6 +242,184 @@ class AccountMove(models.Model):
             manufacturing_orders = []
         if month_orders:
             total_ngt_m3 = cooling["ngt_m3"] + normal["ngt_m3"]
+        manual_operations = []
+        manual_total_qty = 0.0
+        if month_orders:
+            manual_ops = self.env["gear.rmc.manual.operation"].search(
+                [("docket_id.monthly_order_id", "=", month_orders.id)],
+                order="date asc, id asc",
+            )
+            for op in manual_ops:
+                mode_label = dict(op._fields["recipe_display_mode"].selection).get(op.recipe_display_mode) if op.recipe_display_mode else ""
+                qty_val = op.manual_qty_total or op.qty_m3 or 0.0
+                manual_total_qty += qty_val
+                manual_operations.append(
+                    {
+                        "description": op.docket_no or op.docket_id.name or "Manual entry",
+                        "quantity": qty_val,
+                        "remarks": mode_label or "",
+                    }
+                )
+        prime_output_with_manual = prime_output + manual_total_qty
+
+        scrap_logs = []
+        if month_orders:
+            start_dt = fields.Datetime.to_datetime(billing_start) if billing_start else False
+            end_dt = fields.Datetime.to_datetime(billing_end) if billing_end else False
+            if end_dt:
+                end_dt = end_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+            scrap_domain = [
+                ("monthly_order_id", "in", month_orders.ids),
+                ("state", "=", "done"),
+            ]
+            if start_dt:
+                scrap_domain.append(("date_done", ">=", start_dt))
+            if end_dt:
+                scrap_domain.append(("date_done", "<=", end_dt))
+            scraps = self.env["stock.scrap"].search(scrap_domain, order="date_done asc, id asc")
+            if not scraps and month_orders.production_ids:
+                alt_domain = [
+                    ("production_id", "in", month_orders.production_ids.ids),
+                    ("state", "=", "done"),
+                ]
+                if start_dt:
+                    alt_domain.append(("date_done", ">=", start_dt))
+                if end_dt:
+                    alt_domain.append(("date_done", "<=", end_dt))
+                scraps = self.env["stock.scrap"].search(alt_domain, order="date_done asc, id asc")
+            for scrap in scraps:
+                reason = ", ".join(scrap.scrap_reason_tag_ids.mapped("name")) if scrap.scrap_reason_tag_ids else ""
+                scrap_logs.append(
+                    {
+                        "date": format_datetime(self.env, scrap.date_done) if scrap.date_done else "",
+                        "reference": scrap.name,
+                        "reason": reason or scrap.origin or scrap.product_id.display_name or "",
+                        "quantity": scrap.scrap_qty or 0.0,
+                    }
+                )
+
+        # Prepare NGT request payload data once
+        ngt_requests_data = []
+        currency_symbol_default = contract and contract.currency_id.symbol or self.company_id.currency_id.symbol or ""
+        for request in ngt_requests:
+            meter_units = request.electricity_units or 0.0
+            if not meter_units and request.meter_reading_start is not None and request.meter_reading_end is not None:
+                meter_units = max(request.meter_reading_end - request.meter_reading_start, 0.0)
+            ngt_requests_data.append(
+                {
+                    "name": request.name,
+                    "company_name": request.company_id.display_name if request.company_id else "",
+                    "contract_name": request.so_id.display_name or "",
+                    "status": request.state,
+                    "mgq_monthly": request.mgq_monthly or 0.0,
+                    "period_start": format_datetime(self.env, request.date_start) if request.date_start else "",
+                    "period_end": format_datetime(self.env, request.date_end) if request.date_end else "",
+                    "hours": request.hours_total or 0.0,
+                    "hour_rate": request.ngt_hourly_factor_effective
+                    or request.ngt_hourly_rate
+                    or request.ngt_hourly_prorata_factor
+                    or 0.0,
+                    "qty": request.ngt_qty
+                    or ((request.hours_total or 0.0) * (request.ngt_hourly_factor_effective or request.ngt_hourly_rate or request.ngt_hourly_prorata_factor or 0.0)),
+                    "rate_per_m3": (request.total_expense / request.ngt_qty) if request.ngt_qty else 0.0,
+                    "meter_start": request.meter_reading_start or 0.0,
+                    "meter_end": request.meter_reading_end or 0.0,
+                    "meter_units": meter_units,
+                    "employee_expense": request.employee_expense or 0.0,
+                    "land_rent": request.land_rent or 0.0,
+                    "electricity_rate": request.electricity_unit_rate or 0.0,
+                    "electricity_expense": request.electricity_expense or 0.0,
+                    "total_expense": request.total_expense or 0.0,
+                    "reason": request.reason or "",
+                    "currency_symbol": request.currency_id.symbol
+                    or (request.company_id.currency_id.symbol if request.company_id and request.company_id.currency_id else currency_symbol_default),
+                    "show_expenses": any(
+                        [
+                            request.employee_expense,
+                            request.land_rent,
+                            request.electricity_unit_rate,
+                            request.electricity_expense,
+                            request.total_expense,
+                        ]
+                    ),
+                }
+            )
+
+        # NGT expense snapshot (single rate per month)
+        ngt_expense = {}
+        if month_orders:
+            m = month_orders[:1]
+            currency_symbol = m.company_id.currency_id.symbol or ""
+            emp = m.ngt_employee_expense or 0.0
+            land = m.ngt_land_rent or 0.0
+            units = m.ngt_meter_units or 0.0
+            # Derive start/end meters from approved requests in the billing window (earliest start, latest end)
+            start_meter = None
+            end_meter = None
+            meter_requests = ngt_requests_data or []
+            used_meter_log = False
+            meter_logs = self.env["gear.ngt.meter.log"].search(
+                [("so_id", "=", contract.id if contract else False), ("month", "=", month_start)],
+                order="month desc, id desc",
+            )
+            if meter_logs:
+                start_candidates = [log.start_meter for log in meter_logs if log.start_meter]
+                end_candidates = [log.end_meter for log in meter_logs if log.end_meter]
+                if start_candidates:
+                    start_meter = min(start_candidates)
+                if end_candidates:
+                    end_meter = max(end_candidates)
+                if start_meter is not None and end_meter is not None:
+                    units = max(end_meter - start_meter, 0.0)
+                    used_meter_log = True
+                    # when a meter log exists, it should override request meter values
+                # always prefer the meter log unit rate if present
+                last_rate = meter_logs[-1].electricity_unit_rate or 0.0
+                if last_rate:
+                    unit_rate = last_rate
+            if not used_meter_log:
+                start_vals = [float(req.get("meter_start")) for req in meter_requests if req.get("meter_start") is not None]
+                end_vals = [float(req.get("meter_end")) for req in meter_requests if req.get("meter_end") is not None]
+                if start_vals:
+                    start_meter = min(start_vals) if start_meter is None else min(start_meter, min(start_vals))
+                if end_vals:
+                    end_meter = max(end_vals) if end_meter is None else max(end_meter, max(end_vals))
+                if start_meter is not None and end_meter is not None:
+                    units = max(end_meter - start_meter, 0.0)
+                elif meter_requests:
+                    # Fallback to first/last request meter values if one side is missing
+                    first_req = meter_requests[0]
+                    last_req = meter_requests[-1]
+                    start_meter = start_meter if start_meter is not None else first_req.get("meter_start")
+                    end_meter = end_meter if end_meter is not None else last_req.get("meter_end")
+                    if start_meter is not None and end_meter is not None:
+                        units = max(end_meter - start_meter, 0.0)
+            start_dt = meter_requests and meter_requests[0].get("period_start") or None
+            end_dt = meter_requests and meter_requests[-1].get("period_end") or None
+            unit_rate = m.ngt_electricity_unit_rate or (meter_logs and meter_logs[-1].electricity_unit_rate) or 0.0
+            # Apply agreed multiplier of 10 on meter units when deriving electricity expense if not already stored
+            elec = m.ngt_electricity_expense or ((units * 10.0) * unit_rate)
+            # Total Monthly Expense = Employee + Land + Electricity
+            total_exp = (emp + land + elec)
+            # NGT Rate per m³ = Total Monthly Expense / Monthly MGQ Target
+            base_mgq = m.monthly_target_qty or m.x_monthly_mgq_snapshot or target_qty or 0.0
+            rate_per_m3 = total_exp / base_mgq if base_mgq else 0.0
+            ngt_expense = {
+                "employee_expense": emp,
+                "land_rent": land,
+                "start_meter": start_meter,
+                "end_meter": end_meter,
+                "start_date": start_dt,
+                "end_date": end_dt,
+                "electricity_units": units,
+                "electricity_rate": unit_rate,
+                "electricity_expense": elec,
+                "total_expense": total_exp,
+                "rate_per_m3": rate_per_m3,
+                "currency_symbol": currency_symbol,
+                "mgq_target": base_mgq,
+                "show_expenses": bool(emp or land or elec or total_exp),
+            }
 
         payload = {
             "invoice_name": self.name,
@@ -257,7 +437,7 @@ class AccountMove(models.Model):
             "waveoff_allowance": waveoff_allowance,
             "waveoff_applied": waveoff_applied,
             "loto_chargeable_hours": loto_chargeable,
-            "prime_output_qty": prime_output,
+            "prime_output_qty": prime_output_with_manual if month_orders else prime_output,
             "allowed_wastage_qty": allowed_wastage_qty,
             "actual_scrap_qty": actual_scrap_qty,
             "over_wastage_qty": over_wastage_qty,
@@ -285,6 +465,9 @@ class AccountMove(models.Model):
                 for docket in dockets
             ],
             "manufacturing_orders": manufacturing_orders,
+            "manual_operations": manual_operations,
+            "manual_total_qty": manual_total_qty,
+            "scrap_logs": scrap_logs,
             "loto_requests": [
                 {
                     "name": request.name,
@@ -297,45 +480,8 @@ class AccountMove(models.Model):
                 }
                 for request in loto_requests
             ],
-            "ngt_requests": [
-                {
-                    "name": request.name,
-                    "company_name": request.company_id.display_name if request.company_id else "",
-                    "contract_name": request.so_id.display_name or "",
-                    "status": request.state,
-                    "mgq_monthly": request.mgq_monthly or 0.0,
-                    "period_start": format_datetime(self.env, request.date_start) if request.date_start else "",
-                    "period_end": format_datetime(self.env, request.date_end) if request.date_end else "",
-                    "hours": request.hours_total or 0.0,
-                    "hour_rate": request.ngt_hourly_factor_effective
-                    or request.ngt_hourly_rate
-                    or request.ngt_hourly_prorata_factor
-                    or 0.0,
-                    "qty": request.ngt_qty
-                    or ((request.hours_total or 0.0) * (request.ngt_hourly_factor_effective or request.ngt_hourly_rate or request.ngt_hourly_prorata_factor or 0.0)),
-                    "rate_per_m3": (request.total_expense / request.ngt_qty) if request.ngt_qty else 0.0,
-                    "meter_start": request.meter_reading_start or 0.0,
-                    "meter_end": request.meter_reading_end or 0.0,
-                    "meter_units": request.electricity_units or 0.0,
-                    "employee_expense": request.employee_expense or 0.0,
-                    "land_rent": request.land_rent or 0.0,
-                    "electricity_rate": request.electricity_unit_rate or 0.0,
-                    "electricity_expense": request.electricity_expense or 0.0,
-                    "total_expense": request.total_expense or 0.0,
-                    "reason": request.reason or "",
-                    "currency_symbol": request.currency_id and request.currency_id.symbol or (request.company_id.currency_id and request.company_id.currency_id.symbol) or "",
-                    "show_expenses": any(
-                        [
-                            request.employee_expense,
-                            request.land_rent,
-                            request.electricity_unit_rate,
-                            request.electricity_expense,
-                            request.total_expense,
-                        ]
-                    ),
-                }
-                for request in ngt_requests
-            ],
+            "ngt_requests": ngt_requests_data,
+            "ngt_expense": ngt_expense,
             "show_cooling": any(
                 [
                     cooling_totals.get("target_qty"),

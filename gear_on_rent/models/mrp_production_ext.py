@@ -1072,7 +1072,16 @@ class MrpWorkorder(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        workorders = super().create(vals_list)
+        allowed_states = {"blocked", "ready", "progress", "done", "cancel"}
+        sanitized_vals = []
+        for vals in vals_list:
+            vals = dict(vals)
+            state = vals.get("state")
+            if not state or state not in allowed_states:
+                vals["state"] = "ready"
+            sanitized_vals.append(vals)
+
+        workorders = super().create(sanitized_vals)
         workorders._gear_autocreate_dockets()
         return workorders
 

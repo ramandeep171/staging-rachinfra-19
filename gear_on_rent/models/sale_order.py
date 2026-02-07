@@ -1538,33 +1538,43 @@ class SaleOrder(models.Model):
         """Apply LOTO relief and compute the wave-off utilisation."""
         self.ensure_one()
         productions = self._gear_get_productions_between(request.date_start, request.date_end)
-        grouped = defaultdict(list)
-        for production in productions:
-            grouped[production.x_monthly_order_id].append(production)
+        # LOTO wave-off: apply contract allowance, subtracting any previously used in the same month.
+        allowance = self.x_loto_waveoff_hours or 0.0
+        month_key = fields.Date.to_date(request.date_start).replace(day=1)
+        LotoLedger = self.env["gear.loto.ledger"]
+        already_used = sum(
+            LotoLedger.search(
+                [
+                    ("so_id", "=", self.id),
+                    ("month", "=", month_key),
+                    ("request_id", "!=", request.id),
+                ]
+            ).mapped("hours_waveoff")
+        )
+        remaining_waveoff = max(allowance - already_used, 0.0)
 
+        # Distribute wave-off against productions in chronological order
         total_waveoff = 0.0
         total_chargeable = 0.0
-
-        for monthly_order, items in grouped.items():
-            if not monthly_order:
+        for production in sorted(productions, key=lambda p: p.date_start or datetime.min):
+            hours = self._gear_overlap_hours(production, request.date_start, request.date_end)
+            if not hours:
                 continue
-            allowance = self.x_loto_waveoff_hours or 0.0
-            used = monthly_order.waveoff_hours_applied or 0.0
-            remaining_waveoff = max(allowance - used, 0.0)
-            for production in sorted(items, key=lambda p: p.date_start or datetime.min):
-                hours = self._gear_overlap_hours(production, request.date_start, request.date_end)
-                if not hours:
-                    continue
-                waveoff_applied = min(remaining_waveoff, hours)
-                chargeable = hours - waveoff_applied
-                production.gear_allocate_relief_hours(hours, "loto")
-                production.gear_apply_loto_waveoff(waveoff_applied, chargeable)
-                total_waveoff += waveoff_applied
-                total_chargeable += chargeable
-                remaining_waveoff -= waveoff_applied
+            waveoff_applied = min(remaining_waveoff, hours)
+            chargeable = hours - waveoff_applied
+            production.gear_allocate_relief_hours(hours, "loto")
+            production.gear_apply_loto_waveoff(waveoff_applied, chargeable)
+            total_waveoff += waveoff_applied
+            total_chargeable += chargeable
+            remaining_waveoff -= waveoff_applied
+
+        # Any rounding remainder goes to chargeable so totals match the duration
         remainder = round(request.hours_total - (total_waveoff + total_chargeable), 2)
         if remainder > 0:
             total_chargeable += remainder
+        # Final guard: ensure wave-off + chargeable never exceeds the request duration
+        total_waveoff = min(total_waveoff, request.hours_total)
+        total_chargeable = max(request.hours_total - total_waveoff, 0.0)
         return total_waveoff, total_chargeable
 
     def _gear_get_productions_between(self, start_dt, end_dt):

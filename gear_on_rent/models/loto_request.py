@@ -127,8 +127,8 @@ class GearLotoRequest(models.Model):
 
     def action_reset_to_draft(self):
         for request in self:
-            if request.state not in ("submitted", "rejected"):
-                raise UserError(_("Only submitted or rejected requests can be reset."))
+            if request.state not in ("submitted", "rejected", "approved"):
+                raise UserError(_("Only submitted, approved, or rejected requests can be reset."))
             request.state = "draft"
         return True
 

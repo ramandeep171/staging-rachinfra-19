@@ -59,4 +59,10 @@
               parent="menu_gear_on_rent_compliance"
               action="gear_on_rent.action_gear_loto_request"
               sequence="20"/>
+
+    <menuitem id="menu_gear_ngt_meter_logs"
+              name="NGT Meter Logs"
+              parent="menu_gear_on_rent_compliance"
+              action="gear_on_rent.action_gear_ngt_meter_log"
+              sequence="30"/>
 </odoo>
