@@ -1,6 +1,6 @@
 {
     "name": "Gear On Rent",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "author": "SmarterPeak",
     "license": "OEEL-1",
     "category": "Services/Rental",

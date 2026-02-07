@@ -216,13 +216,10 @@ class MrpProduction(models.Model):
         help="Remaining work order payloads (quantity/date) to instantiate after the current chunk completes.",
     )
 
-    _sql_constraints = [
-        (
-            "check_relief_not_negative",
-            "CHECK(x_relief_qty >= 0)",
-            "Relief quantity cannot be negative.",
-        ),
-    ]
+    _check_relief_not_negative = models.Constraint(
+        "CHECK(x_relief_qty >= 0)",
+        "Relief quantity cannot be negative.",
+    )
 
     @api.depends("x_daily_target_qty", "x_relief_qty")
     def _compute_adjusted_target_qty(self):
@@ -706,7 +703,6 @@ class MrpWorkorder(models.Model):
     gear_cycle_reason_id = fields.Many2one(
         comodel_name="gear.cycle.reason",
         string="Cycle Reason",
-        tracking=True,
     )
     gear_cycle_reason_type = fields.Selection(
         related="gear_cycle_reason_id.reason_type",

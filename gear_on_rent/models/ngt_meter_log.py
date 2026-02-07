@@ -32,7 +32,6 @@ class GearNgTMeterLog(models.Model):
     electricity_unit_rate = fields.Monetary(
         string="Unit Rate",
         currency_field="currency_id",
-        digits=(16, 2),
         help="Rate per unit/kVAh for this month.",
     )
     company_id = fields.Many2one(

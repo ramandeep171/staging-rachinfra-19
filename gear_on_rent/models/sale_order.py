@@ -1643,14 +1643,25 @@ class SaleOrder(models.Model):
         if inferred_date:
             day_start = user_tz.localize(datetime.combine(inferred_date, time.min))
             day_end = user_tz.localize(datetime.combine(inferred_date, time(23, 59, 59)))
-            if not start:
-                start = to_utc(day_start)
+            day_start_utc = to_utc(day_start)
+            day_end_utc = to_utc(day_end)
+            if production.x_monthly_order_id:
+                # Daily MOs should be constrained to the inferred day.
+                if not start:
+                    start = day_start_utc
+                if not end:
+                    end = day_end_utc
+                start = max(start, day_start_utc)
+                end = min(end, day_end_utc)
             else:
-                start = min(start, to_utc(day_start))
-            if not end:
-                end = to_utc(day_end)
-            else:
-                end = max(end, to_utc(day_end))
+                if not start:
+                    start = day_start_utc
+                else:
+                    start = min(start, day_start_utc)
+                if not end:
+                    end = day_end_utc
+                else:
+                    end = max(end, day_end_utc)
 
         return start, end
 

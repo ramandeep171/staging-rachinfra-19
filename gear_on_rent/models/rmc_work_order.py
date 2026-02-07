@@ -150,6 +150,11 @@ class GearRmcMonthlyOrder(models.Model):
         store=True,
         help="Allowance minus applied wave-off hours.",
     )
+    apply_waveoff_remaining = fields.Boolean(
+        string="Apply Wave-Off Remaining to NGT Hours",
+        default=True,
+        help="When enabled, remaining wave-off allowance reduces NGT hours used for downtime relief.",
+    )
     downtime_total_hours = fields.Float(
         string="Downtime Hours Total",
         digits=(16, 2),
@@ -423,13 +428,10 @@ class GearRmcMonthlyOrder(models.Model):
         readonly=True,
     )
 
-    _sql_constraints = [
-        (
-            "check_monthly_dates",
-            "CHECK(date_end >= date_start)",
-            "End date must not be earlier than start date.",
-        )
-    ]
+    _check_monthly_dates = models.Constraint(
+        "CHECK(date_end >= date_start)",
+        "End date must not be earlier than start date.",
+    )
 
     @api.constrains("x_inventory_mode", "x_real_warehouse_id")
     def _check_inventory_mode_real_warehouse(self):
@@ -579,8 +581,8 @@ class GearRmcMonthlyOrder(models.Model):
         NgTLedger = self.env["gear.ngt.ledger"]
         LotoLedger = self.env["gear.loto.ledger"]
         for order in self:
-            ngt_total = sum(order.production_ids.mapped("x_ngt_hours"))
-            loto_total = sum(order.production_ids.mapped("x_loto_hours"))
+            ngt_total = 0.0
+            loto_total = 0.0
             ledger_domain = []
             if order.so_id:
                 ledger_domain = [("so_id", "=", order.so_id.id)]
@@ -598,12 +600,10 @@ class GearRmcMonthlyOrder(models.Model):
                 ngt_domain.append(("request_id.state", "=", "approved"))
 
                 ngt_ledgers = NgTLedger.search(ngt_domain)
-                if ngt_ledgers:
-                    ngt_total = sum(ngt_ledgers.mapped("hours_relief"))
+                ngt_total = sum(ngt_ledgers.mapped("hours_relief")) if ngt_ledgers else 0.0
 
                 loto_ledgers = LotoLedger.search(loto_domain)
-                if loto_ledgers:
-                    loto_total = sum(loto_ledgers.mapped("hours_total"))
+                loto_total = sum(loto_ledgers.mapped("hours_total")) if loto_ledgers else 0.0
 
             order.ngt_hours = ngt_total
             order.loto_hours = loto_total
@@ -611,6 +611,15 @@ class GearRmcMonthlyOrder(models.Model):
             order.waveoff_hours_applied = min(loto_total, allowance)
             order.waveoff_hours_chargeable = max(loto_total - allowance, 0.0)
             order.waveoff_hours_remaining = max(allowance - order.waveoff_hours_applied, 0.0)
+            # If there are no approved NGT hours for this month, clear stale per-MO NGT allocations.
+            if not ngt_total and order.production_ids:
+                stale_productions = order.production_ids.filtered(lambda p: p.x_ngt_hours)
+                if stale_productions:
+                    for production in stale_productions.sudo():
+                        qty_relief = production._gear_hours_to_qty(production.x_ngt_hours or 0.0)
+                        if qty_relief:
+                            production.x_relief_qty = max((production.x_relief_qty or 0.0) - qty_relief, 0.0)
+                        production.x_ngt_hours = 0.0
     @api.depends("so_id.x_loto_waveoff_hours", "waveoff_hours_applied")
     def _compute_waveoff_remaining(self):
         for order in self:
@@ -628,6 +637,7 @@ class GearRmcMonthlyOrder(models.Model):
         "waveoff_hours_chargeable",
         "ngt_hours",
         "waveoff_hours_remaining",
+        "apply_waveoff_remaining",
     )
     def _compute_downtime_relief_qty(self):
         for order in self:
@@ -638,12 +648,15 @@ class GearRmcMonthlyOrder(models.Model):
                 order.downtime_total_hours = 0.0
             else:
                 # Prefer ledger-backed hours on the monthly order; fall back to per-MO hours.
-                ngt_hours = order.ngt_hours or sum(order.production_ids.mapped("x_ngt_hours"))
-                waveoff_chargeable = order.waveoff_hours_chargeable or sum(order.production_ids.mapped("x_waveoff_hours_chargeable"))
+                ngt_hours = order.ngt_hours
+                waveoff_chargeable = order.waveoff_hours_chargeable
                 allowance_remaining = order.waveoff_hours_remaining or 0.0
 
                 # Requested formula: (NGT Hours - Remaining Wave-Off) + chargeable LOTO hours.
-                effective_ngt = (ngt_hours or 0.0) - (allowance_remaining or 0.0)
+                if order.apply_waveoff_remaining:
+                    effective_ngt = (ngt_hours or 0.0) - (allowance_remaining or 0.0)
+                else:
+                    effective_ngt = ngt_hours or 0.0
                 hours = max((effective_ngt or 0.0) + (waveoff_chargeable or 0.0), 0.0)
 
                 factor = order._gear_get_ngt_factor()

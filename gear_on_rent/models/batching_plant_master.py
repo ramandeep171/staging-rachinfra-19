@@ -95,9 +95,9 @@ class GearMgqRateMaster(models.Model):
     capacity_id = fields.Many2one("gear.plant.capacity.master", string="Plant Capacity", required=True)
     mgq_min = fields.Float(string="MGQ Min", digits=(16, 2))
     mgq_max = fields.Float(string="MGQ Max", digits=(16, 2))
-    prime_rate = fields.Monetary(currency_field="currency_id", string="Prime Rate", digits=(16, 2))
-    optimize_rate = fields.Monetary(currency_field="currency_id", string="Optimize Rate", digits=(16, 2))
-    after_mgq_rate = fields.Monetary(currency_field="currency_id", string="After MGQ Rate", digits=(16, 2))
+    prime_rate = fields.Monetary(currency_field="currency_id", string="Prime Rate")
+    optimize_rate = fields.Monetary(currency_field="currency_id", string="Optimize Rate")
+    after_mgq_rate = fields.Monetary(currency_field="currency_id", string="After MGQ Rate")
     ngt_rate = fields.Monetary(
         currency_field="currency_id",
         string="NGT Rate",
@@ -164,11 +164,10 @@ class GearOptionalServiceMaster(models.Model):
     name = fields.Char(required=True)
     code = fields.Char(string="Code")
     charge_type = fields.Selection(selection=[("per_cum", "Per CUM"), ("per_month", "Per Month"), ("fixed", "Fixed")], required=True)
-    rate = fields.Monetary(currency_field="currency_id", digits=(16, 2))
+    rate = fields.Monetary(currency_field="currency_id")
     diesel_per_cum = fields.Monetary(
         string="Diesel (Per CUM)",
         currency_field="currency_id",
-        digits=(16, 2),
         help="Optional diesel surcharge captured for this service.",
     )
     default_enabled = fields.Boolean(string="Enabled by Default", default=False)

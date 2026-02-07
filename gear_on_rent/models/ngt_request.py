@@ -151,7 +151,6 @@ class GearNgTRequest(models.Model):
     electricity_unit_rate = fields.Monetary(
         string="Electricity Unit Rate",
         currency_field="currency_id",
-        digits=(16, 2),
         tracking=True,
         readonly=True,
         help="Rate per unit/kVAh used to compute electricity expense from meter readings.",
@@ -168,7 +167,6 @@ class GearNgTRequest(models.Model):
         currency_field="currency_id",
         compute="_compute_expense_breakdown",
         store=True,
-        digits=(16, 2),
         readonly=True,
     )
     total_expense = fields.Monetary(
@@ -176,7 +174,6 @@ class GearNgTRequest(models.Model):
         currency_field="currency_id",
         compute="_compute_expense_breakdown",
         store=True,
-        digits=(16, 2),
         readonly=True,
     )
     company_id = fields.Many2one(
@@ -311,6 +308,20 @@ class GearNgTRequest(models.Model):
                         production.sudo().x_ngt_hours = max((production.x_ngt_hours or 0.0) - hours, 0.0)
                         if qty_relief:
                             production.sudo().x_relief_qty = max((production.x_relief_qty or 0.0) - qty_relief, 0.0)
+                    # Recompute monthly order relief KPIs to reflect the rollback.
+                    month_date = fields.Date.to_date(request.date_start)
+                    monthly_orders = self.env["gear.rmc.monthly.order"].search(
+                        [
+                            ("so_id", "=", request.so_id.id),
+                            ("date_start", "<=", month_date),
+                            ("date_end", ">=", month_date),
+                        ]
+                    )
+                    if monthly_orders:
+                        monthly_orders._compute_relief_breakdown()
+                        monthly_orders._compute_downtime_relief_qty()
+                        monthly_orders._compute_optimized_standby()
+                        monthly_orders.flush_recordset()
             request.write(
                 {
                     "state": "draft",

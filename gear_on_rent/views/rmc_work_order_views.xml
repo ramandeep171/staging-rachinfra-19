@@ -98,6 +98,7 @@
                             <field name="x_window_end" readonly="state != 'draft'"/>
                             <field name="x_is_cooling_period"/>
                             <field name="x_auto_email_daily"/>
+                            <field name="apply_waveoff_remaining"/>
                         </group>
                     </group>
                     <group>

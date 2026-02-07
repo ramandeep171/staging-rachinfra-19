@@ -154,7 +154,22 @@ class PrepareInvoiceFromMrp(models.TransientModel):
 
         def _extract_taxes(line):
             taxes_field = getattr(line, "tax_id", False) or getattr(line, "taxes_id", self.env["account.tax"])
-            return taxes_field
+            if taxes_field:
+                taxes_field = taxes_field.filtered(lambda t: t.company_id == order.company_id)
+            if taxes_field and taxes_field.exists():
+                return taxes_field
+
+            product = line.product_id if line else False
+            if not product:
+                return self.env["account.tax"]
+
+            taxes = product.taxes_id.filtered(lambda t: t.company_id == order.company_id)
+            if not taxes:
+                taxes = getattr(order.company_id, "account_sale_tax_id", False) or self.env["account.tax"]
+            fiscal_position = order.fiscal_position_id or order.partner_id.property_account_position_id
+            if fiscal_position:
+                taxes = fiscal_position.map_tax(taxes, product=product, partner=order.partner_id)
+            return taxes
 
         def _extract_analytic(line):
             distribution = getattr(line, "analytic_distribution", {}) or {}
@@ -368,9 +383,9 @@ class PrepareInvoiceFromMrp(models.TransientModel):
                         "name": _compose_line_name(manual_product, manual_label),
                         "product_id": manual_product.id,
                         "quantity": manual_on_qty,
-                        "price_unit": 0.0,
-                        "tax_ids": False,
-                        "analytic_distribution": False,
+                        "price_unit": prime_price_unit,
+                        "tax_ids": [(6, 0, taxes_prime.ids)] if taxes_prime else False,
+                        "analytic_distribution": analytic_prime or False,
                         "sale_line_ids": [(6, 0, manual_sale_line_ids)],
                     },
                 )
@@ -389,9 +404,9 @@ class PrepareInvoiceFromMrp(models.TransientModel):
                         "name": _compose_line_name(manual_product, manual_label),
                         "product_id": manual_product.id,
                         "quantity": manual_after_qty,
-                        "price_unit": 0.0,
-                        "tax_ids": False,
-                        "analytic_distribution": False,
+                        "price_unit": prime_price_unit,
+                        "tax_ids": [(6, 0, taxes_prime.ids)] if taxes_prime else False,
+                        "analytic_distribution": analytic_prime or False,
                         "sale_line_ids": [(6, 0, manual_sale_line_ids)],
                     },
                 )

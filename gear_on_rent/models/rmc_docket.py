@@ -209,9 +209,10 @@ class GearRmcDocket(models.Model):
         help="Customer for whom this docket was produced (defaults from the contract).",
     )
 
-    _sql_constraints = [
-        ("unique_docket_per_contract", "unique(so_id, docket_no)", "The docket number must be unique per contract."),
-    ]
+    _unique_docket_per_contract = models.Constraint(
+        "UNIQUE(so_id, docket_no)",
+        "The docket number must be unique per contract.",
+    )
 
     @api.model
     def _get_cycle_runtime_threshold(self):

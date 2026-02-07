@@ -19,13 +19,10 @@ class MrpWorkcenter(models.Model):
         copy=False,
     )
 
-    _sql_constraints = [
-        (
-            "unique_ids_external_id",
-            "unique(x_ids_external_id, company_id)",
-            "Each IDS external identifier must be unique per company.",
-        )
-    ]
+    _unique_ids_external_id = models.Constraint(
+        "UNIQUE (x_ids_external_id, company_id)",
+        "Each IDS external identifier must be unique per company.",
+    )
 
     @api.constrains("x_equipment_id")
     def _check_equipment_company(self):
