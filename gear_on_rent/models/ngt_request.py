@@ -210,7 +210,11 @@ class GearNgTRequest(models.Model):
     )
     def _compute_ngt_qty(self):
         for request in self:
-            factor = request.ngt_hourly_factor_effective or 0.0
+            # Use a high-precision factor for quantity so compounded rounding gives the expected total.
+            if request.ngt_hourly_prorata_factor:
+                factor = request.ngt_hourly_prorata_factor
+            else:
+                factor = request._gear_compute_precise_factor()
             request.ngt_qty = float_round((request.hours_total or 0.0) * factor, precision_digits=2)
 
     @api.depends("mgq_monthly", "date_start")
@@ -221,15 +225,25 @@ class GearNgTRequest(models.Model):
             days = calendar.monthrange(date_ref.year, date_ref.month)[1]
             per_hour = 0.0
             if mgq > 0 and days > 0:
-                per_hour = float_round((mgq / days) / 24.0, precision_digits=2)
+                per_hour = float_round((mgq / days) / 24.0, precision_digits=2, rounding_method="DOWN")
             request.ngt_hourly_rate = per_hour
 
     @api.depends("ngt_hourly_prorata_factor", "ngt_hourly_rate")
     def _compute_ngt_hourly_factor_effective(self):
         for request in self:
             factor = request.ngt_hourly_prorata_factor or request.ngt_hourly_rate or 0.0
-            factor = float_round(factor, precision_digits=2)
+            factor = float_round(factor, precision_digits=2, rounding_method="DOWN")
             request.ngt_hourly_factor_effective = factor
+
+    def _gear_compute_precise_factor(self):
+        """Return the m³ per hour factor with higher precision (no early rounding)."""
+        self.ensure_one()
+        mgq = self.mgq_monthly or 0.0
+        date_ref = fields.Datetime.to_datetime(self.date_start) if self.date_start else fields.Datetime.now()
+        days = calendar.monthrange(date_ref.year, date_ref.month)[1]
+        if mgq <= 0 or days <= 0:
+            return 0.0
+        return (mgq / days) / 24.0
 
     @api.depends(
         "meter_reading_start",

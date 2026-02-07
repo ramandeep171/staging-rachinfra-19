@@ -2,6 +2,7 @@ from calendar import monthrange
 import calendar
 from datetime import datetime, time, timedelta
 from math import ceil
+from decimal import Decimal, ROUND_HALF_UP
 
 try:  # pragma: no cover - shim for dev/test containers
     import pytz
@@ -871,13 +872,13 @@ class GearRmcMonthlyOrder(models.Model):
             date_ref = self.date_start or fields.Date.context_today(self)
             days_in_month = calendar.monthrange(date_ref.year, date_ref.month)[1]
             if mgq and days_in_month:
-                factor = float_round((mgq / days_in_month) / 24.0, precision_digits=2)
+                factor = (mgq / days_in_month) / 24.0  # keep full precision for later multiplication
         if not factor:
             # Last fallback: use the first daily target snapshot if present.
             daily_target = sum(self.production_ids.mapped("x_daily_target_qty")) / len(self.production_ids) if self.production_ids else 0.0
             if daily_target:
-                factor = float_round(daily_target / 24.0, precision_digits=2)
-        return float_round(factor or 0.0, precision_digits=2)
+                factor = daily_target / 24.0
+        return factor or 0.0
 
     def _gear_get_prorated_mgq(self):
         self.ensure_one()
@@ -984,8 +985,24 @@ class GearRmcMonthlyOrder(models.Model):
                 raise UserError(_("The monthly order must span at least one day."))
 
             target_qty = order.monthly_target_qty or 0.0
-            daily_target = round(target_qty / days_in_month, 2) if days_in_month else 0.0
+            if target_qty <= 0:
+                raise UserError(
+                    _(
+                        "Monthly MGQ must be a positive value before generating daily orders for %s. "
+                        "Please update the contract's Monthly MGQ."
+                    )
+                    % (order.so_id.display_name or order.name)
+                )
+            # Split using Decimal to keep the exact monthly total while rounding to 2dp per day.
+            tgt_dec = Decimal(str(target_qty)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            days_dec = Decimal(days_in_month)
+            # Prefer rounding down so displayed daily MGQ stays at the lower bound (e.g., 88.70 instead of 88.71).
+            daily_dec = (tgt_dec / days_dec).quantize(Decimal("0.00"), rounding=ROUND_DOWN)
+            daily_targets = [float(daily_dec)] * days_in_month
+            remainder_dec = (tgt_dec - daily_dec * (days_dec - 1)).quantize(Decimal("0.00"), rounding=ROUND_HALF_UP)
+            daily_targets[-1] = float(remainder_dec)
 
+            daily_target = float(daily_dec)
             if daily_target <= 0:
                 raise UserError(
                     _(
@@ -1056,6 +1073,8 @@ class GearRmcMonthlyOrder(models.Model):
             routing = order._gear_resolve_inventory_targets()
 
             while cursor <= generation_end:
+                offset = (cursor - order.date_start).days
+                target_for_day = daily_targets[offset] if 0 <= offset < len(daily_targets) else daily_target
                 start_dt, end_dt = order._gear_get_day_bounds(cursor, user_tz)
 
                 production = existing_map.get(cursor)
@@ -1063,8 +1082,8 @@ class GearRmcMonthlyOrder(models.Model):
                     if production.state not in ("done", "cancel"):
                         production.write(
                             {
-                                "product_qty": daily_target,
-                                "x_daily_target_qty": daily_target,
+                                "product_qty": target_for_day,
+                                "x_daily_target_qty": target_for_day,
                                 "x_is_cooling_period": order.x_is_cooling_period,
                                 "warehouse_id": routing["warehouse"].id,
                                 "picking_type_id": routing["picking_type"].id,
@@ -1074,6 +1093,14 @@ class GearRmcMonthlyOrder(models.Model):
                                 "x_target_warehouse_id": routing["warehouse"].id,
                                 "wastage_allowed_percent": order.wastage_allowed_percent,
                                 "wastage_penalty_rate": order.wastage_penalty_rate,
+                            }
+                        )
+                    else:
+                        # Keep historical MOs intact, but refresh the target snapshot so rollups stay accurate.
+                        production.write(
+                            {
+                                "x_daily_target_qty": target_for_day,
+                                "x_is_cooling_period": order.x_is_cooling_period,
                             }
                         )
                 else:
