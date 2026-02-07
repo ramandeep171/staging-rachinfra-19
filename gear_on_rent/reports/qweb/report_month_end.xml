@@ -80,10 +80,12 @@
             <!-- Production Overview - Basis Information -->
             <t t-set="ngt_list" t-value="payload.get('ngt_requests') or []"/>
             <t t-set="ngt_total_hours" t-value="sum(req.get('hours', 0.0) for req in ngt_list)"/>
+            <t t-set="ngt_total_qty" t-value="sum(req.get('qty', 0.0) for req in ngt_list)"/>
+            <t t-set="ngt_hours_display" t-value="ngt_list and ngt_total_hours or payload.get('ngt_hours', 0.0)"/>
             <t t-set="ngt_first_start" t-value="ngt_list and ngt_list[0].get('period_start') or ''"/>
             <t t-set="ngt_last_end" t-value="ngt_list and ngt_list[-1].get('period_end') or ''"/>
             <t t-set="prime_qty" t-value="payload.get('prime_output_qty', 0.0)"/>
-            <t t-set="ngt_qty" t-value="payload.get('ngt_qty', 0.0)"/>
+            <t t-set="ngt_qty" t-value="ngt_list and ngt_total_qty or payload.get('ngt_qty', 0.0)"/>
             <t t-set="standby_qty" t-value="payload.get('optimized_standby', 0.0)"/>
             <t t-set="total_invoice_qty" t-value="prime_qty + ngt_qty + standby_qty"/>
             <div style="margin:12px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
@@ -126,7 +128,7 @@
                     <td>4</td>
                     <td class="gor-text-left">NGT Hours</td>
                     <td>Captured</td>
-                    <td><t t-esc="payload.get('ngt_hours', 0.0)"/></td>
+                    <td><t t-esc="ngt_hours_display"/></td>
                     <td>-</td>
                   </tr>
                   <tr>
@@ -191,8 +193,8 @@
                   <tr><td>1</td><td class="gor-text-left">Monthly MGQ Target</td><td><t t-esc="payload.get('target_qty', 0.0)"/></td><td>-</td></tr>
                   <tr><td>2</td><td class="gor-text-left">Adjusted MGQ</td><td><t t-esc="payload.get('adjusted_target_qty', 0.0)"/></td><td>-</td></tr>
                   <tr><td>3</td><td class="gor-text-left">Prime Output</td><td><t t-esc="payload.get('prime_output_qty', 0.0)"/></td><td>Production + manual</td></tr>
-                  <tr><td>4</td><td class="gor-text-left">NGT Hours</td><td><t t-esc="payload.get('ngt_hours', 0.0)"/></td><td>Captured</td></tr>
-                  <tr><td>5</td><td class="gor-text-left">NGT Relief (m³)</td><td><t t-esc="payload.get('ngt_qty', 0.0)"/></td><td>Billing quantity</td></tr>
+                  <tr><td>4</td><td class="gor-text-left">NGT Hours</td><td><t t-esc="ngt_hours_display"/></td><td>Captured</td></tr>
+                  <tr><td>5</td><td class="gor-text-left">NGT Relief (m³)</td><td><t t-esc="ngt_qty"/></td><td>Billing quantity</td></tr>
                   <tr><td>6</td><td class="gor-text-left">Optimized Standby</td><td><t t-esc="payload.get('optimized_standby', 0.0)"/></td><td>Standby balancing</td></tr>
                 </tbody>
               </table>
