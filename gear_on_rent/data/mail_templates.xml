@@ -78,5 +78,40 @@
       <field name="report_template_ids" eval="[(4, ref('gear_on_rent.action_report_batching_plant_quote'))]"/>
       <field name="auto_delete" eval="True"/>
     </record>
+
+    <!-- Custom invoice email for Monthly Work Orders -->
+    <record id="mail_template_mwo_invoice_custom" model="mail.template">
+      <field name="name">Gear Monthly Invoice (Customer)</field>
+      <field name="model_id" ref="account.model_account_move"/>
+      <field name="auto_delete" eval="True"/>
+      <field name="email_from">{{ (object.company_id.email or user.email) or '' }}</field>
+      <field name="partner_to">{{ object.partner_id.id }}</field>
+      <field name="subject">Invoice {{ object.name or 'n/a' }} — Monthly RMC ({{ object.gear_period_start or object.invoice_date or '' }})</field>
+      <field name="body_html" type="html">
+        <div style="margin:0;padding:0;">
+          <p>Dear <t t-esc="object.partner_id.name or 'Customer'"/>,</p>
+          <p>Please find attached the monthly invoice <strong><t t-esc="object.name"/></strong> for your review and processing.</p>
+          <!-- Derive quantities directly from invoice lines so summary matches the PDF lines -->
+          <t t-set="prime_qty" t-value="sum(line.quantity for line in object.invoice_line_ids if 'Prime Output' in (line.name or '') or 'Prime Output' in (line.display_name or ''))"/>
+          <t t-set="standby_qty" t-value="sum(line.quantity for line in object.invoice_line_ids if 'Optimized Standby' in (line.name or '') or 'Optimised Standby' in (line.name or '') or 'Optimized Standby' in (line.display_name or '') or 'Optimised Standby' in (line.display_name or ''))"/>
+          <t t-set="ngt_qty" t-value="sum(line.quantity for line in object.invoice_line_ids if 'NGT' in (line.name or '') or 'No-Generation' in (line.name or '') or 'NGT' in (line.display_name or '') or 'No-Generation' in (line.display_name or ''))"/>
+          <t t-set="total_qty" t-value="prime_qty + standby_qty + ngt_qty"/>
+
+          <p><strong>Invoice summary:</strong></p>
+          <ul>
+            <li>Prime Output: <t t-esc="('%.2f' % prime_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li>NGT (No-Generation Time): <t t-esc="('%.2f' % ngt_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li>Optimised Standby: <t t-esc="('%.2f' % standby_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li>Total Quantity: <t t-esc="('%.2f' % total_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li>Total Invoice Value: <t t-esc="format_amount(object.amount_total, object.currency_id)"/></li>
+          </ul>
+
+          <p>All supporting documents and annexures, including the detailed quantity breakup and NGT assessment, are attached.</p>
+          <p>Please confirm receipt and proceed with payment as per agreed terms. If you need any clarification or additional documentation, let us know.</p>
+          <p>Warm regards,<br/>
+             <t t-esc="object.company_id.name or ''"/></p>
+        </div>
+      </field>
+    </record>
   </data>
 </odoo>

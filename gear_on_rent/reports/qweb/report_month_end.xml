@@ -17,7 +17,9 @@
           <t t-call="web.external_layout">
             <div class="gor-page">
             <style>
-              .gor-page{width:90%;margin:0 auto;}
+              /* Reserve space for the Odoo header so content never overlaps it */
+              .header{height:140px;}
+              .gor-page{width:90%;margin:0 auto;padding-top:140px;}
               .gor-kv-table{width:100%;border-collapse:collapse;margin-bottom:12px;}
               .gor-kv-table th{padding:2px 6px;text-align:left;font-weight:600;border:none;}
               .gor-kv-table td{padding:2px 6px;text-align:right;border:none;}
@@ -55,6 +57,7 @@
               .gor-text-center{text-align:center;}
               .gor-footer{position:running(gor-footer);font-size:10px;text-align:right;}
               .gor-footer-placeholder{height:12mm;}
+              .gor-avoid-break{page-break-inside: avoid; break-inside: avoid;}
             </style>
             
             <div class="row mb-3">
@@ -88,7 +91,7 @@
             <t t-set="ngt_qty" t-value="ngt_list and ngt_total_qty or payload.get('ngt_qty', 0.0)"/>
             <t t-set="standby_qty" t-value="payload.get('optimized_standby', 0.0)"/>
             <t t-set="total_invoice_qty" t-value="prime_qty + ngt_qty + standby_qty"/>
-            <div style="margin:12px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
+            <div class="gor-avoid-break" style="margin:12px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
               <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">
                 PRODUCTION OVERVIEW - BASIS INFORMATION (<t t-esc="payload.get('month_label')"/>)
               </div>
@@ -178,7 +181,7 @@
             </div>
           
             <!-- Operations Summary Card -->
-            <div style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
+            <div class="gor-avoid-break" style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
               <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">OPERATIONS SUMMARY</div>
               <table class="gor-full-table" style="font-size:11px;">
                 <thead style="background:#0b5394;color:#fff;">
@@ -202,7 +205,7 @@
 
             <!-- Diesel Overrun Card -->
             <t t-if="payload.get('show_diesel')">
-              <div style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
+              <div class="gor-avoid-break" style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
                 <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">DIESEL OVERRUN</div>
                   <table class="gor-full-table" style="font-size:11px;">
                     <thead style="background:#0b5394;color:#fff;">
@@ -223,7 +226,7 @@
 
             <!-- Cooling Windows Card -->
             <t t-if="payload.get('show_cooling')">
-              <div style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
+              <div class="gor-avoid-break" style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
                 <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">COOLING WINDOWS</div>
                   <table class="gor-full-table" style="font-size:11px;">
                     <thead style="background:#0b5394;color:#fff;">
@@ -245,7 +248,7 @@
 
             <!-- Wastage & Scrap Annexure -->
             <t t-if="payload.get('show_wastage') and (payload.get('prime_output_qty', 0.0) or payload.get('allowed_wastage_qty', 0.0) or payload.get('actual_scrap_qty', 0.0) or payload.get('over_wastage_qty', 0.0) or payload.get('scrap_logs') or payload.get('manufacturing_orders'))">
-              <div style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
+              <div class="gor-avoid-break" style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
                 <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">WASTAGE &amp; SCRAP ANNEXURE</div>
                 <!-- Build scrap logs -->
                 <t t-set="scrap_logs" t-value="payload.get('scrap_logs') or []"/>

@@ -81,6 +81,22 @@ class AccountMove(models.Model):
             if categories:
                 move.x_billing_category = categories[0]
 
+    # Use a custom invoice email template for Gear monthly invoices.
+    def _get_mail_template(self):
+        base = super()._get_mail_template()
+        # If all moves are customer invoices tied to a Monthly Work Order, use the custom template.
+        if (
+            self
+            and all(m.move_type == "out_invoice" and m.gear_monthly_order_id for m in self)
+        ):
+            template = self.env.ref(
+                "gear_on_rent.mail_template_mwo_invoice_custom",
+                raise_if_not_found=False,
+            )
+            if template:
+                return template
+        return base
+
     def _gear_get_related_sale_orders(self):
         self.ensure_one()
         return self.invoice_line_ids.mapped("sale_line_ids.order_id")
