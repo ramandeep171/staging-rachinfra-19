@@ -5,22 +5,40 @@
       <field name="name">Gear On Rent Daily MO Report</field>
       <field name="model_id" ref="mrp.model_mrp_production"/>
       <field name="auto_delete" eval="True"/>
-      <field name="email_from">{{ (object.x_sale_order_id.company_id.email or object.company_id.email) or '' }}</field>
-      <field name="partner_to">{{ object.x_sale_order_id.partner_invoice_id.id or object.x_sale_order_id.partner_id.id }}</field>
-      <field name="subject">Daily MO Report - {{ object.display_name }}</field>
+      <field name="email_from">{{ (object.x_sale_order_id and (object.x_sale_order_id.company_id.email or object.company_id.email)) or object.company_id.email or '' }}</field>
+      <field name="partner_to">{{ (object.x_sale_order_id and (object.x_sale_order_id.partner_invoice_id.id or object.x_sale_order_id.partner_id.id)) or '' }}</field>
+      <field name="subject">Daily Operational Report - {{ format_date((object.date_start or object.create_date or object.write_date or datetime.date.today()), lang_code=(object.x_sale_order_id and object.x_sale_order_id.partner_id and object.x_sale_order_id.partner_id.lang) or user.lang) }}</field>
       <field name="body_html" type="html">
-<div style="margin: 0px; padding: 0px;">
-    <p>Namaste <t t-out="object.x_sale_order_id.partner_id.name or 'Customer'"/>,</p>
-    <p>Daily report for manufacturing order <strong><t t-out="object.display_name"/></strong> is ready. Key metrics:</p>
-    <ul>
-      <li>Daily Target: <t t-out="format_amount(object.x_daily_target_qty or 0.0, object.company_id.currency_id) if object.company_id else object.x_daily_target_qty"/> m³</li>
-      <li>Adjusted Target: <t t-out="object.x_adjusted_target_qty or 0.0"/> m³</li>
-      <li>Prime Output: <t t-out="object.x_prime_output_qty or 0.0"/> m³</li>
-      <li>NGT Relief: <t t-out="object.x_relief_qty or 0.0"/> m³</li>
-    </ul>
-    <p>The full PDF report is attached for your reference.</p>
-    <p>--<br/>Gear On Rent Automation</p>
-</div>
+        <div style="margin:0;padding:0;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:#222;">
+          <t t-set="lang_code" t-value="(object.x_sale_order_id and object.x_sale_order_id.partner_id and object.x_sale_order_id.partner_id.lang) or user.lang"/>
+          <t t-set="report_date" t-value="object.date_start or object.create_date or object.write_date or datetime.date.today()"/>
+          <t t-set="prime_qty" t-value="object.x_prime_output_qty or 0.0"/>
+          <t t-set="ngt_qty" t-value="object.x_relief_qty or 0.0"/>
+          <t t-set="target_qty_email" t-value="(object.x_monthly_order_id and object.x_monthly_order_id.monthly_target_qty) or (object.x_daily_target_qty or object.product_qty or 0.0)"/>
+          <t t-set="standby_qty" t-value="max((target_qty_email or 0.0) - (prime_qty + ngt_qty), 0.0)"/>
+          <t t-set="total_qty" t-value="prime_qty + ngt_qty + standby_qty"/>
+          <t t-set="total_qty" t-value="prime_qty + ngt_qty + standby_qty"/>
+
+          <p>Dear Team,</p>
+          <p>I hope you are doing well.</p>
+          <p>Please find below the <strong>Daily Operational Report</strong> for
+            <strong><t t-esc="format_date(report_date, date_format='MMMM yyyy', lang_code=lang_code)"/></strong>, summarising the output and operational quantities for your review and records.</p>
+
+          <p><strong>Daily Report Summary:</strong></p>
+          <ul>
+            <li><strong>Prime Output:</strong> <t t-esc="('%.2f' % prime_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li><strong>NGT (No-Generation Time):</strong> <t t-esc="('%.2f' % ngt_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li><strong>Optimised Standby:</strong> <t t-esc="('%.2f' % standby_qty).rstrip('0').rstrip('.')"/> m³</li>
+            <li><strong>Total Quantity Handled:</strong> <t t-esc="('%.2f' % total_qty).rstrip('0').rstrip('.')"/> m³</li>
+          </ul>
+
+          <p>The detailed calculation sheets, quantity breakup, and No-Generation Time assessment annexures are attached for reference and verification.</p>
+          <p><strong>Kindly acknowledge receipt of this report within the next 3 hours.</strong> If any clarification, correction, or additional information is required, please let us know.</p>
+
+          <p>Thank you for your continued coordination.</p>
+          <p>Warm regards,<br/>
+             <t t-esc="object.company_id.name or 'Gear On Rent'"/></p>
+        </div>
       </field>
     </record>
 
@@ -106,7 +124,7 @@
             <li>Total Invoice Value: <t t-esc="format_amount(object.amount_total, object.currency_id)"/></li>
           </ul>
 
-          <p>All supporting documents and annexures, including the detailed quantity breakup and NGT assessment, are attached.</p>
+          <p>All supporting documents and annexures, including the detailed quantity breakup and No-Generation Time assessment, are attached.</p>
           <p>Please confirm receipt and proceed with payment as per agreed terms. If you need any clarification or additional documentation, let us know.</p>
           <p>Warm regards,<br/>
              <t t-esc="object.company_id.name or ''"/></p>

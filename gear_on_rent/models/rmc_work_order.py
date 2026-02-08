@@ -2,7 +2,7 @@ from calendar import monthrange
 import calendar
 from datetime import datetime, time, timedelta
 from math import ceil
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, ROUND_DOWN
 
 try:  # pragma: no cover - shim for dev/test containers
     import pytz

@@ -131,6 +131,12 @@
                                             string="PDF"
                                             class="btn-link"
                                             context="{'download': True}"/>
+                                    <button name="action_send_daily_report_email"
+                                            type="object"
+                                            icon="fa-envelope"
+                                            string="Send"
+                                            class="btn-link"
+                                            help="Email the daily report to the customer"/>
                                     <field name="date_start"/>
                                     <field name="x_daily_target_qty" sum="Total"/>
                                     <field name="x_adjusted_target_qty" sum="Total"/>
@@ -138,6 +144,7 @@
                                     <field name="x_optimized_standby_qty" sum="Total" column_invisible="parent.x_is_cooling_period"/>
                                     <field name="x_ngt_hours" sum="Total"/>
                                     <field name="x_loto_hours" sum="Total"/>
+                                    <field name="x_include_attendance_annexure" widget="boolean_toggle"/>
                                 </list>
                             </field>
                         </page>
@@ -292,6 +299,17 @@
                         <field name="deduction_qty" readonly="1"/>
                     </group>
                 </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_mrp_production_form_inherit_gear_attendance" model="ir.ui.view">
+        <field name="name">mrp.production.form.inherit.gear.attendance</field>
+        <field name="model">mrp.production</field>
+        <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/group" position="inside">
+                <field name="x_include_attendance_annexure"/>
             </xpath>
         </field>
     </record>

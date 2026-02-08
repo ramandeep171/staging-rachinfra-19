@@ -1,9 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 import calendar
 import base64
 import logging
 
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools import format_date, format_datetime
 
 _logger = logging.getLogger(__name__)
@@ -112,6 +113,11 @@ class MrpProduction(models.Model):
         default=False,
         copy=False,
         help="Flag to avoid emailing the daily MO report multiple times.",
+    )
+    x_include_attendance_annexure = fields.Boolean(
+        string="Include Attendance Annexure",
+        default=True,
+        help="When enabled, the attendance annexure block is shown on the daily report PDF/email.",
     )
     mgq_monthly = fields.Float(
         string="MGQ (Monthly) Snapshot",
@@ -234,12 +240,13 @@ class MrpProduction(models.Model):
             client_dockets = production._gear_client_dockets()
             production.x_prime_output_qty = sum(client_dockets.mapped("qty_m3"))
 
-    @api.depends("x_adjusted_target_qty", "x_prime_output_qty")
+    @api.depends("x_daily_target_qty", "product_qty", "x_prime_output_qty", "x_relief_qty")
     def _compute_optimized_standby_qty(self):
         for production in self:
-            adjusted = production.x_adjusted_target_qty or 0.0
-            prime = production.x_prime_output_qty or 0.0
-            production.x_optimized_standby_qty = max(adjusted - prime, 0.0)
+            target_qty = production.x_daily_target_qty or production.product_qty or 0.0
+            prime_output = production.x_prime_output_qty or 0.0
+            relief_qty = production.x_relief_qty or 0.0
+            production.x_optimized_standby_qty = max(target_qty - (prime_output + relief_qty), 0.0)
 
     @api.depends("x_docket_ids.runtime_minutes", "x_docket_ids.idle_minutes")
     def _compute_runtime_idle_minutes(self):
@@ -326,6 +333,9 @@ class MrpProduction(models.Model):
         if not report:
             raise UserError(_("Daily MO report configuration is missing."))
 
+        force_email = bool(self.env.context.get("force_email"))
+        email_only = bool(self.env.context.get("email_only"))
+
         attachment = False
         try:
             pdf_content, report_type = report._render_qweb_pdf(report.id, res_ids=self.ids)
@@ -344,19 +354,94 @@ class MrpProduction(models.Model):
             attachment = self.env["ir.attachment"].create(attachment_vals)
 
         monthly = self.x_monthly_order_id
+        contract = monthly.so_id if monthly else self.x_sale_order_id
         template = self.env.ref("gear_on_rent.mail_template_daily_mo_report", raise_if_not_found=False)
-        if template and (not monthly or monthly.x_auto_email_daily):
-            email_values = {}
+        send_email = template and ((not monthly or monthly.x_auto_email_daily) or force_email)
+        mail_sent = False
+        mail_message = False
+        email_values = {}
+        if send_email:
             if attachment:
                 email_values["attachment_ids"] = [(4, attachment.id)]
-            template.send_mail(self.id, force_send=True, email_values=email_values)
-            self.x_daily_report_sent = True
+            # Fallback recipients in case partner_to renders empty (e.g., missing invoice partner email).
+            if contract and not email_values.get("email_to"):
+                candidate_emails = [
+                    contract.partner_invoice_id.email,
+                    contract.partner_id.email,
+                    contract.user_id.email,
+                    self.env.user.email,
+                ]
+                email_to_list = [e for e in candidate_emails if e]
+                if email_to_list:
+                    email_values["email_to"] = ",".join(dict.fromkeys(email_to_list))
+            mail_id = template.send_mail(self.id, force_send=True, email_values=email_values)
+            mail_sent = bool(mail_id)
+            if mail_sent:
+                self.x_daily_report_sent = True
+                mail_message = self.env["mail.mail"].browse(mail_id).mail_message_id
+        elif email_only:
+            raise UserError(_("Email template for daily MO report is missing."))
+        elif force_email:
+            raise UserError(_("Daily MO report email could not be sent. Please check the template and mail settings."))
 
-        if monthly:
-            message = _("Daily report generated for %(mo)s.") % {"mo": self.display_name}
-            monthly.message_post(body=message, attachment_ids=attachment and [attachment.id] or False)
+        message_attachment_ids = attachment and [attachment.id] or False
+        # Prefer cloning the real email message so chatter shows the envelope + body.
+        if mail_sent and mail_message:
+            if monthly:
+                mail_message.copy(
+                    {
+                        "model": monthly._name,
+                        "res_id": monthly.id,
+                        "parent_id": False,
+                    }
+                )
+        else:
+            if send_email:
+                message = _("Daily report email attempted for %(mo)s but no recipient was found.") % {
+                    "mo": self.display_name
+                }
+                message_type = "comment"
+            else:
+                message = _("Daily report generated for %(mo)s.") % {"mo": self.display_name}
+                message_type = "comment"
 
+            if monthly:
+                monthly.message_post(
+                    body=message,
+                    attachment_ids=message_attachment_ids,
+                    message_type=message_type,
+                    subtype_xmlid="mail.mt_comment",
+                )
+            # Always log on the MO as well so chatter shows the action on the child record.
+            self.message_post(
+                body=message,
+                attachment_ids=message_attachment_ids,
+                message_type=message_type,
+                subtype_xmlid="mail.mt_comment",
+            )
+
+        if email_only:
+            if not mail_sent:
+                raise UserError(_("Daily MO report email could not be sent. Please check the template and mail settings."))
+            return True
         return report.report_action(self)
+
+    def action_send_daily_report_email(self):
+        """Manually email the daily MO report from the list view without opening the PDF."""
+        self.ensure_one()
+        action = self.with_context(force_email=True, email_only=True).action_print_daily_report()
+        if action is True:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("Email queued"),
+                    "message": _("Daily report email queued for %s.") % (self.display_name,),
+                    "type": "success",
+                    "sticky": False,
+                },
+            }
+        return action
 
     def _gear_hours_to_qty(self, hours):
         self.ensure_one()
@@ -399,6 +484,7 @@ class MrpProduction(models.Model):
         if self.date_start:
             start_dt = fields.Datetime.context_timestamp(self, self.date_start)
         start_date = start_dt.date() if start_dt else fields.Date.context_today(self)
+        report_date = start_date
 
         monthly_order = self.x_monthly_order_id
         if not monthly_order and self.x_sale_order_id and start_date:
@@ -417,16 +503,25 @@ class MrpProduction(models.Model):
         contract = self.x_sale_order_id or (monthly_order and monthly_order.so_id)
         customer = contract.partner_id if contract else False
 
+        monthly_target_qty = monthly_order.monthly_target_qty if monthly_order else contract.x_monthly_mgq if contract else 0.0
+        monthly_adjusted = monthly_order.adjusted_target_qty if monthly_order else monthly_target_qty
+
         target_qty = self.x_daily_target_qty or self.product_qty or 0.0
+        if not target_qty and monthly_order:
+            target_qty = monthly_adjusted or monthly_target_qty or (monthly_order.mgq_monthly or 0.0)
+
         adjusted_qty = self.x_adjusted_target_qty or target_qty
+        if monthly_order and not adjusted_qty:
+            adjusted_qty = monthly_adjusted or monthly_target_qty or adjusted_qty
+        ngt_hours = self.x_ngt_hours or 0.0
+        relief_qty = self.x_relief_qty or 0.0
         workorder_output = sum(self.workorder_ids.mapped("qty_produced"))
         prime_output = self.x_prime_output_qty or workorder_output or (self.qty_produced or 0.0)
         is_cooling = bool(self.x_is_cooling_period or (monthly_order and monthly_order.x_is_cooling_period))
-        standby_qty = self.x_optimized_standby_qty or max(adjusted_qty - prime_output, 0.0)
-        if is_cooling:
-            standby_qty = 0.0
-        ngt_hours = self.x_ngt_hours or 0.0
-        relief_qty = self.x_relief_qty or 0.0
+        # Standby = remaining MGQ after prime output and NGT relief.
+        # Use monthly adjusted/target MGQ when available so the summary reflects contract-level MGQ.
+        standby_base_qty = monthly_target_qty or monthly_adjusted or target_qty
+        standby_qty = max(standby_base_qty - (prime_output + relief_qty), 0.0)
         waveoff_applied = self.x_waveoff_hours_applied or 0.0
         waveoff_chargeable = self.x_waveoff_hours_chargeable or 0.0
         total_waveoff = waveoff_applied + waveoff_chargeable
@@ -434,8 +529,6 @@ class MrpProduction(models.Model):
         actual_scrap_qty = self.actual_scrap_qty or 0.0
         over_wastage_qty = self.over_wastage_qty or 0.0
         deduction_qty = self.deduction_qty or 0.0
-        monthly_target_qty = monthly_order.monthly_target_qty if monthly_order else contract.x_monthly_mgq if contract else 0.0
-        monthly_adjusted = monthly_order.adjusted_target_qty if monthly_order else monthly_target_qty
         cumulative_prime = monthly_order.prime_output_qty if monthly_order else prime_output
         cumulative_standby = monthly_order.optimized_standby_qty if monthly_order else standby_qty
         cumulative_ngt = monthly_order.downtime_relief_qty if monthly_order else relief_qty
@@ -465,12 +558,13 @@ class MrpProduction(models.Model):
         }
 
         bucket_data = cooling_totals if is_cooling else normal_totals
+        # Keep standby populated even during cooling to reflect true shortfall/overage.
         bucket_data.update(
             {
                 "target_qty": target_qty,
                 "adjusted_target_qty": adjusted_qty,
                 "prime_output_qty": prime_output,
-                "standby_qty": 0.0 if is_cooling else standby_qty,
+                "standby_qty": standby_qty,
                 "ngt_m3": relief_qty,
                 "ngt_hours": ngt_hours,
                 "waveoff_applied_hours": waveoff_applied,
@@ -479,27 +573,71 @@ class MrpProduction(models.Model):
         )
 
         docket_records = self.x_docket_ids.sorted(key=lambda d: (d.date or fields.Date.today(), d.id))
-        docket_rows = [
-            {
-                "docket_no": docket.docket_no,
-                "date": format_date(self.env, docket.date),
-                "timestamp": format_datetime(self.env, docket.payload_timestamp) if docket.payload_timestamp else "",
-                "batching_time": format_datetime(self.env, docket.batching_time) if docket.batching_time else "",
-                "customer_name": docket.customer_id.display_name or "",
-                "customer_address": docket.customer_id.contact_address or "",
-                "quantity_ordered": docket.quantity_ordered or 0.0,
-                "qty_m3": docket.qty_m3,
-                "workcenter": docket.workcenter_id.display_name,
-                "tm_number": docket.tm_number or "",
-                "recipe": docket.recipe_id.display_name or "",
-                "runtime_minutes": docket.runtime_minutes,
-                "idle_minutes": docket.idle_minutes,
-                "slump": docket.slump,
-                "alarms": ", ".join(docket.alarm_codes or []),
-                "notes": docket.notes,
-            }
-            for docket in docket_records
-        ]
+        docket_rows = []
+        manual_ops_map = {}
+        if docket_records:
+            first_docket = docket_records[0]
+            candidate_date = first_docket.date
+            if not candidate_date:
+                dt_candidate = first_docket.batching_time or first_docket.payload_timestamp
+                if dt_candidate:
+                    dt_local = fields.Datetime.context_timestamp(self, dt_candidate)
+                    candidate_date = dt_local.date() if dt_local else False
+            if candidate_date:
+                report_date = candidate_date
+        manual_operations = self.env["gear.rmc.manual.operation"].search([("docket_id", "in", docket_records.ids)])
+        for op in manual_operations:
+            mode = op.recipe_display_mode or "on_production"
+            manual_ops_map.setdefault(op.docket_id.id, []).append(
+                {
+                    "description": op.docket_no or op.docket_id.display_name,
+                    "quantity": op.manual_qty_total or op.qty_m3 or 0.0,
+                    "remarks": dict(op._fields["recipe_display_mode"].selection).get(mode, mode.replace("_", " ").title()),
+                    "mode": mode,
+                }
+            )
+
+        manual_operations_rows = []
+        manual_total_qty = 0.0
+
+        for docket in docket_records:
+            workorder = docket.workorder_id
+            start_dt = workorder.date_start if workorder and workorder.date_start else docket.batching_time or docket.payload_timestamp
+            end_dt = workorder.date_finished if workorder and workorder.date_finished else docket.payload_timestamp or docket.batching_time
+            duration_minutes = (workorder.duration if workorder else 0.0) or docket.runtime_minutes or 0.0
+            if not end_dt and start_dt and duration_minutes:
+                end_dt = start_dt + timedelta(minutes=duration_minutes)
+            manual_on = sum(op["quantity"] for op in manual_ops_map.get(docket.id, []) if op["mode"] == "on_production")
+            manual_after = sum(op["quantity"] for op in manual_ops_map.get(docket.id, []) if op["mode"] == "after_production")
+            if docket.id in manual_ops_map:
+                for op in manual_ops_map[docket.id]:
+                    manual_total_qty += op["quantity"]
+                    manual_operations_rows.append(op)
+            docket_rows.append(
+                {
+                    "docket_no": docket.docket_no,
+                    "date": format_date(self.env, docket.date),
+                    "timestamp": format_datetime(self.env, docket.payload_timestamp) if docket.payload_timestamp else "",
+                    "batching_time": format_datetime(self.env, docket.batching_time) if docket.batching_time else "",
+                    "start_time": format_datetime(self.env, start_dt) if start_dt else "",
+                    "end_time": format_datetime(self.env, end_dt) if end_dt else "",
+                    "duration_minutes": duration_minutes,
+                    "customer_name": docket.customer_id.display_name or "",
+                    "customer_address": docket.customer_id.contact_address or "",
+                    "quantity_ordered": docket.quantity_ordered or 0.0,
+                    "qty_m3": docket.qty_m3,
+                    "manual_on_qty": manual_on,
+                    "manual_after_qty": manual_after,
+                    "workcenter": docket.workcenter_id.display_name,
+                    "tm_number": docket.tm_number or "",
+                    "recipe": docket.recipe_id.display_name or "",
+                    "runtime_minutes": docket.runtime_minutes,
+                    "idle_minutes": docket.idle_minutes,
+                    "slump": docket.slump,
+                    "alarms": ", ".join(docket.alarm_codes or []),
+                    "notes": docket.notes,
+                }
+            )
 
         if not docket_rows:
             fallback_workorders = self.workorder_ids.sorted(
@@ -523,7 +661,13 @@ class MrpProduction(models.Model):
                         "docket_no": workorder.name,
                         "date": date_display,
                         "timestamp": timestamp_display,
+                        "batching_time": timestamp_display,
+                        "start_time": format_datetime(self.env, workorder.date_start) if workorder.date_start else "",
+                        "end_time": format_datetime(self.env, workorder.date_finished) if workorder.date_finished else timestamp_display,
+                        "duration_minutes": duration or 0.0,
                         "qty_m3": qty,
+                        "manual_on_qty": 0.0,
+                        "manual_after_qty": 0.0,
                         "workcenter": workorder.workcenter_id.display_name,
                         "runtime_minutes": duration,
                         "idle_minutes": 0.0,
@@ -532,6 +676,8 @@ class MrpProduction(models.Model):
                         "notes": "",
                     }
                 )
+
+        month_label = format_date(self.env, report_date, date_format="d MMMM yyyy")
 
         manufacturing_orders = [
             {
@@ -548,8 +694,241 @@ class MrpProduction(models.Model):
                 "optimized_standby": standby_qty,
                 "ngt_hours": ngt_hours,
                 "loto_hours": waveoff_chargeable,
+                "reason": _("Production scrap"),
             }
         ]
+
+        day_start_dt = datetime.combine(report_date, time.min)
+        day_end_dt = datetime.combine(report_date, time.max)
+
+        # Capture scrap logs for the day (or this MO) similar to the month-end annexure.
+        scrap_logs = []
+        scrap_domain = [("state", "=", "done")]
+        if self.workorder_ids:
+            scrap_domain.append(("workorder_id", "in", self.workorder_ids.ids))
+        else:
+            scrap_domain.append(("production_id", "=", self.id))
+
+        if report_date:
+            start_dt = fields.Datetime.to_datetime(day_start_dt)
+            end_dt = fields.Datetime.to_datetime(day_end_dt)
+            scrap_domain.append(("date_done", ">=", start_dt))
+            scrap_domain.append(("date_done", "<=", end_dt))
+
+        scraps = self.env["stock.scrap"].search(scrap_domain, order="date_done asc, id asc")
+        for scrap in scraps:
+            reason = ", ".join(scrap.scrap_reason_tag_ids.mapped("name")) if getattr(scrap, "scrap_reason_tag_ids", False) else ""
+            scrap_logs.append(
+                {
+                    "date": format_datetime(self.env, scrap.date_done) if scrap.date_done else "",
+                    "reference": scrap.name,
+                    "reason": reason or scrap.origin or (scrap.product_id and scrap.product_id.display_name) or "",
+                    "quantity": scrap.scrap_qty or 0.0,
+                }
+            )
+
+        if not scrap_logs:
+            scrap_logs = [
+                {
+                    "date": mo.get("date_start"),
+                    "reference": mo.get("reference"),
+                    "reason": mo.get("reason") or _("Production scrap"),
+                    "quantity": mo.get("actual_scrap", 0.0),
+                }
+                for mo in manufacturing_orders
+                if mo.get("actual_scrap")
+            ]
+
+        if not scrap_logs and actual_scrap_qty:
+            scrap_logs = [
+                {
+                    "date": month_label,
+                    "reference": self.name or contract.name or _("Scrap"),
+                    "reason": _("Total scrap (no log detail)"),
+                    "quantity": actual_scrap_qty,
+                }
+            ]
+
+        attendance_entries = []
+        attendance_present = 0
+        attendance_hours_total = 0.0
+        if "hr.attendance" in self.env:
+            Attendance = self.env["hr.attendance"]
+            Employee = self.env["hr.employee"]
+            operator_users = docket_records.mapped("operator_user_id")
+            employees = Employee.search([("user_id", "in", operator_users.ids)]) if operator_users else Employee.browse()
+
+            start_dt = fields.Datetime.to_datetime(day_start_dt)
+            end_dt = fields.Datetime.to_datetime(day_end_dt)
+            domain = [("check_in", "<=", end_dt), "|", ("check_out", "=", False), ("check_out", ">=", start_dt)]
+            if employees:
+                # Prefer narrowing to operators tied to the dockets for the day.
+                domain.append(("employee_id", "in", employees.ids))
+
+            attendances = Attendance.search(domain, order="employee_id, check_in")
+            present_ids = set()
+            for att in attendances:
+                check_in = fields.Datetime.to_datetime(att.check_in) if att.check_in else False
+                check_out = fields.Datetime.to_datetime(att.check_out) if att.check_out else False
+                start_bound = max(start_dt, check_in) if check_in else start_dt
+                end_bound = min(end_dt, check_out) if check_out else end_dt
+                hours_val = 0.0
+                if start_bound and end_bound and end_bound > start_bound:
+                    hours_val = round((end_bound - start_bound).total_seconds() / 3600.0, 2)
+                elif att.worked_hours:
+                    hours_val = att.worked_hours
+                attendance_entries.append(
+                    {
+                        "employee_id": att.employee_id.id,
+                        "employee_name": att.employee_id.display_name or att.employee_id.name or "",
+                        "check_in": format_datetime(self.env, att.check_in) if att.check_in else "",
+                        "check_out": format_datetime(self.env, att.check_out) if att.check_out else "",
+                        "worked_hours": hours_val,
+                        "status": _("Open") if not att.check_out else _("Closed"),
+                    }
+                )
+                present_ids.add(att.employee_id.id)
+                attendance_hours_total += hours_val
+            attendance_present = len(present_ids)
+
+        # NGT requests for the same contract/day
+        ngt_requests = self.env["gear.ngt.request"].search(
+            [
+                ("so_id", "=", contract.id if contract else False),
+                ("state", "=", "approved"),
+                ("date_start", "<=", day_end_dt),
+                ("date_end", ">=", day_start_dt),
+            ],
+            order="date_start asc, approved_on desc, id desc",
+        )
+        ngt_requests_data = []
+        currency_symbol_default = contract.currency_id.symbol if contract and contract.currency_id else (self.company_id.currency_id.symbol or "")
+        ngt_hours_from_requests = 0.0
+        ngt_qty_from_requests = 0.0
+        for request in ngt_requests:
+            meter_units = request.electricity_units or 0.0
+            if not meter_units and request.meter_reading_start is not None and request.meter_reading_end is not None:
+                meter_units = max(request.meter_reading_end - request.meter_reading_start, 0.0)
+            ngt_hours_from_requests += request.hours_total or 0.0
+            qty_val = request.ngt_qty or ((request.hours_total or 0.0) * (request.ngt_hourly_factor_effective or request.ngt_hourly_rate or request.ngt_hourly_prorata_factor or 0.0))
+            ngt_qty_from_requests += qty_val
+            ngt_requests_data.append(
+                {
+                    "name": request.name,
+                    "company_name": request.company_id.display_name if request.company_id else "",
+                    "contract_name": request.so_id.display_name or "",
+                    "status": request.state,
+                    "mgq_monthly": request.mgq_monthly or 0.0,
+                    "period_start": format_datetime(self.env, request.date_start) if request.date_start else "",
+                    "period_end": format_datetime(self.env, request.date_end) if request.date_end else "",
+                    "hours": request.hours_total or 0.0,
+                    "hour_rate": request.ngt_hourly_factor_effective
+                    or request.ngt_hourly_rate
+                    or request.ngt_hourly_prorata_factor
+                    or 0.0,
+                    "qty": qty_val,
+                    "meter_start": request.meter_reading_start or 0.0,
+                    "meter_end": request.meter_reading_end or 0.0,
+                    "meter_units": meter_units,
+                    "employee_expense": request.employee_expense or 0.0,
+                    "land_rent": request.land_rent or 0.0,
+                    "electricity_rate": request.electricity_unit_rate or 0.0,
+                    "electricity_expense": request.electricity_expense or 0.0,
+                    "total_expense": request.total_expense or 0.0,
+                    "reason": request.reason or "",
+                    "currency_symbol": request.currency_id.symbol
+                    or (request.company_id.currency_id.symbol if request.company_id and request.company_id.currency_id else currency_symbol_default),
+                    "show_expenses": any(
+                        [
+                            request.employee_expense,
+                            request.land_rent,
+                            request.electricity_unit_rate,
+                            request.electricity_expense,
+                            request.total_expense,
+                        ]
+                    ),
+                }
+            )
+
+        # Override day-level NGT figures with approved requests overlapping the day
+        if ngt_hours_from_requests:
+            ngt_hours = ngt_hours_from_requests
+        if ngt_qty_from_requests:
+            relief_qty = ngt_qty_from_requests
+
+        # Safety cap: a calendar day cannot exceed 24 hours
+        max_hours = 24.0
+        if ngt_hours > max_hours:
+            scale = max_hours / ngt_hours if ngt_hours else 0.0
+            ngt_hours = max_hours
+            relief_qty = round(relief_qty * scale, 2)
+
+        # Refresh standby after final relief adjustments (and keep visible even in cooling).
+        standby_qty = max(target_qty - (prime_output + relief_qty), 0.0)
+        bucket_data["standby_qty"] = standby_qty
+        bucket_data["ngt_m3"] = relief_qty
+        bucket_data["ngt_hours"] = ngt_hours
+        if manufacturing_orders:
+            manufacturing_orders[0]["optimized_standby"] = standby_qty
+            manufacturing_orders[0]["ngt_hours"] = ngt_hours
+        if not monthly_order:
+            cumulative_standby = standby_qty
+            cumulative_ngt = relief_qty
+            cumulative_ngt_hours = ngt_hours
+
+        # NGT expense snapshot from monthly order if available
+        ngt_expense = {}
+        if monthly_order:
+            currency_symbol = monthly_order.company_id.currency_id.symbol or currency_symbol_default
+            emp = monthly_order.ngt_employee_expense or 0.0
+            land = monthly_order.ngt_land_rent or 0.0
+            units = monthly_order.ngt_meter_units or 0.0
+            unit_rate = monthly_order.ngt_electricity_unit_rate or 0.0
+            elec_expense = monthly_order.ngt_electricity_expense or 0.0
+            total_expense = monthly_order.ngt_total_expense or 0.0
+            mgq_target = monthly_order.monthly_target_qty or monthly_order.mgq_monthly or contract.x_monthly_mgq if contract else 0.0
+            rate_per_m3 = (total_expense / mgq_target) if mgq_target else 0.0
+            ngt_expense = {
+                "employee_expense": emp,
+                "land_rent": land,
+                "electricity_rate": unit_rate,
+                "electricity_expense": elec_expense,
+                "electricity_units": units,
+                "total_expense": total_expense,
+                "rate_per_m3": rate_per_m3,
+                "mgq_target": mgq_target,
+                "currency_symbol": currency_symbol,
+                "show_expenses": any([emp, land, elec_expense, total_expense]),
+            }
+
+        # LOTO requests overlapping the day
+        loto_requests = self.env["gear.loto.request"].search(
+            [
+                ("so_id", "=", contract.id if contract else False),
+                ("state", "=", "approved"),
+                ("date_start", "<=", day_end_dt),
+                ("date_end", ">=", day_start_dt),
+            ],
+            order="date_start asc",
+        )
+        loto_requests_data = [
+            {
+                "name": req.name,
+                "period_start": format_datetime(self.env, req.date_start) if req.date_start else "",
+                "period_end": format_datetime(self.env, req.date_end) if req.date_end else "",
+                "hours_total": req.hours_total or 0.0,
+                "hours_waveoff": req.hours_waveoff_applied or 0.0,
+                "hours_chargeable": req.hours_chargeable or 0.0,
+                "reason": req.reason or "",
+            }
+            for req in loto_requests
+        ]
+        loto_total_hours = sum(l.get("hours_total", 0.0) for l in loto_requests_data)
+        loto_chargeable_hours = sum(l.get("hours_chargeable", 0.0) for l in loto_requests_data)
+
+        # Update manufacturing order row with final ngt_hours
+        if manufacturing_orders:
+            manufacturing_orders[0]["ngt_hours"] = ngt_hours
 
         show_normal_totals = any(
             normal_totals.get(key)
@@ -558,7 +937,7 @@ class MrpProduction(models.Model):
 
         payload = {
             "invoice_name": self.name,
-            "month_label": format_date(self.env, start_date, date_format="d MMMM yyyy"),
+            "month_label": month_label,
             "version_label": _("Daily Summary"),
             "contract_name": contract.name if contract else "",
             "customer_name": customer.display_name if customer else "",
@@ -595,6 +974,19 @@ class MrpProduction(models.Model):
             "asset_notes": contract.gear_asset_note if contract else "",
             "dockets": docket_rows,
             "manufacturing_orders": manufacturing_orders,
+            "scrap_logs": scrap_logs,
+            "ngt_requests": ngt_requests_data,
+            "ngt_expense": ngt_expense,
+            "loto_requests": loto_requests_data,
+            "loto_total_hours": loto_total_hours,
+            "loto_chargeable_hours": loto_chargeable_hours,
+            "status_label": _("Approved"),
+            "manual_operations": manual_operations_rows,
+            "manual_total_qty": manual_total_qty,
+            "attendance_entries": attendance_entries,
+            "attendance_present": attendance_present,
+            "attendance_hours_total": round(attendance_hours_total, 2),
+            "include_attendance_annexure": bool(self.x_include_attendance_annexure),
         }
         return payload
 

@@ -78,213 +78,234 @@
                 </p>
               </div>
             </div>
-            <div class="gor-two-col gor-two-col--metrics">
-              <div class="gor-two-col__col">
-                <h3>LOTO Wave-Off Summary</h3>
-                <table class="gor-metric-table">
-                  <tbody>
-                    <tr>
-                        <th>Total LOTO Approved Hours</th>
-                        <td>
-                          <t t-esc="payload.get('loto_total_hours', 0.0)"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Wave-Off Allowance</th>
-                        <td>
-                          <t t-esc="payload.get('waveoff_allowance', 0.0)"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Wave-Off Applied</th>
-                        <td style="color:#198754;">
-                          <t t-esc="payload.get('waveoff_applied', 0.0)"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Chargeable LOTO Hours</th>
-                        <td style="color:#ba1b1b;">
-                          <t t-esc="payload.get('loto_chargeable_hours', 0.0)"/>
-                        </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="gor-two-col__col">
-                <h4>UP-TO-DATE Metrics</h4>
-                <table class="gor-metric-table">
-                  <tbody>
-                    <tr>
-                      <th> AbhiTak MGQ Target</th>
-                      <td>
-                        <t t-esc="payload.get('monthly_target_qty', 0.0)"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>AbhiTak Adjusted MGQ</th>
-                      <td>
-                        <t t-esc="payload.get('monthly_adjusted_qty', 0.0)"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th> AbhiTak Prime Output (m^3)</th>
-                      <td>
-                        <t t-esc="payload.get('monthly_prime_output_qty', 0.0)"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>AbhiTak Optimized Standby (m^3)</th>
-                      <td>
-                        <t t-esc="payload.get('monthly_standby_qty', 0.0)"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th> AbhiTak NGT Relief (m^3)</th>
-                      <td>
-                        <t t-esc="payload.get('monthly_ngt_qty', 0.0)"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>AbhiTak NGT Hours</th>
-                      <td>
-                        <t t-esc="payload.get('monthly_ngt_hours', 0.0)"/>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-12">
-                <h4>Inventory Settings</h4>
-                <table class="gor-metric-table gor-metric-table--left">
-                  <tbody>
-                    <tr>
-                      <th>Inventory Mode</th>
-                      <td>
-                        <t t-esc="payload.get('inventory_mode') or 'N/A'"/>
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Real Warehouse</th>
-                      <td>
-                        <t t-esc="payload.get('real_warehouse') or 'N/A'"/>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <h4 class="mt-3">Exceptions &amp; Notes</h4>
-            <table class="gor-metric-table gor-metric-table--left">
-              <tbody>
-                <tr>
-                  <th>Materials Shortage</th>
-                  <td>
-                    <t t-esc="payload.get('materials_shortage') or 'N/A'"/>
-                  </td>
-                </tr>
-                <tr>
-                  <th>Manpower</th>
-                  <td>
-                    <t t-esc="payload.get('manpower_notes') or 'N/A'"/>
-                  </td>
-                </tr>
-                <tr>
-                  <th>Assets</th>
-                  <td>
-                    <t t-esc="payload.get('asset_notes') or 'N/A'"/>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <t t-set="prime_val" t-value="payload.get('prime_output_qty', 0.0)"/>
+            <t t-set="ngt_qty_val" t-value="payload.get('ngt_qty', 0.0)"/>
+            <!-- Recompute standby using monthly MGQ (target) first, then daily/adjusted fallbacks -->
+            <t t-set="target_val" t-value="payload.get('monthly_target_qty', 0.0) or payload.get('target_qty', 0.0) or payload.get('adjusted_target_qty', 0.0) or payload.get('monthly_adjusted_qty', 0.0)"/>
+            <t t-set="standby_val" t-value="max(target_val - (prime_val + ngt_qty_val), 0.0)"/>
+            <t t-set="total_invoice_qty" t-value="prime_val + standby_val + ngt_qty_val"/>
+            <t t-set="net_effort_hours" t-value="payload.get('ngt_hours', 0.0)"/>
 
-            <t t-if="payload.get('show_cooling_totals') or payload.get('show_normal_totals')">
-              <div class="gor-two-col gor-two-col--metrics">
-                <t t-if="payload.get('show_cooling_totals')">
-                  <div class="gor-two-col__col">
-                    <h5>Cooling Windows</h5>
-                    <table class="gor-metric-table gor-inline-table">
-                      <tbody>
-                        <tr>
-                          <th>Prorated MGQ</th>
-                          <td>
-                            <t t-esc="payload.get('cooling_totals', {}).get('target_qty', 0.0)"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th>Prime Output (m^3)</th>
-                          <td>
-                            <t t-esc="payload.get('cooling_totals', {}).get('prime_output_qty', 0.0)"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th>NGT Billed (m^3)</th>
-                          <td>
-                            <t t-esc="payload.get('cooling_totals', {}).get('ngt_m3', 0.0)"/>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </t>
-                <t t-if="payload.get('show_normal_totals')">
-                  <div class="gor-two-col__col">
-                    <h5>Normal Windows</h5>
-                    <table class="gor-metric-table gor-inline-table">
-                      <tbody>
-                        <tr>
-                          <th>Daily MGQ</th>
-                          <td>
-                            <t t-esc="payload.get('normal_totals', {}).get('target_qty', 0.0)"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th>Prime Output (m^3)</th>
-                          <td>
-                            <t t-esc="payload.get('normal_totals', {}).get('prime_output_qty', 0.0)"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th>Standby (m^3)</th>
-                          <td>
-                            <t t-esc="payload.get('normal_totals', {}).get('standby_qty', 0.0)"/>
-                          </td>
-                        </tr>
-                        <tr>
-                          <th>NGT from Approvals (m^3)</th>
-                          <td>
-                            <t t-esc="payload.get('normal_totals', {}).get('ngt_m3', 0.0)"/>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </t>
+            <div style="margin:12px 0;border:1px solid #0b5394;border-radius:8px;padding:10px;background:#f6f8fc;">
+              <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">
+                PRODUCTION OVERVIEW - BASIS INFORMATION (<t t-esc="payload.get('month_label')"/>)
+              </div>
+              <table class="gor-full-table" style="font-size:11px;">
+                <thead style="display: table-header-group;background:#9c3e0f;color:#fff;">
+                  <tr>
+                    <th style="width:6%;">Sr. No.</th>
+                    <th style="width:32%;">Variables</th>
+                    <th style="width:22%;">Calculation</th>
+                    <th style="width:20%;">Quantity (m³) / Value</th>
+                    <th style="width:20%;">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>1</td><td class="gor-text-left">Inventory Mode</td><td>Input</td><td class="gor-text-left"><t t-esc="payload.get('inventory_mode') or 'N/A'"/></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>2</td><td class="gor-text-left">Real Warehouse</td><td>Input</td><td class="gor-text-left"><t t-esc="payload.get('real_warehouse') or 'N/A'"/></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>3</td><td class="gor-text-left">Net Effort Window</td><td>Time Delta Assessment</td><td><t t-esc="net_effort_hours"/></td><td class="gor-text-left">Active production window</td></tr>
+                  <tr><td>4</td><td class="gor-text-left">NGT Hours</td><td>Captured</td><td><t t-esc="net_effort_hours"/></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>5</td><td class="gor-text-left">Attendance Present</td><td>Count</td><td class="gor-text-left"><t t-esc="payload.get('attendance_present', 0)"/></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>6</td><td class="gor-text-left">Attendance Total Hours</td><td>Hours</td><td class="gor-text-left"><t t-esc="('%.2f' % (payload.get('attendance_hours_total', 0.0) or 0.0)).rstrip('0').rstrip('.')"/></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>7</td><td class="gor-text-left">AbhiTak MGQ Target</td><td>Input</td><td><t t-esc="payload.get('monthly_target_qty', 0.0)"/></td><td class="gor-text-left">Final MGQ Target</td></tr>
+                  <tr><td>8</td><td class="gor-text-left">AbhiTak Adjusted MGQ</td><td>Adjustment</td><td><t t-esc="payload.get('monthly_adjusted_qty', 0.0)"/></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>9</td><td class="gor-text-left"><strong>AbhiTak Prime Output (m³)</strong></td><td><strong>As per production log</strong></td><td><strong><t t-esc="prime_val"/></strong></td><td class="gor-text-left">-</td></tr>
+                  <tr><td>10</td><td class="gor-text-left">AbhiTak Optimized Standby (m³)</td><td>MGQ - (Prime Output + NGT)</td><td><t t-esc="standby_val"/></td><td class="gor-text-left">Standby balancing</td></tr>
+                  <tr><td>11</td><td class="gor-text-left">AbhiTak NGT Relief (m³)</td><td>NGT Hours × Rate</td><td><t t-esc="ngt_qty_val"/></td><td class="gor-text-left">Billing quantity</td></tr>
+                  <tr><td>12</td><td class="gor-text-left">Total Invoice Quantity</td><td>Prime + NGT + Standby</td><td><t t-esc="total_invoice_qty"/></td><td class="gor-text-left">Billing quantity</td></tr>
+                </tbody>
+              </table>
+              <div style="margin-top:6px;font-size:10px;">
+                <div><strong>Materials Shortage:</strong> <t t-esc="payload.get('materials_shortage') or 'N/A'"/></div>
+                <div><strong>Manpower:</strong> <t t-esc="payload.get('manpower_notes') or 'N/A'"/></div>
+                <div><strong>Assets:</strong> <t t-esc="payload.get('asset_notes') or 'N/A'"/></div>
+              </div>
+            </div>
+
+            <t t-if="payload.get('manual_operations')">
+              <div style="margin:12px 0 14px 0;border:1px solid #0b5394;border-radius:8px;padding:10px;background:#f6f8fc;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">PRIME MANUAL OUTPUT BREAKDOWN</div>
+                <t t-set="manual_ops" t-value="payload.get('manual_operations') or []"/>
+                <t t-set="manual_total" t-value="payload.get('manual_total_qty', 0.0)"/>
+                <t t-set="prime_base" t-value="payload.get('prime_output_qty', 0.0) - manual_total"/>
+                <t t-set="prime_combined" t-value="payload.get('prime_output_qty', 0.0)"/>
+                <table class="gor-full-table" style="font-size:11px;">
+                  <thead style="background:#9c3e0f;color:#fff;display: table-header-group;">
+                    <tr>
+                      <th style="width:8%;">Sr.</th>
+                      <th style="width:50%;">Description</th>
+                      <th style="width:22%;">Quantity (m³)</th>
+                      <th style="width:20%;">Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>1</td>
+                      <td class="gor-text-left">Prime Output (system)</td>
+                      <td><t t-esc="prime_base"/></td>
+                      <td class="gor-text-left">Base production</td>
+                    </tr>
+                    <t t-foreach="[(i + 2, op) for i, op in enumerate(manual_ops)]" t-as="row">
+                      <tr>
+                        <td><t t-esc="row[0]"/></td>
+                        <td class="gor-text-left"><t t-esc="row[1].get('description')"/></td>
+                        <td><t t-esc="row[1].get('quantity', 0.0)"/></td>
+                        <td class="gor-text-left"><t t-esc="row[1].get('remarks')"/></td>
+                      </tr>
+                    </t>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="2" class="gor-text-right">TOTAL PRIME MANUAL</th>
+                      <th><t t-esc="manual_total"/></th>
+                      <th></th>
+                    </tr>
+                    <tr>
+                      <th colspan="2" class="gor-text-right">TOTAL PRIME OUTPUT (incl. manual)</th>
+                      <th><t t-esc="prime_combined"/></th>
+                      <th></th>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             </t>
 
-            <h4 class="mt-4">Wastage Summary</h4>
-            <table class="gor-metric-table gor-metric-table--plain">
-              <tbody>
-                <tr>
-                  <th>Prime Output (m³)</th>
-                  <td><t t-esc="payload.get('prime_output_qty', 0.0)"/></td>
-                </tr>
-                <tr>
-                  <th>Allowed Wastage (m³)</th>
-                  <td><t t-esc="payload.get('allowed_wastage_qty', 0.0)"/></td>
-                </tr>
-                <tr>
-                  <th>Actual Scrap (m³)</th>
-                  <td><t t-esc="payload.get('actual_scrap_qty', 0.0)"/></td>
-                </tr>
-                <tr>
-                  <th>Over Wastage / Deduction (m³)</th>
-                  <td><t t-esc="payload.get('over_wastage_qty', 0.0)"/></td>
-                </tr>
-              </tbody>
-            </table>
+            <t t-if="payload.get('scrap_logs')">
+              <div style="margin:10px 0;border:1px solid #0b5394;border-radius:6px;padding:10px;background:#f6f8fc;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0b5394;">WASTAGE &amp; SCRAP ANNEXURE</div>
+                <t t-set="scrap_refs" t-value="', '.join([log.get('reference') for log in payload.get('scrap_logs') if log.get('reference')])"/>
+                <div style="font-size:11px;margin-bottom:8px;">
+                  <strong>References:</strong> <t t-esc="scrap_refs or '-'"/> |
+                  <strong>Contract / SO:</strong> <t t-esc="payload.get('contract_name') or '-'"/> |
+                  <strong>Status:</strong> <t t-esc="payload.get('status_label') or 'Approved'"/> |
+                  <strong>MGQ (Monthly):</strong> <t t-esc="payload.get('monthly_target_qty', 0.0)"/>
+                </div>
+                <t t-set="scrap_total" t-value="sum(log.get('quantity', 0.0) for log in payload.get('scrap_logs'))"/>
+                <table class="gor-full-table" style="margin-bottom:10px;font-size:11px;">
+                  <thead style="display: table-header-group;background:#9c3e0f;color:#fff;">
+                    <tr>
+                      <th style="width:6%;">Sr.</th>
+                      <th class="gor-text-left" style="width:22%;">Date</th>
+                      <th class="gor-text-left" style="width:28%;">Reference</th>
+                      <th class="gor-text-left" style="width:24%;">Reason</th>
+                      <th style="width:20%;">Scrap Qty (m³)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <t t-foreach="[(i + 1, log) for i, log in enumerate(payload.get('scrap_logs'))]" t-as="row">
+                      <tr>
+                        <td><t t-esc="row[0]"/></td>
+                        <td class="gor-text-left"><t t-esc="row[1].get('date') or 'N/A'"/></td>
+                        <td class="gor-text-left"><t t-esc="row[1].get('reference') or 'N/A'"/></td>
+                        <td class="gor-text-left"><t t-esc="row[1].get('reason') or '-'"/></td>
+                        <td><t t-esc="row[1].get('quantity', 0.0)"/></td>
+                      </tr>
+                    </t>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="4" class="gor-text-right">TOTAL SCRAP (m³)</th>
+                      <th><t t-esc="scrap_total"/></th>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                <table class="gor-full-table" style="font-size:11px;">
+                  <thead style="background:#9c3e0f;color:#fff;display: table-header-group;">
+                    <tr>
+                      <th style="width:8%;">Sr. No.</th>
+                      <th style="width:52%;">Variables</th>
+                      <th style="width:20%;">Value</th>
+                      <th style="width:20%;">Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>1</td><td class="gor-text-left">Prime Output (m³)</td><td><t t-esc="payload.get('prime_output_qty', 0.0)"/></td><td>-</td></tr>
+                    <tr><td>2</td><td class="gor-text-left">Allowed Wastage (m³)</td><td><t t-esc="payload.get('allowed_wastage_qty', 0.0)"/></td><td>-</td></tr>
+                    <tr><td>3</td><td class="gor-text-left">Actual Scrap (m³)</td><td><t t-esc="payload.get('actual_scrap_qty', 0.0)"/></td><td>-</td></tr>
+                    <tr><td>4</td><td class="gor-text-left">Over Wastage / Deduction (m³)</td><td><t t-esc="payload.get('over_wastage_qty', 0.0)"/></td><td>-</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </t>
+
+            <t t-if="payload.get('loto_requests')">
+              <div style="page-break-inside:avoid;margin-top:12px;border:1px solid #0b5394;border-radius:8px;padding:12px;">
+                <t t-set="loto_list" t-value="payload.get('loto_requests') or []"/>
+                <t t-set="loto_total_hours" t-value="payload.get('loto_total_hours', 0.0) or sum(l.get('hours_total', 0.0) for l in loto_list)"/>
+                <t t-set="loto_chargeable_hours" t-value="payload.get('loto_chargeable_hours', 0.0)"/>
+                <h4 style="margin:0 0 6px 0;color:#0b5394;">LOTO / Breakdown Annexure</h4>
+                <div style="display:flex;flex-wrap:wrap;gap:8px 20px;font-size:11px;margin-bottom:6px;">
+                  <div><strong>References:</strong> <t t-esc="', '.join(l.get('name') or '' for l in loto_list)"/></div>
+                  <div><strong>Contract / SO:</strong> <t t-esc="payload.get('contract_name') or ''"/></div>
+                  <div><strong>Status:</strong> <t t-esc="payload.get('status_label') or 'Approved'"/></div>
+                  <div><strong>MGQ (Monthly):</strong> <t t-esc="payload.get('monthly_target_qty', 0.0)"/></div>
+                </div>
+                <table class="gor-full-table" style="margin-bottom:10px;">
+                  <thead style="display: table-header-group;">
+                    <tr>
+                      <th>Reference</th>
+                      <th>Period</th>
+                      <th>Total Hours</th>
+                      <th>Wave-Off Applied</th>
+                      <th>Chargeable</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <t t-foreach="loto_list" t-as="loto">
+                      <tr>
+                        <td class="gor-text-left"><t t-esc="loto.get('name')"/></td>
+                        <td class="gor-text-left">
+                          <div><t t-esc="loto.get('period_start')"/></div>
+                          <div><t t-esc="loto.get('period_end')"/></div>
+                        </td>
+                        <td><t t-esc="loto.get('hours_total', 0.0)"/></td>
+                        <td><t t-esc="loto.get('hours_waveoff', 0.0)"/></td>
+                        <td><t t-esc="loto.get('hours_chargeable', 0.0)"/></td>
+                        <td class="gor-text-left"><t t-esc="loto.get('reason')"/></td>
+                      </tr>
+                    </t>
+                  </tbody>
+                </table>
+                <table class="gor-full-table" style="font-size:11px;">
+                  <thead style="display: table-header-group;">
+                    <tr>
+                      <th class="gor-text-left">Label</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th class="gor-text-left">Total LOTO Approved Hours</th>
+                      <td><t t-esc="loto_total_hours"/></td>
+                    </tr>
+                    <tr>
+                      <th class="gor-text-left">Wave-Off Allowance</th>
+                      <td><t t-esc="payload.get('waveoff_allowance', 0.0)"/></td>
+                    </tr>
+                    <tr>
+                      <th class="gor-text-left">Wave-Off Applied This Month</th>
+                      <td style="color:#198754;"><t t-esc="payload.get('waveoff_applied', 0.0)"/></td>
+                    </tr>
+                    <tr>
+                      <th class="gor-text-left">Chargeable LOTO Hours</th>
+                      <td style="color:#ba1b1b;"><t t-esc="loto_chargeable_hours"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <t t-set="loto_period_starts" t-value="', '.join([l.get('period_start') or '' for l in loto_list])"/>
+                <t t-set="loto_period_ends" t-value="', '.join([l.get('period_end') or '' for l in loto_list])"/>
+                <div style="margin:8px 0 0 0;padding:8px;border-left:4px solid #0b5394;background:#f3f7fb;font-size:11px;">
+                  <div style="font-weight:600;margin-bottom:4px;">LOTO Period Calculation Details</div>
+                  <div>LOTO Period Hours: <t t-esc="loto_total_hours"/></div>
+                  <div>Time delta window: Start <t t-esc="loto_period_starts"/> | End <t t-esc="loto_period_ends"/></div>
+                  <div>Chargeable LOTO Hours: <t t-esc="loto_chargeable_hours"/></div>
+                  <div>Total Duration (days): <t t-esc="('%.2f' % (loto_chargeable_hours / 24.0)) if loto_chargeable_hours else '0.00'"/></div>
+                </div>
+              </div>
+            </t>
 
             <h4 class="mt-4">Manufacturing Orders</h4>
             <table class="gor-full-table">
@@ -320,7 +341,7 @@
                       <t t-esc="mo.get('reference')"/>
                     </td>
                     <td class="gor-text-center">
-                      <span t-esc="mo.get('is_cooling') and 'Yes' or ''"/>
+                      <span t-esc="mo.get('is_cooling') and 'Yes' or 'N/A'"/>
                     </td>
                     <td>
                       <t t-esc="mo.get('daily_mgq', 0.0)"/>
@@ -356,15 +377,60 @@
                 </t>
               </tbody>
             </table>
+
+            <t t-if="payload.get('include_attendance_annexure') and payload.get('attendance_entries')">
+              <div style="margin:14px 0;border:1px solid #0b5394;border-radius:10px;overflow:hidden;background:#fff;">
+                <div style="background:#fff;color:#0b5394;padding:8px 12px;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:0.3px;border-bottom:1px solid #0b5394;">
+                  Attendance Annexure
+                </div>
+                <table class="gor-full-table" style="margin:0;font-size:11px;background:#fff;">
+                  <thead style="display: table-header-group;background:#9c3e0f;color:#fff;">
+                    <tr>
+                      <th style="width:6%;">Sr.</th>
+                      <th class="gor-text-left" style="width:34%;">Employee</th>
+                      <th class="gor-text-left" style="width:18%;">Check In</th>
+                      <th class="gor-text-left" style="width:18%;">Check Out</th>
+                      <th style="width:12%;">Worked Hours</th>
+                      <th class="gor-text-left" style="width:12%;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <t t-set="total_hours" t-value="0.0"/>
+                    <t t-foreach="payload.get('attendance_entries', [])" t-as="att" t-foreach-index="idx">
+                      <t t-set="total_hours" t-value="total_hours + (att.get('worked_hours', 0.0) or 0.0)"/>
+                      <tr>
+                        <td><t t-esc="(idx or 0) + 1"/></td>
+                        <td class="gor-text-left"><t t-esc="att.get('employee_name')"/></td>
+                        <td class="gor-text-left"><t t-esc="att.get('check_in')"/></td>
+                        <td class="gor-text-left"><t t-esc="att.get('check_out') or '-'"/></td>
+                        <td><t t-esc="att.get('worked_hours', 0.0)"/></td>
+                        <td class="gor-text-left"><t t-esc="att.get('status')"/></td>
+                      </tr>
+                    </t>
+                    <tr style="font-weight:700;background:#eef3fb;border-top:1px solid #c9d6ed;">
+                      <td colspan="6" class="gor-text-left">
+                        Present: <t t-esc="payload.get('attendance_present', 0)"/> |
+                        Total Hours: <t t-esc="('%.2f' % total_hours).rstrip('0').rstrip('.')"/>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </t>
             <h4 class="mt-4">Production Dockets</h4>
             <table class="gor-full-table">
               <thead style="display: table-header-group;">
                 <tr>
                   <th>Docket</th>
                   <th>Batching Time</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Duration (min)</th>
                   <th>Customer</th>
                   <th>Customer Address</th>
                   <th>Quantity (m³)</th>
+                  <th>Manual On Production</th>
+                  <th>Manual After Production</th>
                   <th>TM Number</th>
                   <th>Recipe</th>
                 </tr>
@@ -384,6 +450,15 @@
                       <t t-esc="docket.get('batching_time')"/>
                     </td>
                     <td class="gor-text-left">
+                      <t t-esc="docket.get('start_time') or 'N/A'"/>
+                    </td>
+                    <td class="gor-text-left">
+                      <t t-esc="docket.get('end_time') or 'N/A'"/>
+                    </td>
+                    <td>
+                      <t t-esc="docket.get('duration_minutes', 0.0)"/>
+                    </td>
+                    <td class="gor-text-left">
                       <t t-esc="docket.get('customer_name')"/>
                     </td>
                     <td class="gor-text-left">
@@ -391,6 +466,12 @@
                     </td>
                     <td>
                       <t t-esc="docket.get('quantity_ordered', 0.0)"/>
+                    </td>
+                    <td>
+                      <t t-esc="docket.get('manual_on_qty', 0.0)"/>
+                    </td>
+                    <td>
+                      <t t-esc="docket.get('manual_after_qty', 0.0)"/>
                     </td>
                     <td class="gor-text-left">
                       <t t-esc="docket.get('tm_number')"/>
@@ -402,6 +483,7 @@
                 </t>
               </tbody>
             </table>
+
             <div class="gor-footer-placeholder"/>
             <div class="gor-footer">Daily MO Report</div>
             </div>
