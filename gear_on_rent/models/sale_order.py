@@ -2059,6 +2059,9 @@ class SaleOrder(models.Model):
         if not rate:
             return
         product = self._gear_resolve_tier_product("prime")
+        # Avoid company cross-over when auto-creating lines.
+        if product and product.company_id and product.company_id != self.company_id:
+            return
         label = product.display_name if product else "Prime Output Production"
         self.order_line = [(0, 0, {"product_id": product.id if product else False, "product_uom_qty": prime_qty, "price_unit": rate, "name": label})] + [(1, l.id, {}) for l in self.order_line]
 
