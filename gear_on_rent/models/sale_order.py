@@ -1841,7 +1841,10 @@ class SaleOrder(models.Model):
     def _gear_refresh_prime_rate_log(self):
         payload_map = self._gear_prime_rate_payload_map()
         self._gear_apply_prime_rate_payload_map(payload_map)
-        # If logs refreshed and still no lines, try to auto-fill.
+        # If logs refreshed and still no lines, try to auto-fill (skip during install/upgrade).
+        install_ctx = self.env.context.get("install_mode") or self.env.context.get("module_upgrade")
+        if install_ctx:
+            return
         for order in self.filtered(lambda o: not o.order_line):
             order._gear_autofill_quote_lines()
 
