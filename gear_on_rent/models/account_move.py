@@ -262,7 +262,7 @@ class AccountMove(models.Model):
         manual_total_qty = 0.0
         if month_orders:
             manual_ops = self.env["gear.rmc.manual.operation"].search(
-                [("docket_id.monthly_order_id", "=", month_orders.id)],
+                [("docket_id.monthly_order_id", "=", month_orders.id), ("state", "=", "approved")],
                 order="date asc, id asc",
             )
             for op in manual_ops:

@@ -240,6 +240,7 @@ class PrepareInvoiceFromMrp(models.TransientModel):
                 ("docket_id.monthly_order_id", "=", monthly.id),
                 ("docket_id.date", ">=", period_start),
                 ("docket_id.date", "<=", period_end),
+                ("state", "=", "approved"),
             ]
         )
         manual_on_qty = sum(

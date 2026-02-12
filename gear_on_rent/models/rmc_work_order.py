@@ -530,7 +530,7 @@ class GearRmcMonthlyOrder(models.Model):
                 order.manual_after_qty = 0.0
                 order.prime_with_manual_qty = order.prime_output_qty or 0.0
                 continue
-            ops = ManualOp.search([("docket_id.monthly_order_id", "=", order.id)])
+            ops = ManualOp.search([("docket_id.monthly_order_id", "=", order.id), ("state", "=", "approved")])
             on_qty = sum(ops.filtered(lambda op: op.recipe_display_mode == "on_production").mapped("manual_qty_total"))
             after_qty = sum(
                 ops.filtered(lambda op: op.recipe_display_mode == "after_production").mapped("manual_qty_total")

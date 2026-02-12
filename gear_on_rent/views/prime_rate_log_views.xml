@@ -53,14 +53,34 @@
                         <group string="Optimize Rate Summary">
                             <field name="optimize_rate"/>
                             <field name="after_mgq_rate"/>
+                            <field name="after_mgq_formula_display" nolabel="1" class="text-muted"/>
                         </group>
                     </group>
-                    <group string="Cost Components" colspan="2">
+                    <group string="A" colspan="2">
                         <group string="Running">
                             <field name="running_monthly"/>
                             <field name="running_per_cum"/>
                             <field name="running_source"/>
                         </group>
+                        <group string="Interest"
+                               invisible="interest_monthly == 0.0 and interest_per_cum == 0.0">
+                            <field name="interest_per_cum"/>
+                            <field name="interest_monthly"/>
+                            <field name="interest_source"/>
+                        </group>
+                    </group>
+                    <group string="B"
+                           colspan="2"
+                           invisible="variable_total_per_cum == 0.0">
+                        <group string="Variable Cost">
+                            <field name="variable_power_per_cum" invisible="variable_power_per_cum == 0.0"/>
+                            <field name="variable_diesel_per_cum" invisible="variable_diesel_per_cum == 0.0"/>
+                            <field name="variable_jcb_per_cum" invisible="variable_jcb_per_cum == 0.0"/>
+                            <field name="variable_total_per_cum"/>
+                            <field name="variable_source"/>
+                        </group>
+                    </group>
+                    <group string="C" colspan="2">
                         <group string="Depreciation">
                             <field name="capex_total" string="Component Total"/>
                             <field name="depreciation_monthly"/>
@@ -68,32 +88,43 @@
                             <field name="depreciation_source"/>
                         </group>
                         <group string="Dead Cost"
-                               modifiers='{"invisible": [["dead_total", "=", 0.0], ["dead_per_cum", "=", 0.0]]}'>
+                               invisible="dead_total == 0.0 and dead_per_cum == 0.0">
                             <field name="dead_total"/>
                             <field name="dead_per_cum"/>
                             <field name="dead_source"/>
                         </group>
-                        <group string="Interest"
-                               modifiers='{"invisible": [["interest_monthly", "=", 0.0], ["interest_per_cum", "=", 0.0]]}'>
-                            <field name="interest_per_cum"/>
-                            <field name="interest_monthly"/>
-                            <field name="interest_source"/>
-                        </group>
                     </group>
                     <group string="Optional Services"
-                           modifiers='{"invisible": [["optional_per_cum", "=", 0.0], ["optional_line_ids", "=", false]]}'>
-                        <field name="optional_per_cum"/>
-                        <field name="optional_line_ids" nolabel="1"
-                               options="{'no_create': True, 'no_edit': True, 'no_open': True}">
-                            <list create="0" edit="0">
-                                <field name="name"/>
-                                <field name="rate_value"/>
-                                <field name="quantity"/>
-                                <field name="per_cum"/>
-                                <field name="total_amount"/>
-                                <field name="charge_type"/>
-                            </list>
-                        </field>
+                           invisible="optional_per_cum == 0.0 and not optional_line_ids">
+                        <group col="2" colspan="2">
+                            <group string="Transport Cost">
+                                <field name="transport_rate_value" string="Rate Value" nolabel="0"/>
+                                <field name="transport_qty" string="Qty" nolabel="0"/>
+                                <label for="transport_fixed" class="o_form_label" string="Fixed Transport"/>
+                                <field name="transport_fixed" nolabel="1"/>
+                                <label for="transport_total" class="o_form_label" string="Total Transport"/>
+                                <field name="transport_total" nolabel="1"/>
+                                <field name="transport_per_cum" string="D. Per CUM" nolabel="0"/>
+                                <label for="transport_variable" class="o_form_label" string="E. Variable Diesel"/>
+                                <field name="transport_variable" nolabel="1"/>
+                                <field name="transport_per_cum_total" string="Total Transport (D+E per CUM)" nolabel="0"/>
+                            </group>
+                            <group string="Pumping Cost">
+                                <field name="pumping_rate_value" string="Rate Value" nolabel="0"/>
+                                <field name="pumping_qty" string="Qty" nolabel="0"/>
+                                <label for="pumping_fixed" class="o_form_label" string="Pump Rental"/>
+                                <field name="pumping_fixed" nolabel="1"/>
+                                <label for="pumping_total" class="o_form_label" string="Total Pumping"/>
+                                <field name="pumping_total" nolabel="1"/>
+                                <field name="pumping_per_cum" string="F. Per CUM" nolabel="0"/>
+                                <label for="pumping_variable" class="o_form_label" string="G. Pump Diesel"/>
+                                <field name="pumping_variable" nolabel="1"/>
+                                <field name="pumping_per_cum_total" string="Total Pumping (F+G per CUM)" nolabel="0"/>
+                            </group>
+                        </group>
+                        <group>
+                            <field name="optional_per_cum" string="Optional / CUM"/>
+                        </group>
                     </group>
                 </sheet>
             </form>

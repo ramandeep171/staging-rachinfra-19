@@ -585,7 +585,9 @@ class MrpProduction(models.Model):
                     candidate_date = dt_local.date() if dt_local else False
             if candidate_date:
                 report_date = candidate_date
-        manual_operations = self.env["gear.rmc.manual.operation"].search([("docket_id", "in", docket_records.ids)])
+        manual_operations = self.env["gear.rmc.manual.operation"].search(
+            [("docket_id", "in", docket_records.ids), ("state", "=", "approved")]
+        )
         for op in manual_operations:
             mode = op.recipe_display_mode or "on_production"
             manual_ops_map.setdefault(op.docket_id.id, []).append(

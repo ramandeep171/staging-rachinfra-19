@@ -90,88 +90,199 @@
                             <h2 class="text-center mb-3">Batching Plant Quotation</h2>
 
                            
-                            <h4 class="mb-2">Service Summary</h4>
+                            <h4 class="mb-2">SECTION 1: Customer Inputs &amp; Assumptions</h4>
                             <t t-set="grade_raw" t-value="quotation_context.get('grade') or (order.gear_design_mix_id.grade if order.gear_design_mix_id else False)"/>
                             <t t-set="grade_value" t-value="grade_raw if grade_raw not in ('', '-', None, False) else False"/>
                             <t t-set="area_raw" t-value="quotation_context.get('area_name') or (order.gear_material_area_id.name if order.gear_material_area_id else False)"/>
                             <t t-set="area_value" t-value="area_raw if area_raw not in ('', '-', None, False) else False"/>
                             <t t-set="plant_running_value" t-value="quotation_context.get('plant_running') or order.gear_plant_running or False"/>
                             <t t-set="plant_running_label" t-value="{'power': 'On Power', 'diesel': 'On Diesel'}.get(plant_running_value) or plant_running_value"/>
-                            <ul class="list-unstyled">
-                                <li><strong>Service Type:</strong> <t t-esc="quotation_context.get('service_type') or order.gear_service_type or '-'"/></li>
-                                <li><strong>Plant Capacity:</strong> <t t-esc="quotation_context.get('capacity') or (order.gear_capacity_id.name if order.gear_capacity_id else '-')"/></li>
-                                <li><strong>Inventory Mode:</strong> <t t-esc="quotation_context.get('inventory_mode') or order.x_inventory_mode or '-'"/></li>
-                                <li t-if="plant_running_label"><strong>Plant Running:</strong> <t t-esc="plant_running_label"/></li>
-                                <li t-if="grade_value"><strong>Grade:</strong> <t t-esc="grade_value"/></li>
-                                <li><strong>Project Duration:</strong> <t t-esc="quotation_context.get('project_duration_months') or order.gear_project_duration_months or 0"/> months</li>
-                                <li><strong>Civil Scope:</strong> <t t-esc="quotation_context.get('civil_scope') or order.gear_civil_scope or '-'"/></li>
-                                <li t-if="area_value"><strong>Area:</strong> <t t-esc="area_value"/></li>
-                            </ul>
-
-                            <h4 class="mt-3 mb-2">MGQ Summary</h4>
-                            <table class="table table-sm o_main_table">
-                                <thead>
+                            <t t-set="project_months" t-value="quotation_context.get('project_duration_months') or order.gear_project_duration_months or (order.gear_project_duration_years and order.gear_project_duration_years * 12) or 0"/>
+                            <t t-set="project_years" t-value="order.gear_project_duration_years or (project_months and (project_months/12.0))"/>
+                            <t t-set="mgq_val" t-value="order.mgq_monthly or order.x_monthly_mgq or plant_slabs.get('mgq') or 0.0"/>
+                <t t-set="production_qty" t-value="order.gear_expected_production_qty or order.gear_project_quantity or 0.0"/>
+                <t t-set="inventory_mode_label" t-value="quotation_context.get('inventory_mode') or order.x_inventory_mode or '-'"/>
+                <t t-set="service_type_label" t-value="quotation_context.get('service_type') or order.gear_service_type or '-'"/>
+                <t t-set="capacity_label" t-value="quotation_context.get('capacity') or (order.gear_capacity_id.name if order.gear_capacity_id else '-')"/>
+                <t t-set="prime_rate_value" t-value="final_rates.get('final_prime_rate') or final_rates.get('prime_rate') or plant_slabs.get('prime_rate') or slab_rates.get('prime_rate') or order.gear_prime_rate_final or order.prime_rate or final_rate.get('total_rate_per_cum') or 0.0"/>
+                <t t-set="optimize_rate_value" t-value="final_rates.get('final_optimize_rate') or final_rates.get('optimize_rate') or plant_slabs.get('optimize_rate') or slab_rates.get('optimize_rate') or order.gear_optimize_rate_final or order.optimize_rate or 0.0"/>
+                <t t-set="after_mgq_rate_value" t-value="final_rates.get('final_after_mgq_rate') or final_rates.get('after_mgq_rate') or slab_rates.get('after_mgq_rate') or plant_slabs.get('after_mgq_rate') or order.gear_after_mgq_rate_final or order.excess_rate or 0.0"/>
+                <t t-set="prime_rate_display" t-value="prime_rate_value"/>
+                <t t-set="tm_requirement" t-value="(mgq_val or 0.0) and ((mgq_val or 0.0) / 750.0) or 0.0"/>
+                <t t-set="pumping_option_label" t-value="order.gear_pumping_opt_in and '3-Point Stationary' or '-'"/>
+                        <!-- Optimize: A (fixed) + C (margin) + D (fixed transport) + F (pump rental) -->
+                        <t t-set="optimize_rate_display" t-value="(prime_base_per_cum or 0.0) + (margin_per_cum or 0.0) + (transport_fixed_per_cum or 0.0) + (pump_fixed_per_cum or 0.0)"/>
+                        <!-- After MGQ display should mirror calculator output -->
+                        <t t-set="after_mgq_rate_display" t-value="after_mgq_rate_value"/>
+                            <table class="table table-sm o_main_table" style="width:100%; font-size:12px;">
+                                <thead style="background:#00a7cf;color:#fff;">
                                     <tr>
-                                        <th>Label</th>
-                                        <th>Value</th>
+                                        <th colspan="4" style="font-weight:700;">Customer Inputs &amp; Assumptions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Monthly Guaranteed Quantity (MGQ)</td>
-                                        <td t-esc="formatLang(pdf_data.get('mgq') or plant_slabs.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 0, digits=2)"/>
+                                        <td style="font-weight:600;">Service Type</td>
+                                        <td t-esc="service_type_label or '-'"/>
+                                        <td style="font-weight:600;">Inventory Option</td>
+                                        <td t-esc="inventory_mode_label or '-'"/>
                                     </tr>
                                     <tr>
-                                        <td>Production Expectation</td>
-                                        <td t-esc="formatLang(pdf_data.get('production_expectation') or order.gear_expected_production_qty or 0, digits=2)"/>
+                                        <td style="font-weight:600;">Plant Capacity</td>
+                                        <td t-esc="capacity_label or '-'"/>
+                                        <td style="font-weight:600;">Plant Running</td>
+                                        <td t-esc="plant_running_label or '-'"/>
                                     </tr>
                                     <tr>
-                                        <td>Project Duration</td>
+                                        <td style="font-weight:600;">Project Timeline</td>
                                         <td>
-                                            <t t-if="order.gear_project_duration_months"><t t-esc="order.gear_project_duration_months"/> months</t>
-                                            <t t-elif="project_duration"><t t-esc="project_duration"/> years</t>
-                                            <t t-elif="order.gear_project_duration_years"><t t-esc="order.gear_project_duration_years"/> years</t>
+                                            <t t-if="project_years">
+                                                <t t-esc="project_years"/> Years
+                                            </t>
+                                            <t t-elif="project_months">
+                                                <t t-esc="project_months"/> Months
+                                            </t>
                                             <t t-else="">-</t>
                                         </td>
+                                        <td style="font-weight:600;">Total Quantity</td>
+                                        <td t-esc="formatLang(production_qty, digits=2) if production_qty else '-'"/>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Monthly MGQ</td>
+                                        <td t-esc="formatLang(mgq_val, digits=2) if mgq_val else '-'"/>
+                                        <td style="font-weight:600;">Dead Cost Scope</td>
+                                        <td t-esc="quotation_context.get('civil_scope') or order.gear_civil_scope or '-'"/>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">TM Requirement</td>
+                                        <td t-esc="tm_requirement and formatLang(tm_requirement, digits=2) or '-'"/>
+                                        <td style="font-weight:600;">Univ. MGQ / TM</td>
+                                        <td>750 m³</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Pumping Option</td>
+                                        <td t-esc="pumping_option_label"/>
+                                        <td style="font-weight:600;">Extra Manpower</td>
+                                        <td>Universal</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Grade</td>
+                                        <td t-esc="grade_value or '-'"/>
+                                        <td style="font-weight:600;">Area / Land Scope</td>
+                                        <td t-esc="area_value or '-'"/>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Notes</td>
+                                        <td colspan="3">This quotation is based on the above inputs. Commercials may change with variation in inputs.</td>
                                     </tr>
                                 </tbody>
                             </table>
 
-                            <h4 class="mt-4 mb-2">Plant Cost (MGQ Slabs)</h4>
-                            <table class="table table-sm o_main_table">
-                                <thead>
-                                    <tr>
-                                        <th>Slab</th>
-                                        <th>Rate / CUM</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            Prime
-                                            <div class="text-muted">Actual RMC quantity produced and billed.</div>
-                                            <div class="text-muted">वास्तविक रूप से उत्पादित और बिल की गई RMC मात्रा।</div>
-                                        </td>
-                                        <td t-esc="formatLang(plant_slabs.get('prime_rate') or 0.0, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            Optimize
-                                            <div class="text-muted">Balance MGQ quantity after adjusting prime production.</div>
-                                            <div class="text-muted">प्राइम प्रोडक्शन घटाने के बाद शेष MGQ मात्रा।</div>
-                                        </td>
-                                        <td t-esc="formatLang(plant_slabs.get('optimize_rate') or 0.0, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            After MGQ
-                                            <div class="text-muted">Quantity beyond MGQ charged at variable cost only.</div>
-                                            <div class="text-muted">MGQ से अधिक मात्रा पर केवल वैरिएबल लागत लागू।</div>
-                                        </td>
-                                        <td t-esc="formatLang(plant_slabs.get('after_mgq_rate') or 0.0, currency_obj=currency)"/>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        <!-- Cost component pre-compute for rate display -->
+                        <t t-set="prime_log" t-value="final_rates.get('prime_rate_log') or {}"/>
+                        <t t-set="components" t-value="prime_log.get('components') or {}"/>
+                        <t t-set="running_comp" t-value="components.get('running', {})"/>
+                        <t t-set="depr_comp" t-value="components.get('depreciation', {})"/>
+                        <t t-set="interest_comp" t-value="components.get('interest', {})"/>
+                        <t t-set="dead_comp" t-value="components.get('dead_cost', {})"/>
+                        <t t-set="depr_component_total" t-value="capex_breakdown.get('total_amount') or ((depr_comp.get('monthly_total') or 0.0) * (depr_comp.get('project_months') or 0.0))"/>
+                        <t t-set="running_per_cum" t-value="running_comp.get('per_cum') or 0.0"/>
+                        <t t-set="depr_per_cum" t-value="depr_comp.get('per_cum') or 0.0"/>
+                        <t t-set="dead_per_cum" t-value="dead_comp.get('per_cum') or dead_cost_context.get('per_cum') or 0.0"/>
+                        <t t-set="interest_per_cum" t-value="interest_comp.get('per_cum') or 0.0"/>
+                        <t t-set="running_monthly" t-value="running_comp.get('monthly_total') or 0.0"/>
+                        <t t-set="depr_monthly" t-value="depr_comp.get('monthly_total') or 0.0"/>
+                        <t t-set="dead_total" t-value="dead_comp.get('total') or dead_cost_context.get('total') or 0.0"/>
+                        <t t-set="interest_monthly" t-value="interest_comp.get('monthly_total') or 0.0"/>
+                        <t t-set="mgq_value" t-value="plant_slabs.get('mgq') or final_rates.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 0.0"/>
+                        <t t-set="margin_per_cum" t-value="components.get('margin', {}).get('per_cum') or 0.0"/>
+                        <t t-set="margin_monthly" t-value="margin_per_cum * (mgq_value or 0.0)"/>
+                        <t t-set="prime_base_monthly" t-value="running_monthly + depr_monthly + dead_total"/>
+                        <t t-set="prime_base_per_cum" t-value="(running_per_cum or 0.0) + (depr_per_cum or 0.0) + (dead_per_cum or 0.0)"/>
+                        <!-- Use Raw Prime Rate (base fixed cost) for A. Fixed Cost -->
+                        <t t-set="prime_rate_val" t-value="prime_log.get('raw_prime_rate') or prime_log.get('prime_rate') or 0.0"/>
+                        <t t-set="prime_output_monthly" t-value="prime_base_monthly + margin_monthly"/>
+                        <t t-set="prime_output_per_cum" t-value="prime_base_per_cum + margin_per_cum"/>
+                        <t t-set="optimize_rate_display" t-value="(prime_base_per_cum or 0.0) + (margin_per_cum or 0.0) + (transport_fixed_per_cum or 0.0) + (pump_fixed_per_cum or 0.0)"/>
+                        <t t-set="variable_cost_rec" t-value="env['gear.variable.cost.master'].sudo().search([('company_id','=', order.company_id.id), ('active','=', True)], limit=1)"/>
+                        <t t-set="variable_power_per_cum" t-value="variable_cost_rec.power_monthly or 0.0"/>
+                        <t t-set="variable_diesel_per_cum" t-value="variable_cost_rec.diesel_monthly or 0.0"/>
+                        <t t-set="variable_jcb_per_cum" t-value="variable_cost_rec.jcb_diesel_per_cum or 0.0"/>
+                        <t t-set="variable_selected" t-value="variable_power_per_cum if (plant_running_value == 'power') else (variable_diesel_per_cum if (plant_running_value == 'diesel') else 0.0)"/>
+                        <t t-set="variable_cost_per_cum" t-value="(variable_selected or 0.0) + (variable_jcb_per_cum or 0.0)"/>
+                        <t t-set="material_per_cum" t-value="(final_rates.get('material_per_cum') or final_rate.get('material_cost') or 0.0) + (variable_cost_per_cum or 0.0)"/>
+                        <t t-set="optional_cost_per_cum" t-value="final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0"/>
+                        <t t-set="running_divisor" t-value="mgq_value or 1.0"/>
+                        <t t-set="show_cost_breakdown" t-value="quotation_context.get('show_cost_breakdown') if 'show_cost_breakdown' in quotation_context else order.gear_show_cost_breakdown"/>
+                        <t t-set="running_power_monthly" t-value="running_map.get('power') or 0.0"/>
+                        <t t-set="running_power_per_cum" t-value="running_power_monthly / running_divisor if running_power_monthly else 0.0"/>
+                        <t t-set="running_dg_monthly" t-value="running_map.get('dg') or 0.0"/>
+                        <t t-set="running_dg_per_cum" t-value="running_dg_monthly / running_divisor if running_dg_monthly else 0.0"/>
+                        <t t-set="running_diesel_monthly" t-value="running_map.get('diesel') or 0.0"/>
+                        <t t-set="running_diesel_per_cum" t-value="running_diesel_monthly / running_divisor if running_diesel_monthly else 0.0"/>
+                        <t t-set="running_admin_monthly" t-value="running_map.get('admin') or 0.0"/>
+                        <t t-set="running_admin_per_cum" t-value="running_admin_monthly / running_divisor if running_admin_monthly else 0.0"/>
+                        <t t-set="running_interest_monthly" t-value="running_map.get('interest') or 0.0"/>
+                        <t t-set="running_interest_per_cum" t-value="running_interest_monthly / running_divisor if running_interest_monthly else 0.0"/>
+                        <t t-set="running_land_monthly" t-value="running_map.get('land_investment') or 0.0"/>
+                        <t t-set="running_land_per_cum" t-value="running_land_monthly / running_divisor if running_land_monthly else 0.0"/>
+                        <t t-set="transport_line" t-value="([opt for opt in optional_services if opt.get('code') == 'transport'] or [{}])[0]"/>
+                        <t t-set="pump_line" t-value="([opt for opt in optional_services if opt.get('code') == 'pump'] or [{}])[0]"/>
+                        <t t-set="transport_per_cum" t-value="transport_line.get('per_cum') or 0.0"/>
+                        <t t-set="transport_diesel_per_cum" t-value="transport_line.get('diesel_per_cum') or 0.0"/>
+                        <!-- D: Fixed Transport should show full transport_per_cum -->
+                        <t t-set="transport_fixed_per_cum" t-value="transport_per_cum"/>
+                        <t t-set="pump_per_cum" t-value="pump_line.get('per_cum') or 0.0"/>
+                        <t t-set="pump_diesel_per_cum" t-value="pump_line.get('diesel_per_cum') or 0.0"/>
+                        <t t-set="pump_per_cum_total" t-value="(pump_per_cum or 0.0) + (pump_diesel_per_cum or 0.0)"/>
+                        <!-- Pump rental (F) should use the full pump_per_cum, not net of diesel. -->
+                        <t t-set="pump_fixed_per_cum" t-value="pump_per_cum"/>
+                        <!-- Optimize: A (fixed) + C (margin) + D (fixed transport) + F (pump rental) -->
+                        <t t-set="optimize_rate_display" t-value="(prime_base_per_cum or 0.0) + (margin_per_cum or 0.0) + (transport_fixed_per_cum or 0.0) + (pump_fixed_per_cum or 0.0)"/>
+                        <t t-set="after_mgq_rate_display" t-value="after_mgq_rate_value"/>
+
+                            <h4 class="mt-4 mb-2" style="text-transform:uppercase;font-weight:700;">Section 2: MGQ-Based Commercial Rates</h4>
+                            <div class="row" style="margin-bottom:10px;">
+                                <div class="col-4">
+                                    <div style="border:1px solid #00a7cf;border-top:4px solid #00a7cf;padding:10px 12px;border-radius:2px;">
+                                        <div style="font-weight:700;font-size:13px;color:#00a7cf;">1) Prime / Final Rate</div>
+                                        <div style="font-weight:800;font-size:22px;color:#00a7cf;line-height:1.1;">
+                                            <t t-esc="formatLang(prime_rate_display or 0.0, currency_obj=currency)"/> <span style="font-size:13px;">/m³</span>
+                                        </div>
+                                        <div style="font-size:12px;margin-top:4px;">(A+B+C) + (D+E) + (F+G)</div>
+                                        <div style="font-size:11px;color:#666;">Standard Production Rate</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="border:1px solid #00a7cf;border-top:4px solid #00a7cf;padding:10px 12px;border-radius:2px;">
+                                        <div style="font-weight:700;font-size:13px;color:#00a7cf;">2) Optimize Rate</div>
+                                        <div style="font-weight:800;font-size:22px;color:#00a7cf;line-height:1.1;">
+                                            <t t-esc="formatLang(optimize_rate_display or 0.0, currency_obj=currency)"/> <span style="font-size:13px;">/m³</span>
+                                        </div>
+                                        <div style="font-size:12px;margin-top:4px;">(A+C) + D + F</div>
+                                        <div style="font-size:11px;color:#666;">For MGQ Shortfall (No Variable Costs)</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="border:1px solid #00a7cf;border-top:4px solid #00a7cf;padding:10px 12px;border-radius:2px;">
+                                        <div style="font-weight:700;font-size:13px;color:#00a7cf;">3) After MGQ Rate</div>
+                                        <div style="font-weight:800;font-size:22px;color:#00a7cf;line-height:1.1;">
+                                            <t t-esc="formatLang(after_mgq_rate_display or 0.0, currency_obj=currency)"/> <span style="font-size:13px;">/m³</span>
+                                        </div>
+                                        <div style="font-size:12px;margin-top:4px;">(B+Mgn) + E + (F+G)</div>
+                                        <div style="font-size:11px;color:#666;">Beyond MGQ Production</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="border:1px solid #d0d7de;background:#f9fbfc;padding:10px 12px;border-radius:3px;margin-bottom:16px;">
+                                <div style="font-weight:700;font-size:12px;margin-bottom:4px;">Production Flow Logic:</div>
+                                <ul style="padding-left:16px;margin:0;font-size:12px;list-style:disc;">
+                                    <li>Actual Production → <strong>Prime Rate</strong> (<t t-esc="formatLang(prime_rate_display or 0.0, currency_obj=currency)"/>)</li>
+                                    <li>Shortfall till MGQ → <strong>Optimize Rate</strong> (<t t-esc="formatLang(optimize_rate_display or 0.0, currency_obj=currency)"/>)</li>
+                                    <li>Excess beyond MGQ → <strong>After MGQ Rate</strong> (<t t-esc="formatLang(after_mgq_rate_display or 0.0, currency_obj=currency)"/>)</li>
+                                </ul>
+                            </div>
+
 
                         <section class="mt-4" t-if="(quotation_context.get('inventory_mode') or order.x_inventory_mode) == 'with_inventory'">
                             <h3>Material Cost</h3>
@@ -254,6 +365,7 @@
                         <t t-set="prime_base_per_cum" t-value="(running_per_cum or 0.0) + (depr_per_cum or 0.0) + (dead_per_cum or 0.0)"/>
                         <t t-set="prime_output_monthly" t-value="prime_base_monthly + margin_monthly"/>
                         <t t-set="prime_output_per_cum" t-value="prime_base_per_cum + margin_per_cum"/>
+                        <t t-set="material_per_cum" t-value="final_rates.get('material_per_cum') or final_rate.get('material_cost') or 0.0"/>
                         <t t-set="optional_cost_per_cum" t-value="final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0"/>
                         <t t-set="running_divisor" t-value="mgq_value or 1.0"/>
                         <t t-set="show_cost_breakdown" t-value="quotation_context.get('show_cost_breakdown') if 'show_cost_breakdown' in quotation_context else order.gear_show_cost_breakdown"/>
@@ -269,115 +381,302 @@
                         <t t-set="running_interest_per_cum" t-value="running_interest_monthly / running_divisor if running_interest_monthly else 0.0"/>
                         <t t-set="running_land_monthly" t-value="running_map.get('land_investment') or 0.0"/>
                         <t t-set="running_land_per_cum" t-value="running_land_monthly / running_divisor if running_land_monthly else 0.0"/>
+                        <t t-set="transport_line" t-value="([opt for opt in optional_services if opt.get('code') == 'transport'] or [{}])[0]"/>
+                        <t t-set="pump_line" t-value="([opt for opt in optional_services if opt.get('code') == 'pump'] or [{}])[0]"/>
+                        <t t-set="transport_per_cum" t-value="transport_line.get('per_cum') or 0.0"/>
+                        <t t-set="transport_diesel_per_cum" t-value="transport_line.get('diesel_per_cum') or 0.0"/>
+                        <t t-set="transport_fixed_per_cum" t-value="transport_per_cum"/>
+                        <t t-set="pump_per_cum" t-value="pump_line.get('per_cum') or 0.0"/>
+                        <t t-set="pump_diesel_per_cum" t-value="pump_line.get('diesel_per_cum') or 0.0"/>
+                        <!-- F: Pump Rental should show full pump_per_cum -->
+                        <t t-set="pump_fixed_per_cum" t-value="pump_per_cum"/>
+
+                        <!-- ensure pump visibility flag is available downstream -->
+                        <t t-set="show_pump" t-value="order.gear_pumping_opt_in"/>
 
                         <section class="mt-4">
-                            <h3>Prime Rate</h3>
-                            <table class="table table-sm o_main_table">
+                            <h4 style="text-transform:uppercase;font-weight:800;margin-bottom:8px;">Section 4: Detailed Cost Breakdown</h4>
+                            <div class="row" style="font-size:12px; color:#333;">
+                                <div class="col-4">
+                                    <div style="border-bottom:2px solid #0094c7;font-weight:700;color:#0094c7;margin-bottom:6px;">Mixing Cost</div>
+                                    <div class="d-flex justify-content-between"><span>A. Fixed Cost</span><span t-esc="formatLang(prime_rate_val, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between"><span>B. Variable Cost</span><span t-esc="formatLang(variable_cost_per_cum, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between"><span>C. Recovery / Margin</span><span t-esc="formatLang(margin_per_cum, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between" style="font-weight:700;margin-top:4px;">
+                                        <span>Total Base (A+B+C)</span>
+                                        <span t-esc="formatLang((prime_base_per_cum or 0.0) + (variable_cost_per_cum or 0.0) + (margin_per_cum or 0.0), currency_obj=currency)"/>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div style="border-bottom:2px solid #0094c7;font-weight:700;color:#0094c7;margin-bottom:6px;">Transport Cost</div>
+                                    <div class="d-flex justify-content-between"><span>D. Fixed Transport</span><span t-esc="formatLang(transport_fixed_per_cum, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between"><span>E. Variable Diesel</span><span t-esc="formatLang(transport_diesel_per_cum, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between" style="font-weight:700;margin-top:4px;">
+                                        <span>Total Transport (D+E)</span>
+                                        <span t-esc="formatLang((transport_fixed_per_cum or 0.0) + (transport_diesel_per_cum or 0.0), currency_obj=currency)"/>
+                                    </div>
+                                </div>
+                                <div class="col-4" t-if="show_pump">
+                                    <div style="border-bottom:2px solid #0094c7;font-weight:700;color:#0094c7;margin-bottom:6px;">Pumping Cost</div>
+                                    <div class="d-flex justify-content-between"><span>F. Pump Rental</span><span t-esc="formatLang(pump_fixed_per_cum, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between"><span>G. Pump Diesel</span><span t-esc="formatLang(pump_diesel_per_cum, currency_obj=currency)"/></div>
+                                    <div class="d-flex justify-content-between" style="font-weight:700;margin-top:4px;">
+                                        <span>Total Pumping (F+G)</span>
+                                        <span t-esc="formatLang((pump_fixed_per_cum or 0.0) + (pump_diesel_per_cum or 0.0), currency_obj=currency)"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div t-if="show_pump" style="background:#fff6da;border:1px solid #f0d9a8;border-radius:3px;padding:8px 10px;margin-top:12px;font-size:11px;">
+                                <strong>Note on Pumping:</strong> Pump diesel cost (G) applies only when pumping is carried out.<br/>
+                                <strong>MGQ Scope:</strong> MGQ logic applies to Mixing and Transport only. Pumping charges are independent.
+                            </div>
+                        </section>
+
+                        <section class="mt-5" style="background:#ffffff;padding:14px 12px;border-radius:12px;border:1px solid #e6eaef;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                            <h3 class="text-center" style="color:#0094c7;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">Project Pricing Model</h3>
+                            <div class="text-center" style="font-size:14px;font-weight:800;color:#4b5563;margin-bottom:12px;text-transform:uppercase;">1. Standard Production Scenario</div>
+
+                            <div class="d-flex justify-content-center">
+                                <div style="position:relative;border:2px solid #0a9dd0;border-radius:10px;padding:18px 18px;min-width:240px;max-width:300px;box-shadow:0 2px 8px rgba(0,0,0,0.10);background:linear-gradient(180deg,#ffffff 0%,#f5fbff 100%);">
+                                    <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:15px;color:#0a9dd0;">&#9650;</div>
+                                    <div style="text-align:center;font-size:24px;color:#0a9dd0;margin-bottom:6px;display:flex;justify-content:center;gap:12px;">
+                                        <i class="fa fa-industry" aria-hidden="true" style="color:#f59e0b;font-size:28px;"></i>
+                                        <i class="fa fa-truck" aria-hidden="true" style="color:#0ea5e9;font-size:28px;"></i>
+                                        <i class="fa fa-tint" aria-hidden="true" style="color:#db2777;font-size:28px;"></i>
+                                    </div>
+                                    <div style="font-size:12px;font-weight:800;color:#4b5563;text-transform:uppercase;letter-spacing:0.2px;">Prime Rate (Actual Production)</div>
+                                    <div style="font-size:34px;font-weight:800;color:#0094c7;line-height:1.1;margin:10px 0 12px 0;">
+                                        <t t-esc="formatLang(prime_rate_display or 0.0, currency_obj=currency)"/>
+                                    </div>
+                                    <div class="d-flex justify-content-center" style="font-weight:700;margin-top:6px;">
+                                        <span style="background:#f15b2a;color:#fff;padding:6px 11px;border-radius:4px;min-width:92px;display:inline-block;text-align:center;margin-right:6px;">Mix (A+B+C)</span>
+                                        <span style="background:#0077d9;color:#fff;padding:6px 11px;border-radius:4px;min-width:92px;display:inline-block;text-align:center;margin-right:6px;">Trans (D+E)</span>
+                                        <span style="background:#2d9b4e;color:#fff;padding:6px 11px;border-radius:4px;min-width:92px;display:inline-block;text-align:center;">Pump (F+G)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-center" style="margin:12px 0 10px 0;">
+                                <div style="width:24px;height:24px;border-radius:3px;background:#d3d8de;color:#5b6470;font-size:14px;line-height:24px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.05);">&#8681;</div>
+                            </div>
+
+                            <div class="d-flex justify-content-center flex-wrap" style="gap:18px;font-size:12px;color:#333;margin-top:8px;">
+                                <div style="border:1px solid #cfd4db;border-radius:10px;padding:14px;min-width:240px;max-width:270px;box-shadow:0 1px 6px rgba(0,0,0,0.05);background:#fff;margin:0 12px;">
+                                    <div style="text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;color:#4b5563;position:relative;">
+                                        <span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:12px;color:#c0c3c9;">&#9650;</span>
+                                        <span style="color:#f59e0b;margin-right:6px;">
+                                            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                                        </span>
+                                        2. If MGQ Not Met (Shortfall)
+                                    </div>
+                                    <div style="text-align:center;font-size:12px;font-weight:800;color:#d97706;margin-top:6px;">Optimize Rate (Penalty)</div>
+                                    <div style="text-align:center;font-size:26px;font-weight:800;color:#d97706;line-height:1.1;margin:8px 0 10px 0;">
+                                        <t t-esc="formatLang(optimize_rate_display or 0.0, currency_obj=currency)"/>
+                                    </div>
+                                    <div class="d-flex justify-content-center" style="font-weight:700;margin-bottom:10px;">
+                                        <span style="background:#f15b2a;color:#fff;padding:6px 10px;border-radius:4px;min-width:82px;display:inline-block;text-align:center;margin-right:6px;">Mix (A+C)</span>
+                                        <span style="background:#0077d9;color:#fff;padding:6px 10px;border-radius:4px;min-width:82px;display:inline-block;text-align:center;margin-right:6px;">Trans (D)</span>
+                                        <span style="background:#2d9b4e;color:#fff;padding:6px 10px;border-radius:4px;min-width:82px;display:inline-block;text-align:center;">Pump (F Only)</span>
+                                    </div>
+                                    <div class="text-muted text-center" style="font-size:11px;">No Variable Costs Charged</div>
+                                </div>
+
+                                <div style="border:1px solid #cfd4db;border-radius:10px;padding:14px;min-width:240px;max-width:270px;box-shadow:0 1px 6px rgba(0,0,0,0.05);background:#fff;margin:0 12px;">
+                                    <div style="text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;color:#4b5563;position:relative;">
+                                        <span style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:12px;color:#c0c3c9;">&#9650;</span>
+                                        <span style="color:#e11d48;margin-right:6px;">
+                                            <i class="fa fa-rocket" aria-hidden="true"></i>
+                                        </span>
+                                        3. Beyond MGQ (Excess)
+                                    </div>
+                                    <div style="text-align:center;font-size:12px;font-weight:800;color:#2563eb;margin-top:6px;">After MGQ Rate (Discounted)</div>
+                                    <div style="text-align:center;font-size:26px;font-weight:800;color:#2563eb;line-height:1.1;margin:8px 0 10px 0;">
+                                        <t t-esc="formatLang(after_mgq_rate_display or 0.0, currency_obj=currency)"/>
+                                    </div>
+                                    <div class="d-flex justify-content-center" style="font-weight:700;margin-bottom:10px;">
+                                        <span style="background:#f15b2a;color:#fff;padding:6px 10px;border-radius:4px;min-width:82px;display:inline-block;text-align:center;margin-right:6px;">Mix (B+Mgn)</span>
+                                        <span style="background:#0077d9;color:#fff;padding:6px 10px;border-radius:4px;min-width:82px;display:inline-block;text-align:center;margin-right:6px;">Trans (E)</span>
+                                        <span style="background:#2d9b4e;color:#fff;padding:6px 10px;border-radius:4px;min-width:82px;display:inline-block;text-align:center;">Pump (F+G)</span>
+                                    </div>
+                                    <div class="text-muted text-center" style="font-size:11px;">Fixed Costs Already Recovered</div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-3" style="font-size:11px;color:#5f6775;font-weight:800;">
+                                <span style="color:#f15b2a;">&#9632; Mixing Cost</span>&#160;&#160;
+                                <span style="color:#0077d9;">&#9632; Transport Cost</span>&#160;&#160;
+                                <span style="color:#2d9b4e;">&#9632; Pumping Cost</span>
+                            </div>
+                        </section>
+
+                        <!-- Understanding the Commercial Model -->
+                        <section class="mt-4" style="border:1px solid #e4edf5;border-radius:12px;padding:12px 14px;box-shadow:0 1px 6px rgba(0,0,0,0.05);background:#fff;">
+                            <div style="display:flex;align-items:center;font-weight:800;font-size:13px;color:#0ea5e9;margin-bottom:8px;padding:6px 10px;border-left:4px solid #0ea5e9;border-radius:6px;background:linear-gradient(90deg,#f7fbff 0%,#ffffff 100%);">
+                                <span style="font-size:16px;margin-right:8px;">&#128161;</span>
+                                Understanding the Commercial Model
+                            </div>
+                            <ul style="list-style:none;margin:0 0 12px 0;padding:0;font-size:12px;color:#2f3844;line-height:1.55;">
+                                <li style="margin-bottom:6px;">
+                                    <span style="color:#22c55e;font-weight:800;margin-right:6px;">&#10003;</span>
+                                    <strong>MGQ Slab Logic</strong> applies exclusively to Mixing + Transport services.
+                                </li>
+                                <li style="margin-bottom:6px;">
+                                    <span style="color:#22c55e;font-weight:800;margin-right:6px;">&#10003;</span>
+                                    <strong>Pumping is a separate service</strong> with distinct rental and execution components.
+                                </li>
+                                <li>
+                                    <span style="color:#22c55e;font-weight:800;margin-right:6px;">&#10003;</span>
+                                    <strong>Pump Rental (F)</strong> applies when reserved; <strong>Pump Diesel (G)</strong> applies only when pumping is actually executed.
+                                </li>
+                            </ul>
+
+                            <div style="display:flex;align-items:center;font-weight:800;font-size:12px;color:#0ea5e9;margin:6px 0 10px 0;">
+                                <span style="font-size:16px;margin-right:6px;">&#128202;</span>
+                                Service Rates - Mixing + Transport (Per m³)
+                            </div>
+                            <table class="table table-sm o_main_table" style="margin-bottom:12px;">
                                 <thead>
-                                    <tr>
-                                        <th>Service</th>
-                                        <th>Monthly</th>
-                                        <th>CUM</th>
+                                    <tr style="background:#0ea5e9;color:#fff;font-weight:800;">
+                                        <th>Service Tier</th>
+                                        <th>Rate</th>
+                                        <th>Applicable To</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody style="font-size:12px;color:#333;">
                                     <tr>
-                                        <td>Running</td>
-                                        <td t-esc="formatLang(running_monthly, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(running_per_cum, currency_obj=currency)"/>
+                                        <td style="font-weight:700;">Prime / Final</td>
+                                        <td t-esc="formatLang(prime_rate_display or 0.0, currency_obj=currency)"/>
+                                        <td>Actual Production Quantity</td>
                                     </tr>
                                     <tr>
-                                        <td>Depreciation</td>
-                                        <td t-esc="formatLang(depr_monthly, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(depr_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr t-if="dead_total or dead_per_cum">
-                                        <td><strong>Dead Cost</strong></td>
-                                        <td t-esc="formatLang(dead_total, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(dead_per_cum, currency_obj=currency)"/>
+                                        <td style="font-weight:700;">Optimize</td>
+                                        <td t-esc="formatLang(optimize_rate_display or 0.0, currency_obj=currency)"/>
+                                        <td>Shortfall to MGQ (If Production &lt; MGQ)</td>
                                     </tr>
                                     <tr>
-                                        <td>Margin</td>
-                                        <td t-esc="formatLang(margin_monthly, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(margin_per_cum, currency_obj=currency)"/>
+                                        <td style="font-weight:700;">After MGQ</td>
+                                        <td t-esc="formatLang(after_mgq_rate_display or 0.0, currency_obj=currency)"/>
+                                        <td>Excess over MGQ (If Production &gt; MGQ)</td>
                                     </tr>
                                 </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td style="font-weight:600;">Prime Output (Base Rate)</td>
-                                        <td style="font-weight:600;" t-esc="formatLang(prime_output_monthly, currency_obj=currency)"/>
-                                        <td style="font-weight:600;" t-esc="formatLang(prime_output_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                </tfoot>
                             </table>
+
+                            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-size:11px;color:#1f2937;margin-top:8px;">
+                                <div style="min-width:170px;max-width:200px;padding:10px 12px;border:1px solid #d7e4f3;border-radius:10px;background:#fafdff;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.7);">
+                                    <div style="font-weight:800;color:#0ea5e9;margin-bottom:2px;">Actual Production</div>
+                                    <div style="font-weight:800;">&#8594; Prime Rate</div>
+                                </div>
+                                <div style="min-width:170px;max-width:200px;padding:10px 12px;border:1px solid #d7e4f3;border-radius:10px;background:#fafdff;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.7);">
+                                    <div style="font-weight:800;color:#d97706;margin-bottom:2px;">Shortfall to MGQ</div>
+                                    <div style="font-weight:800;">&#8594; Optimize Rate</div>
+                                </div>
+                                <div style="min-width:170px;max-width:200px;padding:10px 12px;border:1px solid #d7e4f3;border-radius:10px;background:#fafdff;text-align:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.7);">
+                                    <div style="font-weight:800;color:#2563eb;margin-bottom:2px;">Excess over MGQ</div>
+                                    <div style="font-weight:800;">&#8594; After MGQ Rate</div>
+                                </div>
+                            </div>
                         </section>
 
-                        <section class="mt-4">
-                            <h3>Optional Services</h3>
-                            <t t-set="optional_items" t-value="[opt for opt in (optional_services or []) if (opt.get('per_cum') or opt.get('rate_value') or opt.get('rate') or opt.get('diesel_per_cum') or opt.get('total_amount') or 0.0) != 0]"/>
-                            <t t-if="optional_items">
-                                <table class="table table-sm o_main_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Service</th>
-                                            <th>Rate</th>
-                                            <th>Qty</th>
-                                            <th>Per CUM</th>
-                                            <th>Diesel Per CUM</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr t-foreach="optional_items" t-as="opt">
-                                        <td t-esc="opt.get('name') or opt.get('label') or opt.get('service') or opt.get('code')"/>
-                                        <td t-esc="formatLang(opt.get('rate_value') or opt.get('rate') or 0.0, currency_obj=currency)"/>
-                                        <td t-esc="formatLang(opt.get('quantity') or 0.0, digits=2)"/>
-                                        <td t-esc="formatLang(opt.get('per_cum') or opt.get('total') or 0.0, currency_obj=currency)"/>
-                                        <t t-set="opt_diesel_pc" t-value="opt.get('diesel_per_cum') if opt.get('code') != 'diesel' else 0.0"/>
-                                        <td t-esc="formatLang(opt_diesel_pc or 0.0, currency_obj=currency)"/>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="4" style="text-align:right;font-weight:600;">Optional Cost Total</td>
-                                            <td style="font-weight:600;" t-esc="formatLang(final_rate.get('optional_cost') or pdf_data.get('optional_cost') or 0.0, currency_obj=currency)"/>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </t>
-                            <t t-if="not optional_items">
-                                <p>No optional services selected.</p>
-                            </t>
+                        <!-- Pumping Service - Separate Billing -->
+                        <section t-if="show_pump" class="mt-4" style="border:1px solid #e4edf5;border-radius:10px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.05);background:#fff;">
+                            <div style="display:flex;align-items:center;font-weight:800;font-size:12px;color:#0ea5e9;margin:6px 0 10px 0;">
+                                <span style="font-size:16px;margin-right:6px;">&#128509;</span>
+                                Pumping Service - Stationary (Separate Billing)
+                            </div>
+                            <table class="table table-sm o_main_table" style="margin-bottom:10px;">
+                                <thead>
+                                    <tr style="background:#0ea5e9;color:#fff;font-weight:800;">
+                                        <th>Component</th>
+                                        <th>Rate</th>
+                                        <th>Billing Logic</th>
+                                    </tr>
+                                </thead>
+                                <tbody style="font-size:12px;color:#333;">
+                                    <tr>
+                                        <td style="font-weight:700;">F - Pump Rental / Availability</td>
+                                        <td t-esc="formatLang(pump_fixed_per_cum or pump_per_cum, currency_obj=currency)"/>
+                                        <td>When pump is reserved (fixed rental divided by planned volume)</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:700;">G - Pump Diesel</td>
+                                        <td t-esc="formatLang(pump_diesel_per_cum or 0.0, currency_obj=currency)"/>
+                                        <td>Only when pumping is actually executed</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div style="background:#fff6eb;border:1px solid #f5d7b8;border-radius:6px;padding:10px 12px;font-size:11px;color:#5c4731;">
+                                <strong>Note:</strong> In Optimize quantity, pumping is NOT executed; only rental/availability may apply if pump is reserved.
+                            </div>
                         </section>
 
-                        <section class="mt-3" t-if="optional_items">
-                            <t t-set="diesel_breakdown" t-value="[opt for opt in optional_items if opt.get('code') != 'diesel' and (opt.get('diesel_per_cum') or 0.0)]"/>
-                            <t t-if="diesel_breakdown">
-                                <h4>Diesel Surcharge per CUM</h4>
-                                <p class="text-muted small mb-2">Shows which optional rates were used to build the diesel surcharge.</p>
-                                <table class="table table-sm o_main_table">
-                                    <thead>
-                                        <tr>
-                                            <th>Service</th>
-                                            <th>Qty</th>
-                                            <th>Diesel per CUM</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr t-foreach="diesel_breakdown" t-as="opt">
-                                            <td t-esc="opt.get('name') or opt.get('label') or opt.get('service') or opt.get('code')"/>
-                                            <td t-esc="formatLang(opt.get('quantity') or 0.0, digits=2)"/>
-                                            <td t-esc="formatLang(opt.get('diesel_per_cum') or 0.0, currency_obj=currency)"/>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="2" style="text-align:right;font-weight:600;">Diesel Surcharge Total</td>
-                                            <td style="font-weight:600;" t-esc="formatLang(sum([opt.get('diesel_per_cum') or 0.0 for opt in diesel_breakdown]), currency_obj=currency)"/>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </t>
+
+                        <!-- Service Flow & Billing Logic -->
+                        <section class="mt-4" style="border:1px solid #e4edf5;border-radius:10px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.05);background:#fff;">
+                            <div style="display:flex;align-items:center;font-weight:800;font-size:12px;color:#0ea5e9;margin:6px 0 12px 0;">
+                                <span style="font-size:16px;margin-right:6px;">&#128444;</span>
+                                Service Flow &amp; Billing Logic
+                            </div>
+
+                            <div style="font-weight:800;font-size:12px;color:#374151;margin-bottom:8px;">1. Operational Flow</div>
+                            <t t-set="show_raw" t-value="(quotation_context.get('inventory_mode') or order.x_inventory_mode) == 'with_inventory'"/>
+                            <t t-set="show_pump" t-value="order.gear_pumping_opt_in"/>
+                            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:12px;border:1px dashed #d0d7de;border-radius:10px;background:#f8fbff;margin-bottom:14px;">
+                                <t t-if="show_raw">
+                                    <div style="padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;">Raw Materials<br/>(Client)</div>
+                                    <span style="align-self:center;color:#94a3b8;">&#8594;</span>
+                                </t>
+                                <div style="padding:10px 12px;border-radius:6px;background:#0ea5e9;color:#fff;">Mixing<br/>Service</div>
+                                <span style="align-self:center;color:#94a3b8;">&#8594;</span>
+                                <div style="padding:10px 12px;border-radius:6px;background:#0e84e9;color:#fff;">Transport<br/>Service</div>
+                                <t t-if="show_pump">
+                                    <span style="align-self:center;color:#94a3b8;">&#8594;</span>
+                                    <div style="padding:10px 12px;border-radius:6px;background:#4b5563;color:#fff;">Pumping<br/>Service</div>
+                                </t>
+                                <span style="align-self:center;color:#94a3b8;">&#8594;</span>
+                                <div style="padding:10px 12px;border:1px solid #0ea5e9;border-radius:6px;color:#0ea5e9;">Site<br/>Delivery</div>
+                            </div>
+
+                            <div class="row" style="gap:0;">
+                                <div class="col-6" style="padding-right:8px;">
+                                    <div style="font-weight:800;font-size:12px;color:#374151;margin-bottom:6px;">2. MGQ Decision Logic</div>
+                                    <div style="border:1px solid #e5e7eb;border-radius:10px;background:#f8fbff;padding:12px;font-size:11px;color:#1f2937;line-height:1.5;">
+                                        <div style="font-weight:800;">Is Production &lt; MGQ ?</div>
+                                        <div style="margin-top:6px;"><strong>YES:</strong> Bill (Actual × PRIME) + (Shortfall × OPTIMIZE)</div>
+                                        <div style="margin-top:6px;"><strong>NO (Excess):</strong> Bill (MGQ × PRIME) + (Excess × AFTER MGQ)</div>
+                                    </div>
+                                </div>
+                                <div class="col-6" style="padding-left:8px;">
+                                    <div style="font-weight:800;font-size:12px;color:#374151;margin-bottom:6px;">3. Billing Cycle</div>
+                                    <div style="border:1px solid #e5e7eb;border-radius:10px;background:#f8fbff;padding:12px;font-size:11px;color:#1f2937;line-height:1.6;text-align:center;">
+                                        <div style="padding:6px 8px;border:1px solid #dbe3eb;border-radius:6px;background:#fff;margin-bottom:6px;">Production Data</div>
+                                        <div style="color:#94a3b8;font-size:13px;">&#8595;</div>
+                                        <div style="padding:6px 8px;border:1px solid #dbe3eb;border-radius:6px;background:#fff;margin:6px 0;">MGQ Calculation</div>
+                                        <div style="color:#94a3b8;font-size:13px;">&#8595;</div>
+                                        <div style="padding:6px 8px;border:1px solid #dbe3eb;border-radius:6px;background:#fff;margin-top:6px;">Generate Invoice</div>
+                                    </div>
+                                </div>
+                            </div>
                         </section>
+
+                        <!-- Terms & Conditions Summary -->
+                        <section class="mt-4" style="border-top:1px dashed #d1d5db;padding-top:14px;">
+                            <div style="font-size:18px;font-weight:800;color:#0ea5e9;margin-bottom:10px;">Terms &amp; Conditions Summary</div>
+                            <div class="row" style="font-size:12px;color:#374151;line-height:1.5;">
+                                <div class="col-6">
+                                    <div style="margin-bottom:8px;">📍 <strong>Distance Variation:</strong> Transport diesel component varies with site distance.</div>
+                                    <div style="margin-bottom:8px;">🔧 <strong>Exclusions:</strong> Civil work, power, land/site prep are Client scope.</div>
+                                    <div style="margin-bottom:8px;">💰 <strong>Payment Terms:</strong> As per agreed schedule.</div>
+                                    <div style="margin-bottom:8px;">⏰ <strong>Validity:</strong> 30 days from proposal date.</div>
+                                </div>
+                                <div class="col-6">
+                                    <div style="margin-bottom:8px;">📊 <strong>Cost Breakup:</strong> Detailed breakdown available on request.</div>
+                                    <div style="margin-bottom:8px;">🎯 <strong>Service Level:</strong> Uptime guarantees as per SLA.</div>
+                                    <div style="margin-bottom:8px;">🧾 <strong>GST:</strong> Applicable as per prevailing rates.</div>
+                                    <div style="margin-bottom:8px;">🧩 <strong>Modifications:</strong> Changes in inputs require re-quote.</div>
+                                </div>
+                            </div>
+                        </section>
+
 
                         <section class="mt-4" t-if="(quotation_context.get('civil_scope') or order.gear_civil_scope) == 'vendor'">
                             <h3>Dead Cost / CAPEX</h3>
@@ -425,92 +724,6 @@
                             </p>
                         </section>
 
-                        <section class="mt-4">
-                            <h3>Final Rate per CUM</h3>
-                            <t t-set="mgq_value" t-value="plant_slabs.get('mgq') or final_rates.get('mgq') or order.mgq_monthly or order.x_monthly_mgq or 1.0"/>
-                            <t t-set="optional_breakdown" t-value="components.get('optional', {}).get('services') or []"/>
-                            <t t-set="diesel_optional_per_cum" t-value="sum([(entry.get('per_cum_excluded') or entry.get('per_cum') or 0.0) for entry in optional_breakdown if entry.get('code') == 'diesel'])"/>
-                            <t t-set="diesel_running_per_cum" t-value="(running_map.get('diesel') or 0.0) / (mgq_value or 1.0)"/>
-                            <t t-set="diesel_per_cum_total" t-value="diesel_optional_per_cum + diesel_running_per_cum"/>
-                            <t t-set="margin_per_cum" t-value="components.get('margin', {}).get('per_cum') or 0.0"/>
-                            <t t-set="final_prime_rate_value" t-value="final_rates.get('final_prime_rate') or final_rates.get('total_rate_per_cum') or final_rates.get('prime_rate') or slab_rates.get('prime_rate') or 0.0"/>
-                            <t t-set="optimize_rate_value" t-value="final_rates.get('final_optimize_rate') or final_rates.get('optimize_rate') or slab_rates.get('optimize_rate') or plant_slabs.get('optimize_rate') or 0.0"/>
-                            <t t-set="after_mgq_rate_value" t-value="final_rates.get('final_after_mgq_rate') or final_rates.get('after_mgq_rate') or slab_rates.get('after_mgq_rate') or plant_slabs.get('after_mgq_rate') or 0.0"/>
-                            <table class="table table-sm o_main_table w-100">
-                                <thead>
-                                    <tr>
-                                        <th>Component</th>
-                                        <th>Per CUM</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Prime Output (Base Rate)</td>
-                                        <td t-esc="formatLang(prime_output_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td>Optional Cost Total</td>
-                                        <td t-esc="formatLang(optional_cost_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td style="font-weight:700;">Total Rate</td>
-                                        <td style="font-weight:700;" t-esc="formatLang(final_rate.get('total_rate_per_cum') or final_rate.get('final_rate') or slab_rates.get('total_rate_per_cum') or 0.0, currency_obj=currency)"/>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </section>
-                        <section class="mt-3">
-                            <h3>Optimize Rate</h3>
-                            <table class="table table-sm o_main_table w-100">
-                                <thead>
-                                    <tr>
-                                        <th>Component</th>
-                                        <th>Per CUM</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Diesel (Optional + Running)</td>
-                                        <td t-esc="formatLang(diesel_per_cum_total, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td>Final Rate</td>
-                                        <td t-esc="formatLang(final_prime_rate_value, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Optimize Rate</strong></td>
-                                        <td t-esc="formatLang(optimize_rate_value, currency_obj=currency)"/>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <p class="text-muted small mb-0">Optimize Rate = Final Rate - Diesel (per CUM)</p>
-                        </section>
-                        <section class="mt-3">
-                            <h3>After MGQ Rate</h3>
-                            <table class="table table-sm o_main_table w-100">
-                                <thead>
-                                    <tr>
-                                        <th>Component</th>
-                                        <th>Per CUM</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Diesel (Optional + Running)</td>
-                                        <td t-esc="formatLang(diesel_per_cum_total, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td>Margin / CUM</td>
-                                        <td t-esc="formatLang(margin_per_cum, currency_obj=currency)"/>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Total After MGQ</strong></td>
-                                        <td t-esc="formatLang(after_mgq_rate_value, currency_obj=currency)"/>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <p class="text-muted small mb-0">After MGQ = Diesel + Margin (per CUM)</p>
-                        </section>
 
                         <section class="mt-4" t-if="show_cost_breakdown">
                             <h3>Running Cost Breakdown</h3>

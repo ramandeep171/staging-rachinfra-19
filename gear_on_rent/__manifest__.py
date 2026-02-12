@@ -27,6 +27,7 @@
         "data/product_rmc_data.xml",
         "data/product_batching_data.xml",
         "data/batching_plant_demo_data.xml",
+        "data/cleanup_optional_services.xml",
         "views/gear_on_rent_templates.xml",
         "views/batching_plant_templates.xml",
         "views/batching_plant_portal_templates.xml",

@@ -388,6 +388,7 @@
                 <field name="recipe_id"/>
                 <field name="batching_time"/>
                 <field name="customer_id"/>
+                <field name="state"/>
             </list>
         </field>
     </record>
@@ -413,6 +414,12 @@
         <field name="model">gear.rmc.manual.operation</field>
         <field name="arch" type="xml">
             <form string="Manual Operation">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,to_approve,approved"/>
+                    <button string="Submit" type="object" name="action_submit_for_approval" class="oe_highlight" invisible="[('state','!=','draft')]"/>
+                    <button string="Approve" type="object" name="action_approve" class="btn-primary" invisible="[('state','!=','to_approve')]"/>
+                    <button string="Reset to Draft" type="object" name="action_reset_to_draft" class="btn-secondary" invisible="[('state','not in', ['to_approve','approved'])]"/>
+                </header>
                 <sheet>
                     <group>
                         <field name="docket_id" required="1" string="Docket Number"/>
@@ -443,6 +450,9 @@
                             <field name="customer_id"/>
                             <field name="manual_qty_total" invisible="recipe_display_mode != 'on_production'"/>
                             <field name="manual_qty_total" readonly="1" invisible="recipe_display_mode == 'on_production'"/>
+                            <field name="approval_signature" filename="approval_signature" widget="signature" invisible="[('state','!=','to_approve')]"/>
+                            <field name="approval_signed_by" readonly="1"/>
+                            <field name="approval_signed_on" readonly="1"/>
                         </group>
                     </group>
                     <notebook>

@@ -158,23 +158,6 @@
       <field name="charge_type">per_month</field>
      
     </record>
-    <record id="optional_service_manpower" model="gear.optional.service.master">
-      <field name="name">Manpower per CUM</field>
-      <field name="code">manpower</field>
-      <field name="charge_type">per_month</field>
-      
-    </record>
-    <record id="optional_service_diesel" model="gear.optional.service.master">
-      <field name="name">Diesel surcharge per CUM</field>
-      <field name="code">diesel</field>
-      <field name="charge_type">per_cum</field>
-     
-    </record>
-    <record id="optional_service_jcb" model="gear.optional.service.master">
-      <field name="name">JCB quarterly rental</field>
-      <field name="code">jcb</field>
-      <field name="charge_type">per_month</field>
-    </record>
 
     <!-- Default monthly running cost master so prime-rate math has seed data -->
     <record id="gear_running_cost_master_demo" model="gear.running.cost.master">
@@ -326,22 +309,22 @@
       <field name="excess_rate">430</field>
       <field name="gear_expected_production_qty">2300</field>
       <field name="x_inventory_mode">without_inventory</field>
-      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_pump'), ref('gear_on_rent.optional_service_manpower')])]"/>
+      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_pump')])]"/>
       <field name="gear_transport_opt_in">True</field>
       <field name="gear_pumping_opt_in">True</field>
-      <field name="gear_manpower_opt_in">True</field>
-      <field name="gear_optional_services_cost">330.0</field>
-      <field name="gear_prime_rate_final">720.0</field>
-      <field name="gear_optimize_rate_final">530.0</field>
-      <field name="gear_after_mgq_rate_final">760.0</field>
+      <field name="gear_manpower_opt_in">False</field>
+      <field name="gear_optional_services_cost">250.0</field>
+      <field name="gear_prime_rate_final">640.0</field>
+      <field name="gear_optimize_rate_final">450.0</field>
+      <field name="gear_after_mgq_rate_final">680.0</field>
       <field name="gear_transport_per_cum">100.0</field>
       <field name="gear_pump_per_cum">150.0</field>
-      <field name="gear_manpower_per_cum">80.0</field>
+      <field name="gear_manpower_per_cum">0.0</field>
       <field name="gear_quote_state">sent</field>
       <field name="order_line" model="sale.order.line" eval="[(0, 0, {
         'product_id': obj().env['product.product'].search([('product_tmpl_id', '=', ref('gear_on_rent.product_template_rmc_mixing_dedicated'))], limit=1).id,
         'product_uom_qty': 1.0,
-        'price_unit': 720.0,
+        'price_unit': 640.0,
         'name': 'Prime + Optional Rate Snapshot'
       })]"/>
     </record>
@@ -361,7 +344,7 @@
       <field name="excess_rate">450</field>
       <field name="gear_expected_production_qty">1200</field>
       <field name="x_inventory_mode">without_inventory</field>
-      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_diesel')])]"/>
+      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport')])]"/>
       <field name="gear_transport_opt_in">True</field>
       <field name="gear_diesel_opt_in">True</field>
       <field name="gear_optional_services_cost">160.0</field>
@@ -397,30 +380,30 @@
       <field name="x_real_warehouse_id" ref="stock.warehouse0"/>
       <field name="gear_design_mix_id" ref="gear_on_rent.design_mix_m20"/>
       <field name="gear_material_area_id" ref="gear_on_rent.material_area_gurgaon_south"/>
-      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_pump'), ref('gear_on_rent.optional_service_manpower'), ref('gear_on_rent.optional_service_diesel'), ref('gear_on_rent.optional_service_jcb')])]"/>
+      <field name="gear_optional_service_ids" eval="[(6, 0, [ref('gear_on_rent.optional_service_transport'), ref('gear_on_rent.optional_service_pump')])]"/>
       <field name="gear_transport_opt_in">True</field>
       <field name="gear_pumping_opt_in">True</field>
-      <field name="gear_manpower_opt_in">True</field>
+      <field name="gear_manpower_opt_in">False</field>
       <field name="gear_diesel_opt_in">True</field>
-      <field name="gear_jcb_opt_in">True</field>
+      <field name="gear_jcb_opt_in">False</field>
       <field name="gear_dead_cost_amount">1800000</field>
       <field name="gear_dead_cost_months">36</field>
       <field name="gear_civil_scope">vendor</field>
       <field name="gear_base_plant_rate">370.0</field>
-      <field name="gear_optional_services_cost">404.4</field>
+      <field name="gear_optional_services_cost">310.0</field>
       <field name="gear_dead_cost_per_cum">20.0</field>
       <field name="gear_material_cost_total">3943.0</field>
-      <field name="gear_total_per_cum_rate">4737.4</field>
+      <field name="gear_total_per_cum_rate">4643.0</field>
       <field name="gear_transport_per_cum">100.0</field>
       <field name="gear_pump_per_cum">150.0</field>
-      <field name="gear_manpower_per_cum">80.0</field>
+      <field name="gear_manpower_per_cum">0.0</field>
       <field name="gear_diesel_per_cum">60.0</field>
-      <field name="gear_jcb_monthly">36000.0</field>
+      <field name="gear_jcb_monthly">0.0</field>
       <field name="gear_quote_state">sent</field>
       <field name="order_line" model="sale.order.line" eval="[(0, 0, {
         'product_id': obj().env['product.product'].search([('product_tmpl_id', '=', ref('gear_on_rent.product_template_rmc_supply_turnkey'))], limit=1).id,
         'product_uom_qty': 1.0,
-        'price_unit': 4737.4,
+        'price_unit': 4643.0,
         'name': 'Inventory Mode Total Rate'
       })]"/>
     </record>

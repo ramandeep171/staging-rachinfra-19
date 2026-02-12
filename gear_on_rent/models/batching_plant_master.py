@@ -156,9 +156,6 @@ class GearOptionalServiceMaster(models.Model):
     _PROTECTED_XMLIDS = [
         "gear_on_rent.optional_service_transport",
         "gear_on_rent.optional_service_pump",
-        "gear_on_rent.optional_service_manpower",
-        "gear_on_rent.optional_service_diesel",
-        "gear_on_rent.optional_service_jcb",
     ]
 
     name = fields.Char(required=True)
@@ -235,3 +232,10 @@ class GearOptionalServiceMaster(models.Model):
                 % ", ".join(protected_records.mapped("name"))
             )
         return super().unlink()
+
+    @api.model
+    def _cleanup_removed_services(self, codes=None):
+        """Utility invoked from data files to purge deprecated optional services."""
+
+        codes = codes or []
+        self.sudo().search([("code", "in", codes)]).unlink()

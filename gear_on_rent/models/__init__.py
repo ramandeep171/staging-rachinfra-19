@@ -20,6 +20,7 @@ from . import quotation_pdf
 from . import website_visitor
 from . import cost_component
 from . import cost_masters
+from . import variable_cost_master
 from . import scrap_log
 from . import stock_scrap_ext
 from . import ir_actions_report

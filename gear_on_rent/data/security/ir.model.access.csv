@@ -46,6 +46,9 @@ access_gear_optional_service_master_user,Gear Optional Service Master User,gear_
 access_gear_optional_service_master_manager,Gear Optional Service Master Manager,gear_on_rent.model_gear_optional_service_master,gear_on_rent.group_gear_on_rent_manager,1,1,1,1
 access_gear_running_cost_master_user,Gear Running Cost Master User,gear_on_rent.model_gear_running_cost_master,gear_on_rent.group_gear_on_rent_user,1,0,0,0
 access_gear_running_cost_master_manager,Gear Running Cost Master Manager,gear_on_rent.model_gear_running_cost_master,gear_on_rent.group_gear_on_rent_manager,1,1,1,1
+access_gear_variable_cost_master_user,Gear Variable Cost Master User,gear_on_rent.model_gear_variable_cost_master,gear_on_rent.group_gear_on_rent_user,1,0,0,0
+access_gear_variable_cost_master_manager,Gear Variable Cost Master Manager,gear_on_rent.model_gear_variable_cost_master,gear_on_rent.group_gear_on_rent_manager,1,1,1,1
+access_gear_variable_cost_master_portal,Gear Variable Cost Master Portal,gear_on_rent.model_gear_variable_cost_master,base.group_portal,1,0,0,0
 access_gear_capex_master_user,Gear CAPEX Master User,gear_on_rent.model_gear_capex_master,gear_on_rent.group_gear_on_rent_user,1,0,0,0
 access_gear_capex_master_manager,Gear CAPEX Master Manager,gear_on_rent.model_gear_capex_master,gear_on_rent.group_gear_on_rent_manager,1,1,1,1
 access_gear_dead_cost_master_user,Gear Dead Cost Master User,gear_on_rent.model_gear_dead_cost_master,gear_on_rent.group_gear_on_rent_user,1,0,0,0

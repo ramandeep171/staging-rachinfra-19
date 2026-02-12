@@ -148,11 +148,13 @@
         <field name="model">gear.running.cost.master</field>
         <field name="arch" type="xml">
             <list>
-                <field name="power_monthly"/>
-                <field name="diesel_monthly"/>
                 <field name="admin_monthly"/>
                 <field name="interest_monthly"/>
+                <field name="interest_percent"/>
                 <field name="land_investment"/>
+                <field name="manpower_monthly"/>
+                <field name="maintenance_monthly"/>
+                <field name="jcb_rent_monthly"/>
                 <field name="total_monthly" readonly="1"/>
                 <field name="company_id"/>
                 <field name="active"/>
@@ -167,12 +169,13 @@
             <form string="Running Cost Master">
                 <sheet>
                     <group col="2">
-                        <field name="power_monthly"/>
-                        <field name="diesel_monthly"/>
                         <field name="admin_monthly"/>
                         <field name="interest_monthly"/>
                         <field name="interest_percent"/>
                         <field name="land_investment"/>
+                        <field name="manpower_monthly"/>
+                        <field name="maintenance_monthly"/>
+                        <field name="jcb_rent_monthly"/>
                         <field name="total_monthly" readonly="1"/>
                         <field name="company_id"/>
                         <field name="active"/>
@@ -412,6 +415,60 @@
               parent="menu_gear_on_rent_masters"
               action="action_gear_running_cost_master"
               sequence="8"/>
+
+    <!-- Quick Variable Cost view (subset of running cost) -->
+    <!-- Slim views for Variable Cost (power + diesel only) -->
+    <record id="view_gear_variable_cost_master_list" model="ir.ui.view">
+        <field name="name">gear.variable.cost.master.list</field>
+        <field name="model">gear.variable.cost.master</field>
+        <field name="priority" eval="1"/>
+        <field name="arch" type="xml">
+            <list>
+                <field name="power_monthly"/>
+                <field name="diesel_monthly"/>
+                <field name="jcb_diesel_per_cum"/>
+                <field name="total_monthly" readonly="1"/>
+                <field name="company_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_gear_variable_cost_master_form" model="ir.ui.view">
+        <field name="name">gear.variable.cost.master.form</field>
+        <field name="model">gear.variable.cost.master</field>
+        <field name="priority" eval="1"/>
+        <field name="arch" type="xml">
+            <form string="Variable Cost">
+                <sheet>
+                    <group col="2">
+                        <field name="power_monthly"/>
+                        <field name="diesel_monthly"/>
+                        <field name="jcb_diesel_per_cum"/>
+                    </group>
+                    <group col="2">
+                        <field name="company_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_gear_variable_cost_master" model="ir.actions.act_window">
+        <field name="name">Variable Cost</field>
+        <field name="res_model">gear.variable.cost.master</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_gear_variable_cost_master_list"/>
+        <field name="views" eval="[(ref('view_gear_variable_cost_master_list'), 'list'), (ref('view_gear_variable_cost_master_form'), 'form')]"/>
+        <field name="context">{'default_active': True}</field>
+    </record>
+
+    <menuitem id="menu_gear_variable_cost_master"
+              name="Variable Cost"
+              parent="menu_gear_on_rent_masters"
+              action="action_gear_variable_cost_master"
+              sequence="81"/>
 
     <menuitem id="menu_gear_capex_master"
               name="CAPEX"

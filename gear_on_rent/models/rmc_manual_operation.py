@@ -1,4 +1,5 @@
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 
 class GearRmcManualOperation(models.Model):
@@ -29,6 +30,25 @@ class GearRmcManualOperation(models.Model):
     quantity_ordered = fields.Float(string="Quantity Ordered (m³)", related="docket_id.quantity_ordered", store=True, readonly=True)
     qty_m3 = fields.Float(string="Quantity (m³)", related="docket_id.qty_m3", store=True, readonly=True)
     manual_qty_total = fields.Float(string="Manual Quantity", digits=(16, 3), default=0.0)
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("to_approve", "To Approve"),
+            ("approved", "Approved"),
+        ],
+        string="Status",
+        default="draft",
+        copy=False,
+        tracking=True,
+    )
+    approval_signature = fields.Binary(string="Approval Signature", copy=False)
+    approval_signed_by = fields.Many2one(
+        "res.users",
+        string="Approved By",
+        copy=False,
+        readonly=True,
+    )
+    approval_signed_on = fields.Datetime(string="Approved On", copy=False, readonly=True)
     tm_number = fields.Char(string="TM Number", related="docket_id.tm_number", store=True, readonly=True)
     driver_name = fields.Char(string="Driver Name", related="docket_id.driver_name", store=True, readonly=True)
     operator_user_id = fields.Many2one("res.users", string="Operator User", related="docket_id.operator_user_id", store=True, readonly=True)
@@ -69,6 +89,8 @@ class GearRmcManualOperation(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            vals.setdefault("state", "draft")
         records = super().create(vals_list)
         records._sync_manual_recipe_lines()
         return records
@@ -118,6 +140,33 @@ class GearRmcManualOperation(models.Model):
         for rec in self:
             rec.docket_line_ids = rec.docket_id.docket_line_ids
             rec.docket_batch_ids = rec.docket_id.docket_batch_ids
+
+    def action_submit_for_approval(self):
+        for rec in self:
+            rec.state = "to_approve"
+
+    def action_reset_to_draft(self):
+        for rec in self:
+            rec.write(
+                {
+                    "state": "draft",
+                    "approval_signed_by": False,
+                    "approval_signed_on": False,
+                    "approval_signature": False,
+                }
+            )
+
+    def action_approve(self):
+        for rec in self:
+            if not rec.approval_signature:
+                raise UserError("Capture approval signature before approving.")
+            rec.write(
+                {
+                    "state": "approved",
+                    "approval_signed_by": self.env.user.id,
+                    "approval_signed_on": fields.Datetime.now(),
+                }
+            )
 
 
 class GearRmcManualOperationLine(models.Model):

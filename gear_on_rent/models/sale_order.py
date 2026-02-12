@@ -74,6 +74,7 @@ class GearPrimeRateLogOptional(models.Model):
     )
     rate_value = fields.Monetary(string="Rate Value", currency_field="currency_id")
     per_cum = fields.Monetary(string="Per CUM", currency_field="currency_id")
+    diesel_per_cum = fields.Monetary(string="Diesel (Per CUM)", currency_field="currency_id")
     quantity = fields.Float(string="Qty", digits=(16, 2))
     total_amount = fields.Monetary(string="Total", currency_field="currency_id")
     currency_id = fields.Many2one("res.currency", related="log_id.currency_id", store=True, readonly=True)
@@ -121,7 +122,9 @@ class GearPrimeRateLog(models.Model):
     capacity_id = fields.Many2one(
         "gear.plant.capacity.master", related="order_id.gear_capacity_id", store=True, readonly=True
     )
-    final_prime_rate = fields.Monetary(string="Final Prime", currency_field="currency_id")
+    final_prime_rate = fields.Monetary(
+        string="Final Prime", currency_field="currency_id", compute="_compute_final_prime_rate", store=True
+    )
     final_optimize_rate = fields.Monetary(string="Final Optimize", currency_field="currency_id")
     final_after_mgq_rate = fields.Monetary(string="Final After MGQ", currency_field="currency_id")
     optimize_rate = fields.Monetary(string="Optimize Rate", currency_field="currency_id")
@@ -136,6 +139,41 @@ class GearPrimeRateLog(models.Model):
     running_interest = fields.Monetary(string="Interest (Monthly)", currency_field="currency_id")
     running_land_investment = fields.Monetary(string="Land / Site Dev. (Monthly)", currency_field="currency_id")
     running_total_breakdown = fields.Monetary(string="Running Total (Monthly)", currency_field="currency_id")
+    variable_power_per_cum = fields.Monetary(string="Power (per CUM)", currency_field="currency_id")
+    variable_diesel_per_cum = fields.Monetary(string="Diesel (per CUM)", currency_field="currency_id")
+    variable_jcb_per_cum = fields.Monetary(string="JCB Diesel (per CUM)", currency_field="currency_id")
+    variable_total_per_cum = fields.Monetary(string="Variable Total (per CUM)", currency_field="currency_id")
+    variable_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Variable Source")
+    diesel_optional_per_cum = fields.Monetary(string="Diesel Optional (per CUM)", currency_field="currency_id")
+    after_mgq_formula_display = fields.Char(
+        string="After MGQ Breakdown",
+        compute="_compute_after_mgq_formula_display",
+        help="Breakdown: diesel_optional_per_cum + variable_total_per_cum + margin_per_cum = after_mgq_rate",
+    )
+    transport_fixed = fields.Monetary(string="Fixed Transport", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    transport_variable = fields.Monetary(string="Variable Diesel", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    transport_total = fields.Monetary(string="Total Transport", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    pumping_fixed = fields.Monetary(string="Pump Rental", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    pumping_variable = fields.Monetary(string="Pump Diesel", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    pumping_total = fields.Monetary(string="Total Pumping", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    optional_rate_value_total = fields.Monetary(string="Optional Rate Value", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    optional_qty_total = fields.Float(string="Optional Qty", digits=(16, 2), compute="_compute_optional_breakdowns", store=True)
+    optional_per_cum_total = fields.Monetary(string="Optional Per CUM", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    transport_rate_value = fields.Monetary(string="Rate Value", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    transport_qty = fields.Float(string="Qty", digits=(16, 0), compute="_compute_optional_breakdowns", store=True)
+    transport_per_cum = fields.Monetary(string="Per CUM", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    transport_per_cum_total = fields.Monetary(string="Total Transport Per CUM (D+E)", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    pumping_rate_value = fields.Monetary(string="Rate Value", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    pumping_qty = fields.Float(string="Qty", digits=(16, 0), compute="_compute_optional_breakdowns", store=True)
+    pumping_per_cum = fields.Monetary(string="Per CUM", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    pumping_per_cum_total = fields.Monetary(string="Total Pumping Per CUM (F+G)", currency_field="currency_id", compute="_compute_optional_breakdowns", store=True)
+    plant_running = fields.Selection(
+        [
+            ("power", "On Power"),
+            ("diesel", "On Diesel"),
+        ],
+        string="Plant Running",
+    )
     interest_monthly = fields.Monetary(string="Interest Monthly", currency_field="currency_id")
     interest_per_cum = fields.Monetary(string="Interest / CUM", currency_field="currency_id")
     interest_source = fields.Selection(selection=PRIME_LOG_SOURCE_SELECTION, string="Interest Source")
@@ -155,6 +193,77 @@ class GearPrimeRateLog(models.Model):
         string="Optional Services",
         copy=False,
     )
+
+    @api.depends("diesel_optional_per_cum", "variable_total_per_cum", "margin_per_cum", "after_mgq_rate")
+    def _compute_after_mgq_formula_display(self):
+        for rec in self:
+            if rec.after_mgq_rate or rec.diesel_optional_per_cum or rec.variable_total_per_cum or rec.margin_per_cum:
+                rec.after_mgq_formula_display = (
+                    f"{(rec.diesel_optional_per_cum or 0.0):.2f} + "
+                    f"{(rec.variable_total_per_cum or 0.0):.2f} + "
+                    f"{(rec.margin_per_cum or 0.0):.2f} = "
+                    f"{(rec.after_mgq_rate or 0.0):.2f}"
+                )
+            else:
+                rec.after_mgq_formula_display = False
+
+    @api.depends("prime_rate", "margin_per_cum", "material_per_cum", "optional_per_cum")
+    def _compute_final_prime_rate(self):
+        """Keep Final Prime consistent with the displayed per‑CUM components."""
+        for rec in self:
+            rec.final_prime_rate = (rec.prime_rate or 0.0) + (rec.margin_per_cum or 0.0) + (rec.material_per_cum or 0.0) + (rec.optional_per_cum or 0.0)
+
+    @api.depends("optional_line_ids.code", "optional_line_ids.total_amount", "optional_line_ids.per_cum", "optional_line_ids.quantity")
+    def _compute_optional_breakdowns(self):
+        for rec in self:
+            tfixed = tvar = pfixed = pvar = 0.0
+            rate_sum = qty_sum = per_cum_sum = 0.0
+            transport_rate = transport_qty = transport_per = transport_diesel_per = 0.0
+            pumping_rate = pumping_qty = pumping_per = pumping_diesel_per = 0.0
+            for line in rec.optional_line_ids:
+                total = line.total_amount
+                if not total:
+                    qty = line.quantity or 0.0
+                    total = (line.per_cum or 0.0) * qty
+                rate_sum += line.rate_value or 0.0
+                qty_sum += line.quantity or 0.0
+                per_cum_sum += line.per_cum or 0.0
+                code = (line.code or "").lower()
+                if code == "transport":
+                    tfixed += total
+                    transport_rate += line.rate_value or 0.0
+                    transport_qty += line.quantity or 0.0
+                    transport_per += line.per_cum or 0.0
+                    transport_diesel_per += line.diesel_per_cum or 0.0
+                elif code == "diesel":
+                    tvar += total
+                    transport_diesel_per += line.per_cum or 0.0
+                elif code == "pump":
+                    pfixed += total
+                    pumping_rate += line.rate_value or 0.0
+                    pumping_qty += line.quantity or 0.0
+                    pumping_per += line.per_cum or 0.0
+                    pumping_diesel_per += line.diesel_per_cum or 0.0
+                elif code in ("pump_diesel", "diesel_pump"):
+                    pvar += total
+                    pumping_diesel_per += line.per_cum or 0.0
+            rec.transport_fixed = tfixed
+            rec.transport_variable = transport_diesel_per
+            rec.transport_total = tfixed
+            rec.transport_rate_value = transport_rate
+            rec.transport_qty = transport_qty
+            rec.transport_per_cum = transport_per
+            rec.transport_per_cum_total = transport_per + transport_diesel_per
+            rec.pumping_fixed = pfixed
+            rec.pumping_variable = pumping_diesel_per
+            rec.pumping_total = pfixed + pvar
+            rec.pumping_rate_value = pumping_rate
+            rec.pumping_qty = pumping_qty
+            rec.pumping_per_cum = pumping_per
+            rec.pumping_per_cum_total = pumping_per + pumping_diesel_per
+            rec.optional_rate_value_total = rate_sum
+            rec.optional_qty_total = qty_sum
+            rec.optional_per_cum_total = rec.transport_per_cum_total + rec.pumping_per_cum_total
 
 
 class SaleOrder(models.Model):
@@ -435,11 +544,11 @@ class SaleOrder(models.Model):
     gear_manpower_opt_in = fields.Boolean(string="Manpower Required", tracking=True, default=False)
     gear_diesel_opt_in = fields.Boolean(string="Diesel Required", tracking=True)
     gear_jcb_opt_in = fields.Boolean(string="JCB Required", tracking=True, default=False)
-    gear_transport_qty = fields.Float(string="Transport Qty", digits=(16, 2), tracking=True)
-    gear_pumping_qty = fields.Float(string="Pumping Qty", digits=(16, 2), tracking=True)
-    gear_manpower_qty = fields.Float(string="Manpower Qty", digits=(16, 2), tracking=True)
-    gear_diesel_qty = fields.Float(string="Diesel Qty", digits=(16, 2), tracking=True)
-    gear_jcb_qty = fields.Float(string="JCB Qty", digits=(16, 2), tracking=True)
+    gear_transport_qty = fields.Float(string="Transport Qty", digits=(16, 0), tracking=True)
+    gear_pumping_qty = fields.Float(string="Pumping Qty", digits=(16, 0), tracking=True)
+    gear_manpower_qty = fields.Float(string="Manpower Qty", digits=(16, 0), tracking=True)
+    gear_diesel_qty = fields.Float(string="Diesel Qty", digits=(16, 0), tracking=True)
+    gear_jcb_qty = fields.Float(string="JCB Qty", digits=(16, 0), tracking=True)
     gear_margin_per_cum = fields.Monetary(
         string="Margin / CUM (Override)",
         currency_field="currency_id",
@@ -570,6 +679,19 @@ class SaleOrder(models.Model):
                 rec.gear_diesel_per_cum = 0.0
             if not rec.gear_jcb_opt_in:
                 rec.gear_jcb_qty = 0.0
+
+    @api.onchange("gear_pumping_opt_in", "gear_pumping_qty", "mgq_monthly", "x_monthly_mgq")
+    def _onchange_autofill_pumping_qty(self):
+        """If pumping is enabled and qty is zero/blank, auto-derive it from MGQ."""
+        for rec in self:
+            if not rec.gear_pumping_opt_in:
+                continue
+            qty = rec.gear_pumping_qty or 0.0
+            if qty > 0:
+                continue
+            mgq = rec.mgq_monthly or rec.x_monthly_mgq or 0.0
+            if mgq:
+                rec.gear_pumping_qty = round(float(mgq) / 1500.0, 2)
     gear_prime_rate_final = fields.Float(
         string="Prime Rate (Final)",
         digits=(16, 2),
@@ -1693,6 +1815,9 @@ class SaleOrder(models.Model):
         except Exception:
             self.gear_prime_rate_log = str(payload)
         self._sync_prime_rate_log_payload(payload)
+        # If the quote has no lines yet, auto-populate from the latest rate calc.
+        if not self.order_line:
+            self._gear_autofill_quote_lines()
 
     def _gear_apply_prime_rate_payload_map(self, payload_map):
         for order in self:
@@ -1702,9 +1827,22 @@ class SaleOrder(models.Model):
             else:
                 order.gear_prime_rate_log = False
 
+    def _gear_autofill_quote_lines(self):
+        """If quote is empty, generate lines from current final rates."""
+        self.ensure_one()
+        calculator = self.env["gear.batching.quotation.calculator"].sudo()
+        final_rates = calculator.generate_final_rates(self)
+        if not self.order_line:
+            lines = self._gear_prepare_batching_so_lines(final_rates)
+            if lines:
+                self.order_line = [(5, 0, 0), *lines]
+
     def _gear_refresh_prime_rate_log(self):
         payload_map = self._gear_prime_rate_payload_map()
         self._gear_apply_prime_rate_payload_map(payload_map)
+        # If logs refreshed and still no lines, try to auto-fill.
+        for order in self.filtered(lambda o: not o.order_line):
+            order._gear_autofill_quote_lines()
 
     @api.depends(
         "gear_cost_component_ids.amount",
@@ -1769,9 +1907,39 @@ class SaleOrder(models.Model):
         running_breakdown = source_map.get("running", {})
         capex_breakdown = source_map.get("capex", {})
         dead_breakdown = source_map.get("dead_cost", {})
+        variable_rec = (
+            self.env["gear.variable.cost.master"]
+            .sudo()
+            .search([("company_id", "=", self.company_id.id), ("active", "=", True)], limit=1)
+        )
+        variable_power = variable_rec.power_monthly or 0.0
+        variable_diesel = variable_rec.diesel_monthly or 0.0
+        variable_jcb = variable_rec.jcb_diesel_per_cum or 0.0
+        plant_running = self.gear_plant_running
+        selected_var = variable_power if plant_running == "power" else (variable_diesel if plant_running == "diesel" else 0.0)
+        variable_total = selected_var + variable_jcb
+        variable_source = "master" if variable_rec else False
 
         optional_commands = []
+        # Pre-compute per CUM totals for transport and pumping so we can
+        # populate Optional / CUM even before the log's computed fields run.
+        transport_per_cum = transport_diesel_per_cum = 0.0
+        pumping_per_cum = pumping_diesel_per_cum = 0.0
         for service in optional_services:
+            code = (service.get("code") or "").lower()
+            per_cum_val = service.get("per_cum", 0.0) or 0.0
+            diesel_per_cum_val = service.get("diesel_per_cum", 0.0) or 0.0
+            if code == "transport":
+                transport_per_cum += per_cum_val
+                transport_diesel_per_cum += diesel_per_cum_val
+            elif code == "diesel":
+                # legacy diesel surcharge captured as transport diesel
+                transport_diesel_per_cum += per_cum_val
+            elif code == "pump":
+                pumping_per_cum += per_cum_val
+                pumping_diesel_per_cum += diesel_per_cum_val
+            elif code in ("pump_diesel", "diesel_pump"):
+                pumping_diesel_per_cum += per_cum_val
             optional_commands.append(
                 (
                     0,
@@ -1782,6 +1950,7 @@ class SaleOrder(models.Model):
                         "charge_type": service.get("charge_type"),
                         "rate_value": service.get("rate_value", 0.0),
                         "per_cum": service.get("per_cum", 0.0),
+                        "diesel_per_cum": service.get("diesel_per_cum", 0.0),
                         "quantity": service.get("quantity", 0.0),
                         "total_amount": service.get("total_amount", 0.0),
                     },
@@ -1811,8 +1980,15 @@ class SaleOrder(models.Model):
             "material_per_cum": material.get("per_cum", 0.0),
             "material_source": material.get("source"),
             "inventory_mode": material.get("inventory_mode") or self.x_inventory_mode,
-            "optional_per_cum": optional.get("per_cum", 0.0),
-            "prime_rate": payload.get("prime_rate", 0.0),
+            # Optional / CUM should equal Total Transport (D+E per CUM)
+            #  plus Total Pumping (F+G per CUM).
+            "optional_per_cum": transport_per_cum
+            + transport_diesel_per_cum
+            + pumping_per_cum
+            + pumping_diesel_per_cum,
+            "diesel_optional_per_cum": optional.get("diesel_optional_per_cum", 0.0),
+            # prime_rate already includes variable_total in the calculator payload; avoid double counting here.
+            "prime_rate": payload.get("prime_rate", 0.0) or 0.0,
             "final_prime_rate": payload.get("final_prime_rate", 0.0),
             "final_optimize_rate": payload.get("final_optimize_rate", 0.0),
             "final_after_mgq_rate": payload.get("final_after_mgq_rate", 0.0),
@@ -1827,6 +2003,12 @@ class SaleOrder(models.Model):
             "running_interest": running_breakdown.get("interest", 0.0),
             "running_land_investment": running_breakdown.get("land_investment", 0.0),
             "running_total_breakdown": running_breakdown.get("running_total", running.get("monthly_total", 0.0)),
+            "variable_power_per_cum": variable_power if plant_running == "power" else 0.0,
+            "variable_diesel_per_cum": variable_diesel if plant_running == "diesel" else 0.0,
+            "variable_jcb_per_cum": variable_jcb,
+            "variable_total_per_cum": variable_total,
+            "variable_source": variable_source,
+            "plant_running": plant_running,
             "interest_monthly": interest.get("monthly_total", 0.0),
             "interest_per_cum": interest.get("per_cum", 0.0),
             "interest_source": interest.get("source"),
@@ -1853,6 +2035,28 @@ class SaleOrder(models.Model):
         else:
             log_vals["optional_line_ids"] = optional_commands
             Log.create(log_vals)
+
+    def _gear_ensure_prime_line(self, final_rates=None):
+        """Ensure the Prime tier line exists on the quotation."""
+        self.ensure_one()
+        prime_product = self._gear_resolve_tier_product("prime")
+        prime_line = self.order_line.filtered(lambda l: l.product_id and prime_product and l.product_id.id == prime_product.id)
+        if prime_line:
+            return
+        calculator = self.env["gear.batching.quotation.calculator"].sudo()
+        final_rates = final_rates or calculator.generate_final_rates(self)
+        qty, _ = self._gear_get_billing_quantities()
+        breakdown = (final_rates or {}).get("full_rate_breakdown", {})
+        production_qty = breakdown.get("production_qty") or self.gear_expected_production_qty or 0.0
+        prime_qty = self.qty_mgq or self.mgq_monthly or self.x_monthly_mgq or breakdown.get("mgq", 0.0) or qty
+        if not prime_qty and production_qty:
+            prime_qty = production_qty
+        rate = final_rates.get("final_prime_rate") or self.prime_rate or final_rates.get("prime_rate", 0.0)
+        if not rate:
+            return
+        product = self._gear_resolve_tier_product("prime")
+        label = product.display_name if product else "Prime Output Production"
+        self.order_line = [(0, 0, {"product_id": product.id if product else False, "product_uom_qty": prime_qty, "price_unit": rate, "name": label})] + [(1, l.id, {}) for l in self.order_line]
 
     def action_view_prime_rate_log(self):
         self.ensure_one()
@@ -2038,6 +2242,24 @@ class SaleOrder(models.Model):
 
         self.ensure_one()
 
+        # Prefer RMC Mixing & Production variants (Operational Mode attribute)
+        rmc_template = self.env.ref("gear_on_rent.product_template_rmc_mixing_production", raise_if_not_found=False)
+        op_attr_map = {
+            "prime": "gear_on_rent.product_attribute_value_operational_mode_prime",
+            "optimize": "gear_on_rent.product_attribute_value_operational_mode_standby",
+            "ngt": "gear_on_rent.product_attribute_value_operational_mode_ngt",
+            "after_mgq": "gear_on_rent.product_attribute_value_operational_mode_prime",
+        }
+        op_attr_xmlid = op_attr_map.get(billing_mode)
+        op_attr_value = self.env.ref(op_attr_xmlid, raise_if_not_found=False) if op_attr_xmlid else False
+        if rmc_template and op_attr_value:
+            variants = rmc_template.product_variant_ids.filtered(
+                lambda p: op_attr_value in p.product_template_attribute_value_ids.mapped("product_attribute_value_id")
+            )
+            if variants:
+                return variants[:1]
+
+        # Fallback to legacy Plant / Mixing Service variants
         xmlid_map = {
             "prime": "gear_on_rent.product_batching_service_prime",
             "optimize": "gear_on_rent.product_batching_service_optimize",
@@ -2143,6 +2365,11 @@ class SaleOrder(models.Model):
 
             prime_qty = prime_qty or production_qty or mgq_qty or qty
 
+            after_val = (
+                final_rates.get("final_after_mgq_rate")
+                or final_rates.get("after_mgq_rate")
+                or 0.0
+            )
             tier_config = [
                 (
                     "prime",
@@ -2151,7 +2378,8 @@ class SaleOrder(models.Model):
                     or self.prime_rate
                     or final_rates.get("prime_rate", 0.0),
                     prime_qty,
-                    "Prime Output Production",
+                    "Prime Output Production"
+                    + (f" — After MGQ Rate: {after_val:.2f}" if after_val else ""),
                 ),
                 (
                     "optimize",
@@ -2161,25 +2389,6 @@ class SaleOrder(models.Model):
                     or final_rates.get("optimize_rate", 0.0),
                     optimize_qty,
                     "Optimized Standby Operations",
-                ),
-                (
-                    "ngt",
-                    self._gear_resolve_tier_product("ngt"),
-                    final_rates.get("final_ngt_rate")
-                    or final_rates.get("final_after_mgq_rate")
-                    or self.ngt_rate
-                    or final_rates.get("after_mgq_rate", 0.0),
-                    ngt_qty,
-                    "No-Generation Time (NGT) Period",
-                ),
-                (
-                    "after_mgq",
-                    self._gear_resolve_tier_product("after_mgq"),
-                    final_rates.get("final_after_mgq_rate")
-                    or self.ngt_rate
-                    or final_rates.get("after_mgq_rate", 0.0),
-                    after_mgq_qty,
-                    "After-MGQ Quantity",
                 ),
             ]
 
@@ -2210,46 +2419,40 @@ class SaleOrder(models.Model):
             production_qty = breakdown.get("production_qty") or self.gear_expected_production_qty or 0.0
 
             prime_qty = self.qty_mgq or self.mgq_monthly or self.x_monthly_mgq or breakdown_mgq or 0.0
-            optimize_qty = self.qty_below or 0.0
-            ngt_qty = self.qty_above or 0.0
-
-            if not optimize_qty and prime_qty and production_qty and production_qty < prime_qty:
-                optimize_qty = prime_qty - production_qty
-            if not ngt_qty and prime_qty and production_qty and production_qty > prime_qty:
-                ngt_qty = production_qty - prime_qty
+            optimize_qty = 0.0  # show optimize line with zero qty
+            after_mgq_qty = 0.0  # show after-MGQ line with zero qty
 
             prime_qty = prime_qty or production_qty or mgq_qty or qty
+            after_val = (
+                final_rates.get("final_after_mgq_rate")
+                or final_rates.get("after_mgq_rate")
+                or 0.0
+            )
 
             tier_rates = {
-                "prime": final_rates.get("prime_rate", 0.0) or self.prime_rate,
-                "optimize": final_rates.get("optimize_rate", 0.0) or self.optimize_rate,
-                "ngt": final_rates.get("after_mgq_rate", 0.0) or self.ngt_rate,
+                "prime": final_rates.get("final_prime_rate") or final_rates.get("prime_rate", 0.0) or self.prime_rate,
+                "optimize": final_rates.get("final_optimize_rate") or final_rates.get("optimize_rate", 0.0) or self.optimize_rate,
+                "after_mgq": final_rates.get("final_after_mgq_rate") or after_val,
             }
-            tier_quantities = {"prime": prime_qty, "optimize": optimize_qty, "ngt": ngt_qty}
+            tier_quantities = {"prime": prime_qty, "optimize": optimize_qty, "after_mgq": after_mgq_qty}
             tier_labels = {
                 "prime": "Prime Output Production",
                 "optimize": "Optimized Standby Operations",
-                "ngt": "No-Generation Time (NGT) Period",
+                "after_mgq": "After MGQ Rate",
             }
 
-            for mode in ["prime", "optimize", "ngt"]:
+            for mode in ["prime", "optimize", "after_mgq"]:
                 price = tier_rates.get(mode) or 0.0
-                quantity = tier_quantities.get(mode) or 0.0
+                quantity = tier_quantities.get(mode)
                 if price <= 0:
                     continue
                 product = self._gear_resolve_tier_product(mode)
                 label = product.display_name if product else tier_labels.get(mode) or "Plant / Mixing Service"
+                if mode == "after_mgq":
+                    label = f"After MGQ Rate: {price:.2f}"
                 _append_line(product, quantity, price, label)
 
-        # Optional services (one line per enabled service)
-        for entry in optional_services:
-            per_cum = entry.get("per_cum")
-            if per_cum is None:
-                continue
-            service = self._gear_optional_service_rate(entry.get("code"))
-            optional_product = self._gear_resolve_mapping_product("optional", service=service)
-            optional_name = entry.get("name") or (service.display_name if service else "Optional Service")
-            _append_line(optional_product, mgq_qty or qty, per_cum, optional_name)
+        # Optional services suppressed per requirement: no optional product lines.
 
         return line_commands
 
@@ -2321,6 +2524,32 @@ class SaleOrder(models.Model):
             if template:
                 return template
         return super()._find_mail_template()
+
+    def action_populate_batching_lines(self):
+        """Add slab/optional products with computed rates to the quotation lines."""
+        self.ensure_one()
+
+        calculator = self.env["gear.batching.quotation.calculator"].sudo()
+        final_rates = calculator.generate_final_rates(self)
+        line_commands = self._gear_prepare_batching_so_lines(final_rates)
+        if not line_commands:
+            return
+
+        existing_product_ids = set(
+            self.order_line.filtered(lambda l: not l.display_type).mapped("product_id").ids
+        )
+
+        new_commands = []
+        for command in line_commands:
+            vals = command[2] if isinstance(command, (list, tuple)) and len(command) >= 3 else {}
+            product_id = vals.get("product_id")
+            if product_id and product_id in existing_product_ids:
+                continue
+            new_commands.append(command)
+
+        if new_commands:
+            # Append without disturbing any manual lines the user may have added.
+            self.write({"order_line": new_commands})
 
     def _create_invoices(self, grouped=False, final=False, date=None):
         """Allow plant-mode contracts to invoice ordered quantities without deliveries."""

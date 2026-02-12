@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data noupdate="0">
+    <function model="gear.optional.service.master" name="_cleanup_removed_services" eval="[['manpower', 'jcb', 'diesel']]"/>
+  </data>
+</odoo>

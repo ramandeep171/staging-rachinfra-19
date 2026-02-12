@@ -13,6 +13,13 @@
                         invisible="gear_prime_rate_log_count == 0">
                     <field name="gear_prime_rate_log_count" widget="statinfo" string="Prime Rate Logs"/>
                 </button>
+                <button name="action_populate_batching_lines"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-cubes"
+                        invisible="['|', ('x_billing_category', '!=', 'plant'), ('state', 'not in', ['draft', 'sent'])]">
+                    Populate Lines
+                </button>
             </xpath>
             <xpath expr="//group[@name='order_details']" position="inside">
                 <field name="company_id" invisible="1"/>
@@ -74,13 +81,6 @@
                             <field name="gear_transport_qty" invisible="not gear_transport_opt_in"/>
                             <field name="gear_pumping_opt_in"/>
                             <field name="gear_pumping_qty" invisible="not gear_pumping_opt_in"/>
-                            <field name="gear_manpower_opt_in"/>
-                        </group>
-                        <group>
-                            <field name="gear_diesel_opt_in"/>
-                            <field name="gear_jcb_opt_in"/>
-                            <field name="gear_jcb_qty" invisible="not gear_jcb_opt_in"/>
-                            <field name="gear_optional_service_ids" widget="many2many_tags"/>
                         </group>
                     </group>
                     <group string="Prime Rate Breakdown">

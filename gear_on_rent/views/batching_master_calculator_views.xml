@@ -58,6 +58,8 @@
                                     <field name="prime_rate" readonly="1"/>
                                     <field name="optimize_rate" readonly="1"/>
                                     <field name="after_mgq_rate" readonly="1"/>
+                                    <label for="after_mgq_rate" class="o_form_label text-muted"
+                                           string="After MGQ Rate = diesel_optional_per_cum + variable_total_per_cum + margin_per_cum"/>
                                     <field name="ngt_rate" readonly="1"/>
                                 </group>
                                 <group string="All-In Rates">

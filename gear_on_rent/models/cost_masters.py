@@ -31,6 +31,9 @@ class GearRunningCostMaster(models.Model):
     interest_percent = fields.Float(string="Interest %")
     total_monthly = fields.Float(string="Total Monthly", compute="_compute_total_monthly", store=True)
     land_investment = fields.Float(string="Land / Site Development")
+    manpower_monthly = fields.Float(string="Man Power (Labour) (Monthly)")
+    maintenance_monthly = fields.Float(string="Batching Plant / DG Maintenance (Monthly)")
+    jcb_rent_monthly = fields.Float(string="JCB Rent (Monthly)")
     active = fields.Boolean(default=True)
     company_id = fields.Many2one(
         "res.company", string="Company", required=True, default=lambda self: self.env.company.id
@@ -61,6 +64,9 @@ class GearRunningCostMaster(models.Model):
             "admin_monthly": _sum("admin_monthly"),
             "interest_monthly": _sum("interest_monthly"),
             "land_investment": _sum("land_investment"),
+            "manpower_monthly": _sum("manpower_monthly"),
+            "maintenance_monthly": _sum("maintenance_monthly"),
+            "jcb_rent_monthly": _sum("jcb_rent_monthly"),
             "interest_percent": records[:1].interest_percent if records else 0.0,
         }
         totals["running_total"] = (
@@ -69,6 +75,9 @@ class GearRunningCostMaster(models.Model):
             + totals["admin_monthly"]
             + totals["interest_monthly"]
             + totals["land_investment"]
+            + totals["manpower_monthly"]
+            + totals["maintenance_monthly"]
+            + totals["jcb_rent_monthly"]
         )
         return totals
 
@@ -79,6 +88,9 @@ class GearRunningCostMaster(models.Model):
         "admin_monthly",
         "interest_monthly",
         "land_investment",
+        "manpower_monthly",
+        "maintenance_monthly",
+        "jcb_rent_monthly",
     )
     def _compute_total_monthly(self):
         for record in self:
@@ -89,6 +101,9 @@ class GearRunningCostMaster(models.Model):
                 + (record.admin_monthly or 0.0)
                 + (record.interest_monthly or 0.0)
                 + (record.land_investment or 0.0)
+                + (record.manpower_monthly or 0.0)
+                + (record.maintenance_monthly or 0.0)
+                + (record.jcb_rent_monthly or 0.0)
             )
 
     @api.model
