@@ -1815,8 +1815,9 @@ class SaleOrder(models.Model):
         except Exception:
             self.gear_prime_rate_log = str(payload)
         self._sync_prime_rate_log_payload(payload)
-        # If the quote has no lines yet, auto-populate from the latest rate calc.
-        if not self.order_line:
+        # Skip auto-fill when running in install/upgrade context to avoid company mismatches.
+        install_ctx = self.env.context.get("install_mode") or self.env.context.get("module_upgrade")
+        if not install_ctx and not self.order_line:
             self._gear_autofill_quote_lines()
 
     def _gear_apply_prime_rate_payload_map(self, payload_map):
