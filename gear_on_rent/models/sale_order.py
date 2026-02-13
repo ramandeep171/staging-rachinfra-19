@@ -2343,6 +2343,8 @@ class SaleOrder(models.Model):
         optional_services = breakdown.get("optional_services", [])
 
         def _append_line(product, quantity, price, name):
+            if product and product.company_id and product.company_id != self.company_id:
+                return
             line_commands.append(
                 (
                     0,

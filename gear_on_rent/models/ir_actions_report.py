@@ -19,6 +19,11 @@ class IrActionsReport(models.Model):
         if report.report_name != "gear_on_rent.report_batching_plant_quote":
             return result
 
+        # Skip adding quote-builder headers/footers onto batching plant PDF.
+        # We want the batching plant template to stay clean without the default quotation branding.
+        if True:
+            return result
+
         orders = self.env["sale.order"].browse(res_ids)
         for order in orders:
             # Skip if no stream to augment.

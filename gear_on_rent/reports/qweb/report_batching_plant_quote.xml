@@ -661,18 +661,42 @@
                         <!-- Terms & Conditions Summary -->
                         <section class="mt-4" style="border-top:1px dashed #d1d5db;padding-top:14px;">
                             <div style="font-size:18px;font-weight:800;color:#0ea5e9;margin-bottom:10px;">Terms &amp; Conditions Summary</div>
-                            <div class="row" style="font-size:12px;color:#374151;line-height:1.5;">
+                            <div class="row" style="font-size:12px;color:#0f172a;line-height:1.55;column-gap:12px;row-gap:10px;">
                                 <div class="col-6">
-                                    <div style="margin-bottom:8px;">📍 <strong>Distance Variation:</strong> Transport diesel component varies with site distance.</div>
-                                    <div style="margin-bottom:8px;">🔧 <strong>Exclusions:</strong> Civil work, power, land/site prep are Client scope.</div>
-                                    <div style="margin-bottom:8px;">💰 <strong>Payment Terms:</strong> As per agreed schedule.</div>
-                                    <div style="margin-bottom:8px;">⏰ <strong>Validity:</strong> 30 days from proposal date.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#e11d48;">📍</span>
+                                        <div><strong>Distance Variation:</strong> Transport diesel component varies with site distance.</div>
+                                    </div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#6b7280;">🔧</span>
+                                        <div><strong>Exclusions:</strong> Civil work, power, land/site prep are Client scope.</div>
+                                    </div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#f59e0b;">💰</span>
+                                        <div><strong>Payment Terms:</strong> As per agreed schedule.</div>
+                                    </div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#ef4444;">⏰</span>
+                                        <div><strong>Validity:</strong> 30 days from proposal date.</div>
+                                    </div>
                                 </div>
                                 <div class="col-6">
-                                    <div style="margin-bottom:8px;">📊 <strong>Cost Breakup:</strong> Detailed breakdown available on request.</div>
-                                    <div style="margin-bottom:8px;">🎯 <strong>Service Level:</strong> Uptime guarantees as per SLA.</div>
-                                    <div style="margin-bottom:8px;">🧾 <strong>GST:</strong> Applicable as per prevailing rates.</div>
-                                    <div style="margin-bottom:8px;">🧩 <strong>Modifications:</strong> Changes in inputs require re-quote.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#3b82f6;">📊</span>
+                                        <div><strong>Cost Breakup:</strong> Detailed breakdown available on request.</div>
+                                    </div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#ef4444;">🎯</span>
+                                        <div><strong>Service Level:</strong> Uptime guarantees as per SLA.</div>
+                                    </div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#0ea5e9;">🧾</span>
+                                        <div><strong>GST:</strong> Applicable as per prevailing rates.</div>
+                                    </div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
+                                        <span style="font-size:16px;margin-right:8px;color:#475569;">🧩</span>
+                                        <div><strong>Modifications:</strong> Changes in inputs require re-quote.</div>
+                                    </div>
                                 </div>
                             </div>
                         </section>
