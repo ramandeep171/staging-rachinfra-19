@@ -40,6 +40,39 @@ class IrActionsReport(models.Model):
         if not orders:
             return pdf_content, report_type
 
+        def _has_batching_context(order):
+            """Return True only when batching context fields are actually filled."""
+            def _num(val):
+                try:
+                    return float(val or 0.0)
+                except Exception:
+                    return 0.0
+
+            bool_fields = (
+                order.gear_service_type
+                or order.gear_service_id
+                or order.gear_capacity_id
+                or order.gear_plant_running
+                or order.gear_civil_scope
+            )
+            num_fields = any(
+                [
+                    _num(order.mgq_monthly) > 0.0,
+                    _num(order.x_monthly_mgq) > 0.0,
+                    _num(order.gear_project_duration_years) > 0.0,
+                    _num(order.gear_project_duration_months) > 0.0,
+                    _num(order.gear_expected_production_qty) > 0.0,
+                    _num(order.gear_project_quantity) > 0.0,
+                ]
+            )
+            return bool(bool_fields or num_fields)
+
+        batching_flags = {o.id: _has_batching_context(o) for o in orders}
+        _logger.info("Batching append check for orders %s -> %s", orders.ids, batching_flags)
+        if any(not flag for flag in batching_flags.values()):
+            _logger.info("Skipping batching append: missing batching context on at least one order.")
+            return pdf_content, report_type
+
         try:
             batching_action = self.env.ref("gear_on_rent.action_report_batching_plant_quote")
         except Exception:

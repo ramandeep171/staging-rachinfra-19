@@ -35,9 +35,10 @@
             <xpath expr="//group[@name='order_details']" position="after">
                 <group string="Inventory Mode" col="2">
                     <field name="x_inventory_mode" widget="selection"/>
-                    <field name="x_real_warehouse_id" 
-                           required="x_inventory_mode == 'with_inventory'" 
-                           context="{'default_company_id': company_id}" 
+                    <field name="x_real_warehouse_id"
+                           invisible="x_inventory_mode != 'with_inventory'"
+                           required="x_inventory_mode == 'with_inventory'"
+                           context="{'default_company_id': company_id}"
                            options="{'no_create': False}"/>
                 </group>
             </xpath>

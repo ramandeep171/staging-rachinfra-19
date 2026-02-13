@@ -659,43 +659,43 @@
                         </section>
 
                         <!-- Terms & Conditions Summary -->
-                        <section class="mt-4" style="border-top:1px dashed #d1d5db;padding-top:14px;">
-                            <div style="font-size:18px;font-weight:800;color:#0ea5e9;margin-bottom:10px;">Terms &amp; Conditions Summary</div>
-                            <div class="row" style="font-size:12px;color:#0f172a;line-height:1.55;column-gap:12px;row-gap:10px;">
+                        <section class="mt-4" style="border-top:1px dashed #cbd5e1;padding-top:16px;">
+                            <div style="font-size:18px;font-weight:800;color:#0ea5e9;margin-bottom:12px;">Terms &amp; Conditions Summary</div>
+                            <div class="row" style="font-size:12.5px;color:#0f172a;line-height:1.6;column-gap:16px;row-gap:12px;">
                                 <div class="col-6">
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#e11d48;">📍</span>
-                                        <div><strong>Distance Variation:</strong> Transport diesel component varies with site distance.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#e11d48;">📍</span>
+                                        <div><span style="font-weight:800;">Distance Variation:</span> Transport diesel component varies with site distance.</div>
                                     </div>
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#6b7280;">🔧</span>
-                                        <div><strong>Exclusions:</strong> Civil work, power, land/site prep are Client scope.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#6b7280;">🔧</span>
+                                        <div><span style="font-weight:800;">Exclusions:</span> Civil work, power, land/site prep are Client scope.</div>
                                     </div>
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#f59e0b;">💰</span>
-                                        <div><strong>Payment Terms:</strong> As per agreed schedule.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#f59e0b;">💰</span>
+                                        <div><span style="font-weight:800;">Payment Terms:</span> As per agreed schedule.</div>
                                     </div>
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#ef4444;">⏰</span>
-                                        <div><strong>Validity:</strong> 30 days from proposal date.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#ef4444;">⏰</span>
+                                        <div><span style="font-weight:800;">Validity:</span> 30 days from proposal date.</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#3b82f6;">📊</span>
-                                        <div><strong>Cost Breakup:</strong> Detailed breakdown available on request.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#3b82f6;">📊</span>
+                                        <div><span style="font-weight:800;">Cost Breakup:</span> Detailed breakdown available on request.</div>
                                     </div>
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#ef4444;">🎯</span>
-                                        <div><strong>Service Level:</strong> Uptime guarantees as per SLA.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#ef4444;">🎯</span>
+                                        <div><span style="font-weight:800;">Service Level:</span> Uptime guarantees as per SLA.</div>
                                     </div>
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#0ea5e9;">🧾</span>
-                                        <div><strong>GST:</strong> Applicable as per prevailing rates.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#0ea5e9;">🧾</span>
+                                        <div><span style="font-weight:800;">GST:</span> Applicable as per prevailing rates.</div>
                                     </div>
-                                    <div style="display:flex;align-items:flex-start;margin-bottom:10px;">
-                                        <span style="font-size:16px;margin-right:8px;color:#475569;">🧩</span>
-                                        <div><strong>Modifications:</strong> Changes in inputs require re-quote.</div>
+                                    <div style="display:flex;align-items:flex-start;margin-bottom:12px;">
+                                        <span style="font-size:18px;margin-right:10px;color:#475569;">🧩</span>
+                                        <div><span style="font-weight:800;">Modifications:</span> Changes in inputs require re-quote.</div>
                                     </div>
                                 </div>
                             </div>

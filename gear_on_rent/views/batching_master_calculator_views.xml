@@ -101,18 +101,4 @@
         <field name="target">new</field>
     </record>
 
-    <record id="view_sale_order_batching_calculator_button" model="ir.ui.view">
-        <field name="name">sale.order.batching.calculator.button</field>
-        <field name="model">sale.order</field>
-        <field name="inherit_id" ref="gear_on_rent.view_sale_order_form_inherit_gear_on_rent"/>
-        <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <button name="%(gear_on_rent.action_batching_master_calculator)d"
-                        string="Open Batching Calculator"
-                        type="action"
-                        class="btn-secondary"
-                        context="{'default_order_id': id, 'default_production_qty': gear_expected_production_qty}"/>
-            </xpath>
-        </field>
-    </record>
 </odoo>
